@@ -32,6 +32,7 @@ jobs:
           port: 22
           source: 'dist/*'
           target: /var/www/html
+          strip_components: 1
 
       - name: SSH & Deploy Frontend
         uses: appleboy/ssh-action@v1.0.3
