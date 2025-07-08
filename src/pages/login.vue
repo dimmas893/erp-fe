@@ -43,26 +43,26 @@ const rememberMe = ref(false)
 
 const login = async () => {
   try {
-    const res = await $api('/auth/login', {
-      method: 'POST',
-      body: {
-        email: credentials.value.email,
-        password: credentials.value.password,
-      },
-      onResponseError({ response }) {
-        errors.value = response._data.errors
-      },
-    })
+    // const res = await $api('/auth/login', {
+    //   method: 'POST',
+    //   body: {
+    //     email: credentials.value.email,
+    //     password: credentials.value.password,
+    //   },
+    //   onResponseError({ response }) {
+    //     errors.value = response._data.errors
+    //   },
+    // })
+    router.push('/dashboards/analytics')
+    // const { accessToken, userData, userAbilityRules } = res
 
-    const { accessToken, userData, userAbilityRules } = res
-
-    useCookie('userAbilityRules').value = userAbilityRules
-    ability.update(userAbilityRules)
-    useCookie('userData').value = userData
-    useCookie('accessToken').value = accessToken
-    await nextTick(() => {
-      router.replace(route.query.to ? String(route.query.to) : '/')
-    })
+    // useCookie('userAbilityRules').value = userAbilityRules
+    // ability.update(userAbilityRules)
+    // useCookie('userData').value = userData
+    // useCookie('accessToken').value = accessToken
+    // await nextTick(() => {
+    //   router.replace(route.query.to ? String(route.query.to) : '/')
+    // })
   } catch (err) {
     console.error(err)
   }

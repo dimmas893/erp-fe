@@ -22,24 +22,24 @@ export const setupGuards = router => {
           else allow visiting the page
           (WARN: Don't allow executing further by return statement because next code will check for permissions)
          */
-    if (to.meta.unauthenticatedOnly) {
-      if (isLoggedIn)
-        return '/'
-      else
-        return undefined
-    }
-    if (!canNavigate(to) && to.matched.length) {
-      /* eslint-disable indent */
-            return isLoggedIn
-                ? { name: 'not-authorized' }
-                : {
-                    name: 'login',
-                    query: {
-                        ...to.query,
-                        to: to.fullPath !== '/' ? to.path : undefined,
-                    },
-                }
-            /* eslint-enable indent */
-    }
+    // if (to.meta.unauthenticatedOnly) {
+    //   if (isLoggedIn)
+    //     return '/'
+    //   else
+    //     return undefined
+    // }
+    // if (!canNavigate(to) && to.matched.length) {
+    //   /* eslint-disable indent */
+    //         return isLoggedIn
+    //             ? { name: 'not-authorized' }
+    //             : {
+    //                 name: 'login',
+    //                 query: {
+    //                     ...to.query,
+    //                     to: to.fullPath !== '/' ? to.path : undefined,
+    //                 },
+    //             }
+    //         /* eslint-enable indent */
+    // }
   })
 }
