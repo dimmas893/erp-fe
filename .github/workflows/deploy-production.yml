@@ -1,0 +1,51 @@
+name: CI/CD Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build project
+        run: npm run build
+
+      - name: Copy dist to server via SSH
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 202.10.44.133
+          username: root
+          password: 'Anandadimmas,123'
+          port: 22
+          source: 'dist/*'
+          target: /var/www/html
+          strip_components: 1
+
+      - name: SSH & Deploy Frontend
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 202.10.44.133
+          username: root
+          password: 'Anandadimmas,123'
+          port: 22
+          script: |
+            cd /var/www/html
+            # Optional: bersihkan file lama
+            # rm -rf *
+            # Copy file dari dist jika perlu
+            # cp -r /path/to/temp/dist/* .
+            # Restart nginx jika pakai nginx
+            systemctl reload nginx
