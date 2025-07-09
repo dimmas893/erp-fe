@@ -1,6 +1,5 @@
 <!-- ❗Errors in the form are set on line 60 -->
 <script setup>
-import AuthProvider from '@/views/pages/authentication/AuthProvider.vue'
 import { useGenerateImageVariant } from '@core/composable/useGenerateImageVariant'
 import authV2LoginIllustrationBorderedDark from '@images/pages/auth-v2-login-illustration-bordered-dark.png'
 import authV2LoginIllustrationBorderedLight from '@images/pages/auth-v2-login-illustration-bordered-light.png'
@@ -10,10 +9,14 @@ import authV2MaskDark from '@images/pages/misc-mask-dark.png'
 import authV2MaskLight from '@images/pages/misc-mask-light.png'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
+import Swal from 'sweetalert2'
 import { VForm } from 'vuetify/components/VForm'
 
 const authThemeImg = useGenerateImageVariant(authV2LoginIllustrationLight, authV2LoginIllustrationDark, authV2LoginIllustrationBorderedLight, authV2LoginIllustrationBorderedDark, true)
 const authThemeMask = useGenerateImageVariant(authV2MaskLight, authV2MaskDark)
+
+const appDescription = import.meta.env.VITE_APP_DESCRIPTION
+const appTitle = import.meta.env.VITE_APP_TITLE
 
 definePage({
   meta: {
@@ -23,9 +26,6 @@ definePage({
 })
 
 const isPasswordVisible = ref(false)
-const route = useRoute()
-const router = useRouter()
-const ability = useAbility()
 
 const errors = ref({
   email: undefined,
@@ -58,13 +58,14 @@ const login = async () => {
     useCookie('refreshToken').value = res.data.refreshToken
     useCookie('userData').value = res.data.user
 
-    // Paksa update reactivity userData agar sidebar muncul tanpa reload
-    // Trigger event global agar layout/sidebar re-fetch userData
-    const event = new CustomEvent('userData-updated')
-    window.dispatchEvent(event)
-    await nextTick(() => {
-      router.replace('/dashboards/analytics')
+    // SweetAlert sukses login, lalu reload ke dashboard setelah klik OK
+    await Swal.fire({
+      icon: 'success',
+      title: 'Login berhasil!',
+      confirmButtonText: 'OK',
+      allowOutsideClick: false,
     })
+    window.location.replace('/dashboards/analytics')
   } catch (err) {
     console.error(err)
   }
@@ -130,10 +131,10 @@ const onSubmit = () => {
       >
         <VCardText>
           <h4 class="text-h4 mb-1">
-            Welcome to <span class="text-capitalize"> {{ themeConfig.app.title }} </span>! 👋🏻
+            Welcome to <span class="text-capitalize">{{ appTitle }}</span>! 👋🏻
           </h4>
           <p class="mb-0">
-            Please sign-in to your account and start the adventure
+            {{ appDescription }}
           </p>
         </VCardText>
         <VCardText>
@@ -183,12 +184,12 @@ const onSubmit = () => {
                     v-model="rememberMe"
                     label="Remember me"
                   />
-                  <RouterLink
+                  <!-- <RouterLink
                     class="text-primary ms-2 mb-1"
                     :to="{ name: 'forgot-password' }"
                   >
                     Forgot Password?
-                  </RouterLink>
+                  </RouterLink> -->
                 </div>
 
                 <VBtn
@@ -200,34 +201,7 @@ const onSubmit = () => {
               </VCol>
 
               <!-- create account -->
-              <VCol
-                cols="12"
-                class="text-center"
-              >
-                <span>New on our platform?</span>
-                <RouterLink
-                  class="text-primary ms-1"
-                  :to="{ name: 'register' }"
-                >
-                  Create an account
-                </RouterLink>
-              </VCol>
-              <VCol
-                cols="12"
-                class="d-flex align-center"
-              >
-                <VDivider />
-                <span class="mx-4">or</span>
-                <VDivider />
-              </VCol>
-
-              <!-- auth providers -->
-              <VCol
-                cols="12"
-                class="text-center"
-              >
-                <AuthProvider />
-              </VCol>
+              
             </VRow>
           </VForm>
         </VCardText>
