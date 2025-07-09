@@ -12,6 +12,11 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+  // Tambahan agar bisa dikontrol dari luar jika ingin menampilkan meta
+  showMeta: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update:page'])
@@ -24,12 +29,8 @@ const updatePage = value => {
 <template>
   <div>
     <VDivider />
-
     <div class="d-flex align-center justify-sm-space-between justify-center flex-wrap gap-3 px-6 py-3">
-      <p class="text-disabled mb-0">
-        {{ paginationMeta({ page, itemsPerPage }, totalItems) }}
-      </p>
-
+      <!-- Hapus info meta di sini, biar hanya muncul jika memang ingin -->
       <VPagination
         :model-value="page"
         active-color="primary"

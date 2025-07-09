@@ -68,4 +68,28 @@ export const routes = [
     name: 'apps-ecommerce-dashboard',
     component: () => import('@/pages/dashboards/ecommerce.vue'),
   },
+  // RME Pasien
+  {
+    path: '/rme/pasien',
+    name: 'rme-pasien',
+    component: () => import('@/pages/rme/pasien/index.vue'),
+  },
+  // RME Pasien Detail
+  {
+    path: '/rme/pasien/:id',
+    name: 'rme-pasien-detail',
+    component: () => import('@/pages/rme/pasien/[id].vue'),
+  },
+  // Satu Sehat Pasien
+  {
+    path: '/satusehat/pasien',
+    name: 'satusehat-pasien',
+    component: () => import('@/pages/satusehat/pasien/index.vue'),
+  },
+  // Profile
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@/pages/profile.vue'),
+  },
 ]
