@@ -24,6 +24,7 @@ declare global {
   const controlledComputed: typeof import('@vueuse/core')['controlledComputed']
   const controlledRef: typeof import('@vueuse/core')['controlledRef']
   const createApp: typeof import('vue')['createApp']
+  const createDynamicFilterConfig: typeof import('./src/utils/filterUtils.js')['createDynamicFilterConfig']
   const createEventHook: typeof import('@vueuse/core')['createEventHook']
   const createGenericProjection: typeof import('@vueuse/math')['createGenericProjection']
   const createGlobalState: typeof import('@vueuse/core')['createGlobalState']
@@ -49,19 +50,26 @@ declare global {
   const extendRef: typeof import('@vueuse/core')['extendRef']
   const formatDate: typeof import('./src/@core/utils/formatters.js')['formatDate']
   const formatDateToMonthShort: typeof import('./src/@core/utils/formatters.js')['formatDateToMonthShort']
+  const generateFieldConfigs: typeof import('./src/utils/filterUtils.js')['generateFieldConfigs']
+  const generateFilterFields: typeof import('./src/utils/filterUtils.js')['generateFilterFields']
   const getActivePinia: typeof import('pinia')['getActivePinia']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
+  const getDefaultFilterOperators: typeof import('./src/utils/filterUtils.js')['getDefaultFilterOperators']
+  const getFieldConfig: typeof import('./src/utils/filterUtils.js')['getFieldConfig']
+  const getOperatorsByFieldType: typeof import('./src/utils/filterUtils.js')['getOperatorsByFieldType']
   const h: typeof import('vue')['h']
   const hexToRgb: typeof import('./src/@core/utils/colorConverter.js')['hexToRgb']
   const ignorableWatch: typeof import('@vueuse/core')['ignorableWatch']
   const inject: typeof import('vue')['inject']
   const injectLocal: typeof import('@vueuse/core')['injectLocal']
   const integerValidator: typeof import('./src/@core/utils/validators.js')['integerValidator']
+  const isDateField: typeof import('./src/utils/filterUtils.js')['isDateField']
   const isDefined: typeof import('@vueuse/core')['isDefined']
   const isEmpty: typeof import('./src/@core/utils/helpers.js')['isEmpty']
   const isEmptyArray: typeof import('./src/@core/utils/helpers.js')['isEmptyArray']
   const isNullOrUndefined: typeof import('./src/@core/utils/helpers.js')['isNullOrUndefined']
+  const isNumericField: typeof import('./src/utils/filterUtils.js')['isNumericField']
   const isObject: typeof import('./src/@core/utils/helpers.js')['isObject']
   const isProxy: typeof import('vue')['isProxy']
   const isReactive: typeof import('vue')['isReactive']
@@ -383,6 +391,7 @@ declare module 'vue' {
     readonly controlledComputed: UnwrapRef<typeof import('@vueuse/core')['controlledComputed']>
     readonly controlledRef: UnwrapRef<typeof import('@vueuse/core')['controlledRef']>
     readonly createApp: UnwrapRef<typeof import('vue')['createApp']>
+    readonly createDynamicFilterConfig: UnwrapRef<typeof import('./src/utils/filterUtils.js')['createDynamicFilterConfig']>
     readonly createEventHook: UnwrapRef<typeof import('@vueuse/core')['createEventHook']>
     readonly createGenericProjection: UnwrapRef<typeof import('@vueuse/math')['createGenericProjection']>
     readonly createGlobalState: UnwrapRef<typeof import('@vueuse/core')['createGlobalState']>
@@ -408,19 +417,26 @@ declare module 'vue' {
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
     readonly formatDate: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['formatDateToMonthShort']>
+    readonly generateFieldConfigs: UnwrapRef<typeof import('./src/utils/filterUtils.js')['generateFieldConfigs']>
+    readonly generateFilterFields: UnwrapRef<typeof import('./src/utils/filterUtils.js')['generateFilterFields']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
+    readonly getDefaultFilterOperators: UnwrapRef<typeof import('./src/utils/filterUtils.js')['getDefaultFilterOperators']>
+    readonly getFieldConfig: UnwrapRef<typeof import('./src/utils/filterUtils.js')['getFieldConfig']>
+    readonly getOperatorsByFieldType: UnwrapRef<typeof import('./src/utils/filterUtils.js')['getOperatorsByFieldType']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
     readonly hexToRgb: UnwrapRef<typeof import('./src/@core/utils/colorConverter.js')['hexToRgb']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
     readonly injectLocal: UnwrapRef<typeof import('@vueuse/core')['injectLocal']>
     readonly integerValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['integerValidator']>
+    readonly isDateField: UnwrapRef<typeof import('./src/utils/filterUtils.js')['isDateField']>
     readonly isDefined: UnwrapRef<typeof import('@vueuse/core')['isDefined']>
     readonly isEmpty: UnwrapRef<typeof import('./src/@core/utils/helpers.js')['isEmpty']>
     readonly isEmptyArray: UnwrapRef<typeof import('./src/@core/utils/helpers.js')['isEmptyArray']>
     readonly isNullOrUndefined: UnwrapRef<typeof import('./src/@core/utils/helpers.js')['isNullOrUndefined']>
+    readonly isNumericField: UnwrapRef<typeof import('./src/utils/filterUtils.js')['isNumericField']>
     readonly isObject: UnwrapRef<typeof import('./src/@core/utils/helpers.js')['isObject']>
     readonly isProxy: UnwrapRef<typeof import('vue')['isProxy']>
     readonly isReactive: UnwrapRef<typeof import('vue')['isReactive']>
