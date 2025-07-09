@@ -59,10 +59,11 @@ const login = async () => {
     useCookie('userData').value = res.data.user
 
     // Paksa update reactivity userData agar sidebar muncul tanpa reload
-    // dengan trigger event global atau force update store/layout jika ada
-    // Cara paling aman: reload route agar layout re-evaluate userData
+    // Trigger event global agar layout/sidebar re-fetch userData
+    const event = new CustomEvent('userData-updated')
+    window.dispatchEvent(event)
     await nextTick(() => {
-      router.replace({ path: '/dashboards/analytics', query: { t: Date.now() } })
+      router.replace('/dashboards/analytics')
     })
   } catch (err) {
     console.error(err)
