@@ -360,6 +360,14 @@
     "onWatcherCleanup": true,
     "useId": true,
     "useModel": true,
-    "useTemplateRef": true
+    "useTemplateRef": true,
+    "createDynamicFilterConfig": true,
+    "generateFieldConfigs": true,
+    "generateFilterFields": true,
+    "getDefaultFilterOperators": true,
+    "getFieldConfig": true,
+    "isDateField": true,
+    "isNumericField": true,
+    "getOperatorsByFieldType": true
   }
 }
