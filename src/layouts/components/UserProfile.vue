@@ -9,22 +9,15 @@ const userData = useCookie('userData')
 
 const logout = async () => {
 
-  // Remove "accessToken" from cookie
+  // Hapus semua token dan data user dari cookie
   useCookie('accessToken').value = null
-
-  // Remove "userData" from cookie
-  userData.value = null
-
-  // Redirect to login page
-  await router.push('/login')
-
-  // ℹ️ We had to remove abilities in then block because if we don't nav menu items mutation is visible while redirecting user to login page
-
-  // Remove "userAbilities" from cookie
+  useCookie('refreshToken').value = null
+  useCookie('userData').value = null
   useCookie('userAbilityRules').value = null
-
-  // Reset ability to initial ability
   ability.update([])
+
+  // Redirect ke halaman login
+  await router.push('/login')
 }
 
 const userProfileList = [
