@@ -1,18 +1,18 @@
 <route lang="yaml">
 meta:
   layout: default
-  navActiveLink: rme-pasien
+  navActiveLink: rme-kunjungan
 </route>
 
 <template>
   <VCard>
     <!-- Dynamic Filter Component -->
     <DynamicFilter
-      title="Data Pasien"
+      title="Data Kunjungan"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      :quick-search-placeholder="'Cari nama, NIK, telepon, atau email...'"
-      :quick-search-fields="['name', 'nik', 'phone', 'email']"
+      :quick-search-placeholder="'Cari nomor kunjungan, nama pasien, atau keluhan...'"
+      :quick-search-fields="['visit_number', 'patient.name', 'chief_complaint']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
@@ -21,9 +21,9 @@ meta:
         <VBtn
           color="primary"
           prepend-icon="tabler-plus"
-          :to="{ name: 'rme-pasien-create' }"
+          :to="{ name: 'rme-kunjungan-create' }"
         >
-          Tambah Pasien
+          Tambah Kunjungan
         </VBtn>
       </template>
     </DynamicFilter>
@@ -31,8 +31,8 @@ meta:
     <VDivider />
     <VDataTableServer
       :headers="headers"
-      :items="patients"
-      :items-length="totalPatients"
+      :items="visits"
+      :items-length="totalVisits"
       :loading="loading"
       :items-per-page="itemsPerPage"
       :page="page"
@@ -43,34 +43,38 @@ meta:
       <template #item.no="{ index }">
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
-      <template #item.name="{ item }">
-        <RouterLink :to="{ name: 'rme-pasien-id', params: { id: item.id } }" class="text-primary text-decoration-underline font-weight-medium">
-          {{ item.name }}
+      <template #item.visit_number="{ item }">
+        <RouterLink :to="{ name: 'rme-kunjungan-id', params: { id: item.id } }" class="text-primary text-decoration-underline font-weight-medium">
+          {{ item.visit_number }}
         </RouterLink>
       </template>
-      <template #item.birth_date="{ item }">
-        {{ formatDate(item.birth_date) }}
+      <template #item.patient="{ item }">
+        <div>
+          <div class="font-weight-medium">{{ item.patient?.name || '-' }}</div>
+          <div class="text-caption text-medium-emphasis">{{ item.patient?.patient_number || '-' }}</div>
+        </div>
+      </template>
+      <template #item.visit_date="{ item }">
+        {{ formatDateTime(item.visit_date) }}
+      </template>
+      <template #item.status="{ item }">
+        <VChip :color="getStatusColor(item.status)" size="small" label>
+          {{ getStatusLabel(item.status) }}
+        </VChip>
+      </template>
+      <template #item.payment_status="{ item }">
+        <VChip :color="getPaymentStatusColor(item.payment_status)" size="small" label>
+          {{ getPaymentStatusLabel(item.payment_status) }}
+        </VChip>
+      </template>
+      <template #item.total_amount="{ item }">
+        {{ formatCurrency(item.total_amount) }}
+      </template>
+      <template #item.doctor_id="{ item }">
+        {{ getDoctorName(item.doctor_id) }}
       </template>
       <template #item.created_at="{ item }">
         {{ formatDateTime(item.created_at) }}
-      </template>
-      <template #item.is_active="{ item }">
-        <VChip :color="item.is_active ? 'success' : 'error'" size="small" label>
-          {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
-        </VChip>
-      </template>
-      <template #item.consent_status="{ item }">
-        <VChip :color="getConsentColor(item.consent_status)" size="small" label>
-          {{ item.consent_status }}
-        </VChip>
-      </template>
-      <template #item.emergency_contact="{ item }">
-        <div v-if="item.emergency_contact">
-          <div class="font-weight-medium">{{ item.emergency_contact.name }}</div>
-          <div class="text-body-2">{{ item.emergency_contact.phone }}</div>
-          <div class="text-caption text-medium-emphasis">{{ item.emergency_contact.relationship }}</div>
-        </div>
-        <div v-else class="text-medium-emphasis">-</div>
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex gap-2">
@@ -79,7 +83,7 @@ meta:
             size="small"
             variant="text"
             color="primary"
-            :to="{ name: 'rme-pasien-id', params: { id: item.id } }"
+            :to="{ name: 'rme-kunjungan-id', params: { id: item.id } }"
             title="Lihat Detail"
           />
           <VBtn
@@ -87,8 +91,8 @@ meta:
             size="small"
             variant="text"
             color="warning"
-            :to="{ name: 'rme-pasien-edit-id', params: { id: item.id } }"
-            title="Edit Pasien"
+            :to="{ name: 'rme-kunjungan-edit-id', params: { id: item.id } }"
+            title="Edit Kunjungan"
           />
         </div>
       </template>
@@ -100,7 +104,7 @@ meta:
       </template>
       <template #no-data>
         <div class="text-center py-12">
-          <VIcon size="64" color="primary" class="mb-4">tabler-users</VIcon>
+          <VIcon size="64" color="primary" class="mb-4">tabler-calendar-event</VIcon>
           <h3 class="text-h6 mb-2">Tidak ada data ditemukan</h3>
           <p class="text-body-2 text-medium-emphasis mb-4">
             Coba ubah filter atau kriteria pencarian Anda
@@ -127,12 +131,12 @@ meta:
             <span class="text-body-2 text-medium-emphasis">per halaman</span>
           </div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalPatients) }}
+            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalVisits) }}
           </div>
           <TablePagination
             v-model:page="page"
             v-model:items-per-page="itemsPerPage"
-            :total-items="totalPatients"
+            :total-items="totalVisits"
             :items-per-page-options="perPageOptions"
             hide-details
             :show-meta="false"
@@ -144,74 +148,86 @@ meta:
 </template>
 
 <script setup>
-import TablePagination from '@/@core/components/TablePagination.vue'
-import DynamicFilter from '@/components/DynamicFilter.vue'
-import { $api } from '@/utils/api'
-import { showErrorAlert } from '@/utils/errorHandler'
-import { paginationMeta } from '@/utils/paginationMeta'
-import { computed, onActivated, onMounted, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+console.log('Kunjungan index.vue loaded');
+import TablePagination from '@/@core/components/TablePagination.vue';
+import DynamicFilter from '@/components/DynamicFilter.vue';
+import { $api } from '@/utils/api';
+import { showErrorAlert } from '@/utils/errorHandler';
+import { paginationMeta } from '@/utils/paginationMeta';
+import { computed, onActivated, onMounted, ref, watch } from 'vue';
+import { RouterLink } from 'vue-router';
 
 // State
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref('createdAt')
+const sortBy = ref('visit_date')
 const orderBy = ref('desc')
 const loading = ref(false)
 
-const patients = ref([])
-const totalPatients = ref(0)
+const visits = ref([])
+const totalVisits = ref(0)
 const currentFilters = ref([])
 const currentQuickSearch = ref('')
 
+const doctorOptions = ref([])
 const branchOptions = ref([])
 
 // Reactive field configurations
 const allowedFields = [
-  'patient_number',
-  'nik', 
-  'name',
-  'gender',
-  'phone',
-  'email',
+  'visit_number',
+  'patient_id',
+  'doctor_id',
   'branch_id',
+  'status',
+  'payment_status',
+  'visit_date',
   'created_at'
 ]
 
 const fieldConfigs = computed(() => {
   return {
-    'patient_number': {
-      title: 'No. Pasien',
+    'visit_number': {
+      title: 'Nomor Kunjungan',
       type: 'text'
     },
-    'nik': {
-      title: 'NIK',
-      type: 'text'
-    },
-    'name': {
-      title: 'Nama',
-      type: 'text'
-    },
-    'gender': {
-      title: 'Jenis Kelamin',
+    'patient_id': {
+      title: 'Pasien',
       type: 'select',
-      options: [
-        { title: 'Laki-laki', value: 'MALE' },
-        { title: 'Perempuan', value: 'FEMALE' }
-      ]
+      options: [] // Will be populated from patients API
     },
-    'phone': {
-      title: 'Telepon',
-      type: 'tel'
-    },
-    'email': {
-      title: 'Email',
-      type: 'email'
+    'doctor_id': {
+      title: 'Dokter',
+      type: 'select',
+      options: doctorOptions.value.slice()
     },
     'branch_id': {
       title: 'Cabang',
       type: 'select',
       options: branchOptions.value.slice()
+    },
+    'status': {
+      title: 'Status',
+      type: 'select',
+      options: [
+        { title: 'Scheduled', value: 'SCHEDULED' },
+        { title: 'In Progress', value: 'IN_PROGRESS' },
+        { title: 'Completed', value: 'COMPLETED' },
+        { title: 'Cancelled', value: 'CANCELLED' }
+      ]
+    },
+    'payment_status': {
+      title: 'Status Pembayaran',
+      type: 'select',
+      options: [
+        { title: 'Pending', value: 'PENDING' },
+        { title: 'Paid', value: 'PAID' },
+        { title: 'Partial', value: 'PARTIAL' },
+        { title: 'Refunded', value: 'REFUNDED' }
+      ]
+    },
+    'visit_date': {
+      title: 'Tanggal Kunjungan',
+      type: 'date'
     },
     'created_at': {
       title: 'Tanggal Dibuat',
@@ -245,24 +261,22 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Nama', key: 'name' },
-  { title: 'NIK', key: 'nik' },
-  { title: 'Tgl Lahir', key: 'birth_date' },
-  { title: 'Gender', key: 'gender' },
-  { title: 'Telepon', key: 'phone' },
-  { title: 'Email', key: 'email' },
-  { title: 'Alamat', key: 'address' },
-  { title: 'Emergency Contact', key: 'emergency_contact', sortable: false },
-  { title: 'Status Persetujuan', key: 'consent_status' },
-  { title: 'Aktif', key: 'is_active', sortable: false },
+  { title: 'No. Kunjungan', key: 'visit_number' },
+  { title: 'Pasien', key: 'patient', sortable: false },
+  { title: 'Tanggal Kunjungan', key: 'visit_date' },
+  { title: 'Dokter', key: 'doctor_id', sortable: false },
+  { title: 'Keluhan', key: 'chief_complaint' },
+  { title: 'Status', key: 'status', sortable: false },
+  { title: 'Status Pembayaran', key: 'payment_status', sortable: false },
+  { title: 'Total Bayar', key: 'total_amount' },
   { title: 'Tanggal Input', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
-async function fetchPatients() {
+async function fetchVisits() {
   loading.value = true
-  console.log('🔄 Starting fetchPatients...')
+  console.log('🔄 Starting fetchVisits...')
   
   try {
     const requestBody = {
@@ -274,14 +288,17 @@ async function fetchPatients() {
 
     // Add filters if any
     if (currentFilters.value.length > 0) {
-      requestBody.filters = currentFilters.value
+      requestBody.filters = currentFilters.value.map(f => ({
+        ...f,
+        search_query: f.search_query != null ? String(f.search_query) : '',
+      }))
     }
 
     // Add quick search if exists
     if (currentQuickSearch.value?.trim()) {
       if (!requestBody.filters) requestBody.filters = []
       requestBody.filters.push({
-        search_by: 'name',
+        search_by: 'visit_number',
         filter_type: 'like',
         search_query: currentQuickSearch.value.trim()
       })
@@ -289,28 +306,47 @@ async function fetchPatients() {
 
     console.log('📤 API Request body:', requestBody)
     
-    const res = await $api('/rme/patients/paginated', {
+    const res = await $api('/rme/patient-visits/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
     console.log('📥 API Response:', res)
     
-    patients.value = res.data || []
-    totalPatients.value = res.meta?.total || 0
+    visits.value = res.data || []
+    totalVisits.value = res.meta?.total || 0
     
-    console.log('✅ Patients loaded:', patients.value.length, 'total:', totalPatients.value)
+    console.log('✅ Visits loaded:', visits.value.length, 'total:', totalVisits.value)
   } catch (error) {
-    console.error('❌ Error fetching patients:', error)
+    console.error('❌ Error fetching visits:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Pasien',
-      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.'
+      title: 'Gagal Memuat Data Kunjungan',
+      text: 'Tidak dapat memuat data kunjungan. Silakan coba lagi.'
     })
-    patients.value = []
-    totalPatients.value = 0
+    visits.value = []
+    totalVisits.value = 0
   } finally {
     loading.value = false
-    console.log('🏁 fetchPatients completed')
+    console.log('🏁 fetchVisits completed')
+  }
+}
+
+async function fetchDoctors() {
+  try {
+    const res = await $api('/hris/doctors', {
+      method: 'GET',
+    })
+    doctorOptions.value = (res.data || []).map(doctor => ({
+      title: doctor.name,
+      value: doctor.id,
+    }))
+  } catch (e) {
+    console.error('Error fetching doctors:', e)
+    await showErrorAlert(e, {
+      title: 'Gagal Memuat Data Dokter',
+      text: 'Tidak dapat memuat daftar dokter untuk filter.'
+    })
+    doctorOptions.value = []
   }
 }
 
@@ -318,9 +354,6 @@ async function fetchBranches() {
   try {
     const res = await $api('/wms/branches', {
       method: 'GET',
-      headers: {
-        // Authorization header will be set automatically if needed
-      },
     })
     branchOptions.value = (res.data || []).map(branch => ({
       title: `${branch.name} (${branch.code})`,
@@ -336,26 +369,24 @@ async function fetchBranches() {
   }
 }
 
-// generateFilterConfig function is removed
-
 function handleApplyFilters({ filters, quickSearch }) {
   currentFilters.value = filters
   currentQuickSearch.value = quickSearch
   page.value = 1
-  fetchPatients()
+  fetchVisits()
 }
 
 function handleClearFilters() {
   currentFilters.value = []
   currentQuickSearch.value = ''
   page.value = 1
-  fetchPatients()
+  fetchVisits()
 }
 
 function handleApplyQuickSearch(searchQuery) {
   currentQuickSearch.value = searchQuery
   page.value = 1
-  fetchPatients()
+  fetchVisits()
 }
 
 function onUpdateOptions(options) {
@@ -367,22 +398,53 @@ function onUpdateOptions(options) {
     const sortItem = options.sortBy[0]
     sortBy.value = sortItem.key
     orderBy.value = sortItem.order
-    fetchPatients()
+    fetchVisits()
   }
 }
 
-function getConsentColor(status) {
+function getStatusColor(status) {
   switch (status) {
-    case 'GIVEN': return 'success'
-    case 'PENDING': return 'warning'
-    case 'DENIED': return 'error'
+    case 'SCHEDULED': return 'info'
+    case 'IN_PROGRESS': return 'warning'
+    case 'COMPLETED': return 'success'
+    case 'CANCELLED': return 'error'
     default: return 'secondary'
   }
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleDateString('id-ID')
+function getStatusLabel(status) {
+  switch (status) {
+    case 'SCHEDULED': return 'Terjadwal'
+    case 'IN_PROGRESS': return 'Sedang Berlangsung'
+    case 'COMPLETED': return 'Selesai'
+    case 'CANCELLED': return 'Dibatalkan'
+    default: return status
+  }
+}
+
+function getPaymentStatusColor(status) {
+  switch (status) {
+    case 'PENDING': return 'warning'
+    case 'PAID': return 'success'
+    case 'PARTIAL': return 'info'
+    case 'REFUNDED': return 'error'
+    default: return 'secondary'
+  }
+}
+
+function getPaymentStatusLabel(status) {
+  switch (status) {
+    case 'PENDING': return 'Menunggu'
+    case 'PAID': return 'Lunas'
+    case 'PARTIAL': return 'Sebagian'
+    case 'REFUNDED': return 'Dikembalikan'
+    default: return status
+  }
+}
+
+function getDoctorName(doctorId) {
+  const doctor = doctorOptions.value.find(d => d.value === doctorId)
+  return doctor ? doctor.title : '-'
 }
 
 function formatDateTime(dateStr) {
@@ -390,22 +452,37 @@ function formatDateTime(dateStr) {
   return new Date(dateStr).toLocaleString('id-ID')
 }
 
+function formatCurrency(amount) {
+  if (!amount) return 'Rp 0'
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount)
+}
+
 // Watchers
 watch([page, itemsPerPage], () => {
-  fetchPatients()
+  fetchVisits()
 })
 
 // Always refresh data when component becomes active
 onActivated(() => {
   console.log('🎯 Component onActivated triggered')
-  fetchPatients()
+  fetchVisits()
 })
 
 // Initialize filter config
 onMounted(async () => {
-  console.log('🚀 Component onMounted triggered')
-  await fetchBranches()
-  fetchPatients()
+  console.log('onMounted kunjungan');
+  try {
+    await fetchDoctors()
+  } catch (e) {}
+  try {
+    await fetchBranches()
+  } catch (e) {}
+  fetchVisits()
 })
 </script>
 

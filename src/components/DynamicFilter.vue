@@ -26,6 +26,9 @@
             {{ activeFiltersCount }}
           </VChip>
         </VBtn>
+        
+        <!-- Custom action buttons slot - moved to the right -->
+        <slot name="actions" />
       </div>
     </VCardText>
     

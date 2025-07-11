@@ -9,17 +9,21 @@ declare global {
   const COOKIE_MAX_AGE_1_YEAR: typeof import('./src/utils/constants.js')['COOKIE_MAX_AGE_1_YEAR']
   const EffectScope: typeof import('vue')['EffectScope']
   const acceptHMRUpdate: typeof import('pinia')['acceptHMRUpdate']
+  const advancedErrorExample: typeof import('./src/utils/errorHandlerExamples.js')['advancedErrorExample']
+  const allInOneErrorExample: typeof import('./src/utils/errorHandlerExamples.js')['allInOneErrorExample']
   const alphaDashValidator: typeof import('./src/@core/utils/validators.js')['alphaDashValidator']
   const alphaValidator: typeof import('./src/@core/utils/validators.js')['alphaValidator']
   const asyncComputed: typeof import('@vueuse/core')['asyncComputed']
   const autoResetRef: typeof import('@vueuse/core')['autoResetRef']
   const avatarText: typeof import('./src/@core/utils/formatters.js')['avatarText']
+  const basicErrorExample: typeof import('./src/utils/errorHandlerExamples.js')['basicErrorExample']
   const betweenValidator: typeof import('./src/@core/utils/validators.js')['betweenValidator']
   const computed: typeof import('vue')['computed']
   const computedAsync: typeof import('@vueuse/core')['computedAsync']
   const computedEager: typeof import('@vueuse/core')['computedEager']
   const computedInject: typeof import('@vueuse/core')['computedInject']
   const computedWithControl: typeof import('@vueuse/core')['computedWithControl']
+  const confirmDialogExample: typeof import('./src/utils/errorHandlerExamples.js')['confirmDialogExample']
   const confirmedValidator: typeof import('./src/@core/utils/validators.js')['confirmedValidator']
   const controlledComputed: typeof import('@vueuse/core')['controlledComputed']
   const controlledRef: typeof import('@vueuse/core')['controlledRef']
@@ -38,6 +42,7 @@ declare global {
   const createUnrefFn: typeof import('@vueuse/core')['createUnrefFn']
   const createUrl: typeof import('./src/@core/composable/createUrl.js')['createUrl']
   const customRef: typeof import('vue')['customRef']
+  const customSuccessExample: typeof import('./src/utils/errorHandlerExamples.js')['customSuccessExample']
   const debouncedRef: typeof import('@vueuse/core')['debouncedRef']
   const debouncedWatch: typeof import('@vueuse/core')['debouncedWatch']
   const defineAsyncComponent: typeof import('vue')['defineAsyncComponent']
@@ -48,17 +53,22 @@ declare global {
   const effectScope: typeof import('vue')['effectScope']
   const emailValidator: typeof import('./src/@core/utils/validators.js')['emailValidator']
   const extendRef: typeof import('@vueuse/core')['extendRef']
+  const extractErrorMessages: typeof import('./src/utils/errorHandler.js')['extractErrorMessages']
+  const extractMessagesExample: typeof import('./src/utils/errorHandlerExamples.js')['extractMessagesExample']
   const formatDate: typeof import('./src/@core/utils/formatters.js')['formatDate']
   const formatDateToMonthShort: typeof import('./src/@core/utils/formatters.js')['formatDateToMonthShort']
+  const formatErrorMessages: typeof import('./src/utils/errorHandler.js')['formatErrorMessages']
   const generateFieldConfigs: typeof import('./src/utils/filterUtils.js')['generateFieldConfigs']
   const generateFilterFields: typeof import('./src/utils/filterUtils.js')['generateFilterFields']
   const getActivePinia: typeof import('pinia')['getActivePinia']
   const getCurrentInstance: typeof import('vue')['getCurrentInstance']
   const getCurrentScope: typeof import('vue')['getCurrentScope']
   const getDefaultFilterOperators: typeof import('./src/utils/filterUtils.js')['getDefaultFilterOperators']
+  const getErrorTitle: typeof import('./src/utils/errorHandler.js')['getErrorTitle']
   const getFieldConfig: typeof import('./src/utils/filterUtils.js')['getFieldConfig']
   const getOperatorsByFieldType: typeof import('./src/utils/filterUtils.js')['getOperatorsByFieldType']
   const h: typeof import('vue')['h']
+  const handleError: typeof import('./src/utils/errorHandler.js')['handleError']
   const hexToRgb: typeof import('./src/@core/utils/colorConverter.js')['hexToRgb']
   const ignorableWatch: typeof import('@vueuse/core')['ignorableWatch']
   const inject: typeof import('vue')['inject']
@@ -78,6 +88,7 @@ declare global {
   const isToday: typeof import('./src/@core/utils/helpers.js')['isToday']
   const kFormatter: typeof import('./src/@core/utils/formatters.js')['kFormatter']
   const lengthValidator: typeof import('./src/@core/utils/validators.js')['lengthValidator']
+  const logError: typeof import('./src/utils/errorHandler.js')['logError']
   const logicAnd: typeof import('@vueuse/math')['logicAnd']
   const logicNot: typeof import('@vueuse/math')['logicNot']
   const logicOr: typeof import('@vueuse/math')['logicOr']
@@ -141,6 +152,10 @@ declare global {
   const shallowReactive: typeof import('vue')['shallowReactive']
   const shallowReadonly: typeof import('vue')['shallowReadonly']
   const shallowRef: typeof import('vue')['shallowRef']
+  const showConfirmDialog: typeof import('./src/utils/errorHandler.js')['showConfirmDialog']
+  const showErrorAlert: typeof import('./src/utils/errorHandler.js')['showErrorAlert']
+  const showSuccessAlert: typeof import('./src/utils/errorHandler.js')['showSuccessAlert']
+  const showValidationErrorAlert: typeof import('./src/utils/errorHandler.js')['showValidationErrorAlert']
   const storeToRefs: typeof import('pinia')['storeToRefs']
   const syncRef: typeof import('@vueuse/core')['syncRef']
   const syncRefs: typeof import('@vueuse/core')['syncRefs']
@@ -344,6 +359,7 @@ declare global {
   const useWindowFocus: typeof import('@vueuse/core')['useWindowFocus']
   const useWindowScroll: typeof import('@vueuse/core')['useWindowScroll']
   const useWindowSize: typeof import('@vueuse/core')['useWindowSize']
+  const validationErrorExample: typeof import('./src/utils/errorHandlerExamples.js')['validationErrorExample']
   const watch: typeof import('vue')['watch']
   const watchArray: typeof import('@vueuse/core')['watchArray']
   const watchAtMost: typeof import('@vueuse/core')['watchAtMost']
@@ -376,17 +392,21 @@ declare module 'vue' {
     readonly COOKIE_MAX_AGE_1_YEAR: UnwrapRef<typeof import('./src/utils/constants.js')['COOKIE_MAX_AGE_1_YEAR']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly acceptHMRUpdate: UnwrapRef<typeof import('pinia')['acceptHMRUpdate']>
+    readonly advancedErrorExample: UnwrapRef<typeof import('./src/utils/errorHandlerExamples.js')['advancedErrorExample']>
+    readonly allInOneErrorExample: UnwrapRef<typeof import('./src/utils/errorHandlerExamples.js')['allInOneErrorExample']>
     readonly alphaDashValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['alphaDashValidator']>
     readonly alphaValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['alphaValidator']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
     readonly avatarText: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['avatarText']>
+    readonly basicErrorExample: UnwrapRef<typeof import('./src/utils/errorHandlerExamples.js')['basicErrorExample']>
     readonly betweenValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['betweenValidator']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly computedAsync: UnwrapRef<typeof import('@vueuse/core')['computedAsync']>
     readonly computedEager: UnwrapRef<typeof import('@vueuse/core')['computedEager']>
     readonly computedInject: UnwrapRef<typeof import('@vueuse/core')['computedInject']>
     readonly computedWithControl: UnwrapRef<typeof import('@vueuse/core')['computedWithControl']>
+    readonly confirmDialogExample: UnwrapRef<typeof import('./src/utils/errorHandlerExamples.js')['confirmDialogExample']>
     readonly confirmedValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['confirmedValidator']>
     readonly controlledComputed: UnwrapRef<typeof import('@vueuse/core')['controlledComputed']>
     readonly controlledRef: UnwrapRef<typeof import('@vueuse/core')['controlledRef']>
@@ -405,6 +425,7 @@ declare module 'vue' {
     readonly createUnrefFn: UnwrapRef<typeof import('@vueuse/core')['createUnrefFn']>
     readonly createUrl: UnwrapRef<typeof import('./src/@core/composable/createUrl.js')['createUrl']>
     readonly customRef: UnwrapRef<typeof import('vue')['customRef']>
+    readonly customSuccessExample: UnwrapRef<typeof import('./src/utils/errorHandlerExamples.js')['customSuccessExample']>
     readonly debouncedRef: UnwrapRef<typeof import('@vueuse/core')['debouncedRef']>
     readonly debouncedWatch: UnwrapRef<typeof import('@vueuse/core')['debouncedWatch']>
     readonly defineAsyncComponent: UnwrapRef<typeof import('vue')['defineAsyncComponent']>
@@ -415,17 +436,22 @@ declare module 'vue' {
     readonly effectScope: UnwrapRef<typeof import('vue')['effectScope']>
     readonly emailValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['emailValidator']>
     readonly extendRef: UnwrapRef<typeof import('@vueuse/core')['extendRef']>
+    readonly extractErrorMessages: UnwrapRef<typeof import('./src/utils/errorHandler.js')['extractErrorMessages']>
+    readonly extractMessagesExample: UnwrapRef<typeof import('./src/utils/errorHandlerExamples.js')['extractMessagesExample']>
     readonly formatDate: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['formatDate']>
     readonly formatDateToMonthShort: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['formatDateToMonthShort']>
+    readonly formatErrorMessages: UnwrapRef<typeof import('./src/utils/errorHandler.js')['formatErrorMessages']>
     readonly generateFieldConfigs: UnwrapRef<typeof import('./src/utils/filterUtils.js')['generateFieldConfigs']>
     readonly generateFilterFields: UnwrapRef<typeof import('./src/utils/filterUtils.js')['generateFilterFields']>
     readonly getActivePinia: UnwrapRef<typeof import('pinia')['getActivePinia']>
     readonly getCurrentInstance: UnwrapRef<typeof import('vue')['getCurrentInstance']>
     readonly getCurrentScope: UnwrapRef<typeof import('vue')['getCurrentScope']>
     readonly getDefaultFilterOperators: UnwrapRef<typeof import('./src/utils/filterUtils.js')['getDefaultFilterOperators']>
+    readonly getErrorTitle: UnwrapRef<typeof import('./src/utils/errorHandler.js')['getErrorTitle']>
     readonly getFieldConfig: UnwrapRef<typeof import('./src/utils/filterUtils.js')['getFieldConfig']>
     readonly getOperatorsByFieldType: UnwrapRef<typeof import('./src/utils/filterUtils.js')['getOperatorsByFieldType']>
     readonly h: UnwrapRef<typeof import('vue')['h']>
+    readonly handleError: UnwrapRef<typeof import('./src/utils/errorHandler.js')['handleError']>
     readonly hexToRgb: UnwrapRef<typeof import('./src/@core/utils/colorConverter.js')['hexToRgb']>
     readonly ignorableWatch: UnwrapRef<typeof import('@vueuse/core')['ignorableWatch']>
     readonly inject: UnwrapRef<typeof import('vue')['inject']>
@@ -445,6 +471,7 @@ declare module 'vue' {
     readonly isToday: UnwrapRef<typeof import('./src/@core/utils/helpers.js')['isToday']>
     readonly kFormatter: UnwrapRef<typeof import('./src/@core/utils/formatters.js')['kFormatter']>
     readonly lengthValidator: UnwrapRef<typeof import('./src/@core/utils/validators.js')['lengthValidator']>
+    readonly logError: UnwrapRef<typeof import('./src/utils/errorHandler.js')['logError']>
     readonly logicAnd: UnwrapRef<typeof import('@vueuse/math')['logicAnd']>
     readonly logicNot: UnwrapRef<typeof import('@vueuse/math')['logicNot']>
     readonly logicOr: UnwrapRef<typeof import('@vueuse/math')['logicOr']>
@@ -508,6 +535,10 @@ declare module 'vue' {
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
+    readonly showConfirmDialog: UnwrapRef<typeof import('./src/utils/errorHandler.js')['showConfirmDialog']>
+    readonly showErrorAlert: UnwrapRef<typeof import('./src/utils/errorHandler.js')['showErrorAlert']>
+    readonly showSuccessAlert: UnwrapRef<typeof import('./src/utils/errorHandler.js')['showSuccessAlert']>
+    readonly showValidationErrorAlert: UnwrapRef<typeof import('./src/utils/errorHandler.js')['showValidationErrorAlert']>
     readonly storeToRefs: UnwrapRef<typeof import('pinia')['storeToRefs']>
     readonly syncRef: UnwrapRef<typeof import('@vueuse/core')['syncRef']>
     readonly syncRefs: UnwrapRef<typeof import('@vueuse/core')['syncRefs']>
@@ -711,6 +742,7 @@ declare module 'vue' {
     readonly useWindowFocus: UnwrapRef<typeof import('@vueuse/core')['useWindowFocus']>
     readonly useWindowScroll: UnwrapRef<typeof import('@vueuse/core')['useWindowScroll']>
     readonly useWindowSize: UnwrapRef<typeof import('@vueuse/core')['useWindowSize']>
+    readonly validationErrorExample: UnwrapRef<typeof import('./src/utils/errorHandlerExamples.js')['validationErrorExample']>
     readonly watch: UnwrapRef<typeof import('vue')['watch']>
     readonly watchArray: UnwrapRef<typeof import('@vueuse/core')['watchArray']>
     readonly watchAtMost: UnwrapRef<typeof import('@vueuse/core')['watchAtMost']>
