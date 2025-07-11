@@ -131,6 +131,8 @@ declare module 'vue-router/auto-routes' {
     'register': RouteRecordInfo<'register', '/register', Record<never, never>, Record<never, never>>,
     'rme-pasien': RouteRecordInfo<'rme-pasien', '/rme/pasien', Record<never, never>, Record<never, never>>,
     'rme-pasien-id': RouteRecordInfo<'rme-pasien-id', '/rme/pasien/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'rme-pasien-create': RouteRecordInfo<'rme-pasien-create', '/rme/pasien/create', Record<never, never>, Record<never, never>>,
+    'rme-pasien-edit-id': RouteRecordInfo<'rme-pasien-edit-id', '/rme/pasien/edit/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'satusehat-pasien': RouteRecordInfo<'satusehat-pasien', '/satusehat/pasien', Record<never, never>, Record<never, never>>,
     'tables-data-table': RouteRecordInfo<'tables-data-table', '/tables/data-table', Record<never, never>, Record<never, never>>,
     'tables-simple-table': RouteRecordInfo<'tables-simple-table', '/tables/simple-table', Record<never, never>, Record<never, never>>,

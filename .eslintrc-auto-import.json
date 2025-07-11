@@ -368,6 +368,22 @@
     "getFieldConfig": true,
     "isDateField": true,
     "isNumericField": true,
-    "getOperatorsByFieldType": true
+    "getOperatorsByFieldType": true,
+    "extractErrorMessages": true,
+    "formatErrorMessages": true,
+    "getErrorTitle": true,
+    "handleError": true,
+    "logError": true,
+    "showConfirmDialog": true,
+    "showErrorAlert": true,
+    "showSuccessAlert": true,
+    "showValidationErrorAlert": true,
+    "advancedErrorExample": true,
+    "allInOneErrorExample": true,
+    "basicErrorExample": true,
+    "confirmDialogExample": true,
+    "customSuccessExample": true,
+    "extractMessagesExample": true,
+    "validationErrorExample": true
   }
 }

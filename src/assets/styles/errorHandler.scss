@@ -1,0 +1,214 @@
+/**
+ * Custom styles for Error Handler SweetAlert2 popups
+ */
+
+/* Error Popup Styles */
+.error-popup {
+  border-left: 5px solid #f87171 !important;
+  
+  .error-title {
+    color: #dc2626 !important;
+    font-weight: 600 !important;
+  }
+  
+  .error-content {
+    text-align: left !important;
+    
+    ul {
+      margin: 0 !important;
+      padding-left: 20px !important;
+      
+      li {
+        margin-bottom: 8px !important;
+        line-height: 1.5 !important;
+        color: #374151 !important;
+        
+        &:last-child {
+          margin-bottom: 0 !important;
+        }
+      }
+    }
+  }
+}
+
+/* Validation Error Popup Styles */
+.validation-error-popup {
+  border-left: 5px solid #f59e0b !important;
+  
+  .swal2-title {
+    color: #d97706 !important;
+    font-weight: 600 !important;
+  }
+  
+  .swal2-html-container {
+    text-align: left !important;
+    
+    ul {
+      margin: 0 !important;
+      padding-left: 20px !important;
+      
+      li {
+        margin-bottom: 8px !important;
+        line-height: 1.5 !important;
+        color: #374151 !important;
+        background: #fef3c7 !important;
+        padding: 8px 12px !important;
+        border-radius: 6px !important;
+        border-left: 3px solid #f59e0b !important;
+        
+        &:last-child {
+          margin-bottom: 0 !important;
+        }
+      }
+    }
+  }
+  
+  .swal2-confirm-validation {
+    background-color: #f59e0b !important;
+    border-color: #f59e0b !important;
+    
+    &:hover {
+      background-color: #d97706 !important;
+      border-color: #d97706 !important;
+    }
+  }
+}
+
+/* Success Popup Styles */
+.swal2-popup.swal2-modal {
+  &.swal2-icon-success {
+    border-left: 5px solid #10b981 !important;
+    
+    .swal2-title {
+      color: #059669 !important;
+      font-weight: 600 !important;
+    }
+  }
+}
+
+/* Confirmation Dialog Styles */
+.swal2-popup.swal2-modal {
+  &.swal2-icon-question {
+    border-left: 5px solid #3b82f6 !important;
+    
+    .swal2-title {
+      color: #2563eb !important;
+      font-weight: 600 !important;
+    }
+    
+    .swal2-actions {
+      gap: 12px !important;
+      
+      .swal2-confirm {
+        background-color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+        padding: 10px 24px !important;
+        
+        &:hover {
+          background-color: #2563eb !important;
+          border-color: #2563eb !important;
+        }
+      }
+      
+      .swal2-cancel {
+        background-color: #6b7280 !important;
+        border-color: #6b7280 !important;
+        padding: 10px 24px !important;
+        
+        &:hover {
+          background-color: #4b5563 !important;
+          border-color: #4b5563 !important;
+        }
+      }
+    }
+  }
+}
+
+/* General SweetAlert2 Improvements */
+.swal2-popup {
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  
+  .swal2-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .swal2-html-container {
+    font-size: 1rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .swal2-actions {
+    margin-top: 24px !important;
+    
+    .swal2-styled {
+      border-radius: 8px !important;
+      font-weight: 500 !important;
+      font-size: 0.875rem !important;
+      padding: 10px 20px !important;
+      margin: 0 6px !important;
+      transition: all 0.2s ease-in-out !important;
+      
+      &:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+      }
+    }
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .error-popup, .validation-error-popup {
+    .swal2-html-container {
+      ul li {
+        color: #e5e7eb !important;
+        background: rgba(239, 68, 68, 0.1) !important;
+      }
+    }
+  }
+  
+  .validation-error-popup {
+    .swal2-html-container {
+      ul li {
+        background: rgba(245, 158, 11, 0.1) !important;
+      }
+    }
+  }
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .swal2-popup {
+    width: 90% !important;
+    margin: 0 auto !important;
+    
+    .swal2-title {
+      font-size: 1.25rem !important;
+    }
+    
+    .swal2-html-container {
+      font-size: 0.875rem !important;
+      
+      ul {
+        padding-left: 16px !important;
+        
+        li {
+          padding: 6px 10px !important;
+          font-size: 0.875rem !important;
+        }
+      }
+    }
+    
+    .swal2-actions {
+      flex-direction: column !important;
+      gap: 8px !important;
+      
+      .swal2-styled {
+        width: 100% !important;
+        margin: 0 !important;
+      }
+    }
+  }
+} 

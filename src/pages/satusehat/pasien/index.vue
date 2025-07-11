@@ -1,324 +1,289 @@
 <template>
-  <VCard>
-    <!-- Dynamic Filter Component -->
-    <DynamicFilter
-      title="Data Pasien SatuSehat"
-      :fields="filterConfig.fields"
-      :field-configs="filterConfig.fieldConfigs"
-      :quick-search-placeholder="'Cari nama, NIK, nomor SatuSehat...'"
-      :quick-search-fields="['name', 'nik', 'satusehat_id']"
-      @apply-filters="handleApplyFilters"
-      @clear-filters="handleClearFilters"
-      @apply-quick-search="handleApplyQuickSearch"
-    />
-    
-    <VDivider />
-    <VDataTableServer
-      :headers="headers"
-      :items="patients"
-      :items-length="totalPatients"
-      :loading="loading"
-      :items-per-page="itemsPerPage"
-      :page="page"
-      :sort-by="[{ key: sortBy, order: orderBy }]"
-      class="text-no-wrap"
-      @update:options="onUpdateOptions"
-    >
-      <template #item.no="{ index }">
-        {{ (itemsPerPage * (page - 1)) + index + 1 }}
-      </template>
-      <template #item.name="{ item }">
-        <div class="font-weight-medium">{{ item.name }}</div>
-      </template>
-      <template #item.birth_date="{ item }">
-        {{ formatDate(item.birth_date) }}
-      </template>
-      <template #item.sync_status="{ item }">
-        <VChip :color="getSyncStatusColor(item.sync_status)" size="small" label>
-          {{ getSyncStatusText(item.sync_status) }}
-        </VChip>
-      </template>
-      <template #item.last_sync="{ item }">
-        {{ formatDateTime(item.last_sync) }}
-      </template>
-      <template #loading>
-        <VSkeletonLoader
-          class="mx-auto"
-          type="table-row@10"
-        />
-      </template>
-      <template #no-data>
-        <div class="text-center py-12">
-          <VIcon size="64" color="primary" class="mb-4">tabler-users</VIcon>
-          <h3 class="text-h6 mb-2">Tidak ada data ditemukan</h3>
-          <p class="text-body-2 text-medium-emphasis mb-4">
-            Coba ubah filter atau kriteria pencarian Anda
-          </p>
-          <VBtn color="primary" variant="tonal" @click="handleClearFilters">
-            Reset Filter
-          </VBtn>
+  <div>
+    <!-- Search Cards Section -->
+    <VRow class="mb-6">
+      <!-- Search by NIK Card -->
+      <VCol cols="12" md="6">
+        <VCard class="h-100">
+          <VCardTitle class="d-flex align-center gap-2">
+            <VIcon color="primary">tabler-id-badge-2</VIcon>
+            <span>Cari Pasien SatuSehat by NIK</span>
+          </VCardTitle>
+          <VCardText>
+            <VForm ref="nikForm" @submit.prevent="searchByNIK">
+              <VTextField
+                v-model="searchNIK"
+                label="Masukkan NIK"
+                placeholder="3212121007331111"
+                :loading="loadingNIK"
+                :disabled="loadingNIK"
+                variant="outlined"
+                density="comfortable"
+                prepend-inner-icon="tabler-id"
+                :rules="nikValidationRules"
+                maxlength="16"
+                @keyup.enter="searchByNIK"
+              />
+              <VBtn
+                type="submit"
+                color="primary"
+                :loading="loadingNIK"
+                :disabled="!searchNIK || searchNIK.length !== 16"
+                block
+                class="mt-3"
+              >
+                <VIcon start>tabler-search</VIcon>
+                Cari by NIK
+              </VBtn>
+            </VForm>
+          </VCardText>
+        </VCard>
+      </VCol>
+
+      <!-- Search by ID Card -->
+      <VCol cols="12" md="6">
+        <VCard class="h-100">
+          <VCardTitle class="d-flex align-center gap-2">
+            <VIcon color="success">tabler-medical-cross</VIcon>
+            <span>Cari Pasien SatuSehat by ID</span>
+          </VCardTitle>
+          <VCardText>
+            <VForm ref="idForm" @submit.prevent="searchByID">
+              <VTextField
+                v-model="searchID"
+                label="Masukkan ID SatuSehat"
+                placeholder="P20394967103"
+                :loading="loadingID"
+                :disabled="loadingID"
+                variant="outlined"
+                density="comfortable"
+                prepend-inner-icon="tabler-hash"
+                :rules="idValidationRules"
+                @keyup.enter="searchByID"
+              />
+              <VBtn
+                type="submit"
+                color="success"
+                :loading="loadingID"
+                :disabled="!searchID"
+                block
+                class="mt-3"
+              >
+                <VIcon start>tabler-search</VIcon>
+                Cari by ID
+              </VBtn>
+            </VForm>
+          </VCardText>
+        </VCard>
+      </VCol>
+    </VRow>
+
+    <!-- Search Results Card -->
+    <VCard v-if="searchResult" class="mb-6">
+      <VCardTitle class="d-flex align-center justify-space-between">
+        <div class="d-flex align-center gap-2">
+          <VIcon color="info">tabler-user-check</VIcon>
+          <span>Hasil Pencarian</span>
         </div>
-      </template>
-      <template #bottom>
-        <div class="d-flex align-center justify-space-between flex-wrap gap-3 pa-4">
-          <div class="d-flex align-center gap-2">
-            <span class="text-body-2 text-medium-emphasis">Tampilkan:</span>
-            <VSelect
-              v-model="itemsPerPage"
-              :items="perPageOptions"
-              item-title="title"
-              item-value="value"
-              density="compact"
-              variant="outlined"
-              hide-details
-              style="min-width: 80px; max-width: 100px;"
-            />
-            <span class="text-body-2 text-medium-emphasis">per halaman</span>
-          </div>
-          <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalPatients) }}
-          </div>
-          <TablePagination
-            v-model:page="page"
-            v-model:items-per-page="itemsPerPage"
-            :total-items="totalPatients"
-            :items-per-page-options="perPageOptions"
-            hide-details
-            :show-meta="false"
-          />
+        <VBtn
+          variant="text"
+          color="error"
+          size="small"
+          @click="clearSearchResult"
+        >
+          <VIcon>tabler-x</VIcon>
+        </VBtn>
+      </VCardTitle>
+      <VCardText>
+        <VAlert
+          v-if="searchResult.error"
+          type="error"
+          variant="tonal"
+          class="mb-4"
+        >
+          {{ searchResult.error }}
+        </VAlert>
+        <div v-else-if="searchResult.data">
+          <VRow>
+            <VCol cols="12" md="6">
+              <VList>
+                <VListItem>
+                  <VListItemTitle>ID SatuSehat</VListItemTitle>
+                  <VListItemSubtitle>{{ searchResult.data.id || '-' }}</VListItemSubtitle>
+                </VListItem>
+                <VListItem>
+                  <VListItemTitle>Nama</VListItemTitle>
+                  <VListItemSubtitle>{{ searchResult.data.name || '-' }}</VListItemSubtitle>
+                </VListItem>
+                <VListItem>
+                  <VListItemTitle>NIK</VListItemTitle>
+                  <VListItemSubtitle>{{ searchResult.data.nik || '-' }}</VListItemSubtitle>
+                </VListItem>
+              </VList>
+            </VCol>
+            <VCol cols="12" md="6">
+              <VList>
+                <VListItem>
+                  <VListItemTitle>IHS Number</VListItemTitle>
+                  <VListItemSubtitle>{{ searchResult.data.ihs_number || '-' }}</VListItemSubtitle>
+                </VListItem>
+                <VListItem>
+                  <VListItemTitle>Status</VListItemTitle>
+                  <VListItemSubtitle>
+                    <VChip 
+                      :color="searchResult.data.active ? 'success' : 'error'" 
+                      size="small" 
+                      label
+                    >
+                      {{ searchResult.data.active ? 'Aktif' : 'Tidak Aktif' }}
+                    </VChip>
+                  </VListItemSubtitle>
+                </VListItem>
+                <VListItem>
+                  <VListItemTitle>Terakhir Update</VListItemTitle>
+                  <VListItemSubtitle>{{ formatDateTime(searchResult.data.lastUpdated) }}</VListItemSubtitle>
+                </VListItem>
+              </VList>
+            </VCol>
+          </VRow>
+        </div>
+      </VCardText>
+    </VCard>
   </div>
-      </template>
-    </VDataTableServer>
-  </VCard>
 </template>
 
 <script setup>
-import TablePagination from '@/@core/components/TablePagination.vue'
-import DynamicFilter from '@/components/DynamicFilter.vue'
-import { createDynamicFilterConfig } from '@/utils/filterUtils'
-import { paginationMeta } from '@/utils/paginationMeta'
-import { ref, watch } from 'vue'
-
-// State
-const itemsPerPage = ref(10)
-const page = ref(1)
-const sortBy = ref('created_at')
-const orderBy = ref('desc')
-const loading = ref(false)
-
-const patients = ref([])
-const totalPatients = ref(0)
-const currentFilters = ref([])
-const currentQuickSearch = ref('')
-
-// Dynamic filter configuration
-const filterConfig = ref({
-  fields: [],
-  fieldConfigs: {}
+// Add definePage for navigation
+definePage({
+  meta: {
+    navActiveLink: 'satusehat-pasien'
+  }
 })
 
-const perPageOptions = [
-  { value: 5, title: '5' },
-  { value: 10, title: '10' },
-  { value: 15, title: '15' },
-  { value: 20, title: '20' },
-  { value: -1, title: 'All' },
-]
+import { $api } from '@/utils/api'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const headers = [
-  { title: 'No', key: 'no', sortable: false },
-  { title: 'Nama', key: 'name' },
-  { title: 'NIK', key: 'nik' },
-  { title: 'ID SatuSehat', key: 'satusehat_id' },
-  { title: 'Tgl Lahir', key: 'birth_date' },
-  { title: 'Gender', key: 'gender' },
-  { title: 'Status Sync', key: 'sync_status' },
-  { title: 'Terakhir Sync', key: 'last_sync' },
-  { title: 'Tanggal Input', key: 'created_at' },
-]
+const route = useRoute()
+const router = useRouter()
 
-// Functions
-async function fetchPatients() {
-  loading.value = true
+// Debug navigation state
+onMounted(() => {
+  console.log('🔍 SatuSehat Pasien Page Debug Info:')
+  console.log('📍 Current Route:', route)
+  console.log('📍 Route Name:', route.name)
+  console.log('📍 Route Path:', route.path)
+  console.log('📍 Route Matched:', route.matched)
+})
+
+// Watch route changes for debugging
+watch(() => route.name, (newName, oldName) => {
+  console.log(`🔄 Route changed from ${oldName} to ${newName}`)
+}, { immediate: true })
+
+// Search functionality state
+const searchNIK = ref('')
+const searchID = ref('')
+const loadingNIK = ref(false)
+const loadingID = ref(false)
+const searchResult = ref(null)
+
+// Form refs
+const nikForm = ref(null)
+const idForm = ref(null)
+
+// Form submission states
+const nikSubmitted = ref(false)
+const idSubmitted = ref(false)
+
+// Validation rules that only activate after submission
+const nikValidationRules = computed(() => {
+  if (!nikSubmitted.value) return []
+  return [
+    v => !!v || 'NIK wajib diisi',
+    v => v.length === 16 || 'NIK harus 16 digit'
+  ]
+})
+
+const idValidationRules = computed(() => {
+  if (!idSubmitted.value) return []
+  return [
+    v => !!v || 'ID SatuSehat wajib diisi'
+  ]
+})
+
+// Search functions
+async function searchByNIK() {
+  nikSubmitted.value = true
+  
+  // Validate form
+  const { valid } = await nikForm.value.validate()
+  if (!valid) return
+
+  loadingNIK.value = true
+  searchResult.value = null
+
   try {
-    const requestBody = {
-      page: page.value,
-      per_page: itemsPerPage.value === -1 ? 1000 : itemsPerPage.value,
-      sort_by: sortBy.value,
-      sort_order: orderBy.value,
-    }
-
-    // Add filters if any
-    if (currentFilters.value.length > 0) {
-      requestBody.filters = currentFilters.value
-    }
-
-    // Add quick search if exists
-    if (currentQuickSearch.value?.trim()) {
-      if (!requestBody.filters) requestBody.filters = []
-      requestBody.filters.push({
-        search_by: 'name',
-        filter_type: 'like',
-        search_query: currentQuickSearch.value.trim()
-      })
-    }
-
-    // Mock data for demonstration - replace with actual API call
-    const mockData = generateMockSatuSehatData()
-    patients.value = mockData.data
-    totalPatients.value = mockData.total
-
-    // Generate dynamic filter configuration from first fetch
-    if (mockData.data && mockData.data.length > 0 && filterConfig.value.fields.length === 0) {
-      generateFilterConfig(mockData.data[0])
+    const result = await $api(`/satu-sehat/patient-by-nik?nik=${searchNIK.value}`, {
+      method: 'GET'
+    })
+    
+    if (result.response_code === 200) {
+      searchResult.value = { data: result.data }
+    } else {
+      searchResult.value = { error: result.response_message || 'Gagal mencari pasien' }
     }
   } catch (error) {
-    console.error('Error fetching SatuSehat patients:', error)
-    patients.value = []
-    totalPatients.value = 0
+    console.error('Error searching by NIK:', error)
+    searchResult.value = { error: 'Terjadi kesalahan saat mencari pasien' }
   } finally {
-    loading.value = false
+    loadingNIK.value = false
   }
 }
 
-function generateMockSatuSehatData() {
-  // This would be replaced with actual API call
-  const mockPatients = [
-    {
-      id: 1,
-      name: 'John Doe',
-      nik: '1234567890123456',
-      satusehat_id: 'SS-001-2024',
-      birth_date: '1990-01-15',
-      gender: 'MALE',
-      phone: '081234567890',
-      email: 'john@example.com',
-      address: 'Jakarta',
-      sync_status: 'SYNCED',
-      last_sync: '2024-01-15T10:30:00Z',
-      created_at: '2024-01-10T08:00:00Z',
-      updated_at: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      nik: '1234567890123457',
-      satusehat_id: 'SS-002-2024',
-      birth_date: '1985-05-20',
-      gender: 'FEMALE',
-      phone: '081234567891',
-      email: 'jane@example.com',
-      address: 'Bandung',
-      sync_status: 'PENDING',
-      last_sync: null,
-      created_at: '2024-01-12T09:15:00Z',
-      updated_at: '2024-01-12T09:15:00Z'
-    }
-  ]
-
-  return {
-    data: mockPatients,
-    total: mockPatients.length
-  }
-}
-
-function generateFilterConfig(sampleData) {
-  // Custom field configurations for SatuSehat patient data
-  const customConfigs = {
-    'satusehat_id': {
-      title: 'ID SatuSehat',
-      type: 'text'
-    },
-    'sync_status': {
-      title: 'Status Sinkronisasi',
-      type: 'select',
-      options: [
-        { title: 'Tersinkron', value: 'SYNCED' },
-        { title: 'Menunggu', value: 'PENDING' },
-        { title: 'Gagal', value: 'FAILED' },
-        { title: 'Tidak Aktif', value: 'DISABLED' }
-      ]
-    },
-    'last_sync': {
-      title: 'Terakhir Sinkron',
-      type: 'date'
-    }
-  }
-
-  const config = createDynamicFilterConfig({ data: [sampleData] }, customConfigs)
-  filterConfig.value = config
-}
-
-function handleApplyFilters({ filters, quickSearch }) {
-  currentFilters.value = filters
-  currentQuickSearch.value = quickSearch
-  page.value = 1
-  fetchPatients()
-}
-
-function handleClearFilters() {
-  currentFilters.value = []
-  currentQuickSearch.value = ''
-  page.value = 1
-  fetchPatients()
-}
-
-function handleApplyQuickSearch(searchQuery) {
-  currentQuickSearch.value = searchQuery
-  page.value = 1
-  fetchPatients()
-}
-
-function onUpdateOptions(options) {
-  if (options.page !== page.value) page.value = options.page
-  if (options.itemsPerPage !== itemsPerPage.value) itemsPerPage.value = options.itemsPerPage
+async function searchByID() {
+  idSubmitted.value = true
   
-  // Handle sorting
-  if (options.sortBy && options.sortBy.length > 0) {
-    const sortItem = options.sortBy[0]
-    sortBy.value = sortItem.key
-    orderBy.value = sortItem.order
-    fetchPatients()
+  // Validate form
+  const { valid } = await idForm.value.validate()
+  if (!valid) return
+
+  loadingID.value = true
+  searchResult.value = null
+
+  try {
+    const result = await $api(`/satu-sehat/patient-by-id/${searchID.value}`, {
+      method: 'GET'
+    })
+    
+    if (result.response_code === 200) {
+      searchResult.value = { data: result.data }
+    } else {
+      searchResult.value = { error: result.response_message || 'Gagal mencari pasien' }
+    }
+  } catch (error) {
+    console.error('Error searching by ID:', error)
+    searchResult.value = { error: 'Terjadi kesalahan saat mencari pasien' }
+  } finally {
+    loadingID.value = false
   }
 }
 
-function getSyncStatusColor(status) {
-  switch (status) {
-    case 'SYNCED': return 'success'
-    case 'PENDING': return 'warning'
-    case 'FAILED': return 'error'
-    case 'DISABLED': return 'secondary'
-    default: return 'secondary'
-  }
-}
-
-function getSyncStatusText(status) {
-  switch (status) {
-    case 'SYNCED': return 'Tersinkron'
-    case 'PENDING': return 'Menunggu'
-    case 'FAILED': return 'Gagal'
-    case 'DISABLED': return 'Tidak Aktif'
-    default: return 'Unknown'
-  }
-}
-
-function formatDate(dateStr) {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleDateString('id-ID')
+function clearSearchResult() {
+  searchResult.value = null
+  searchNIK.value = ''
+  searchID.value = ''
+  // Reset form validation states
+  nikSubmitted.value = false
+  idSubmitted.value = false
+  nikForm.value?.resetValidation()
+  idForm.value?.resetValidation()
 }
 
 function formatDateTime(dateStr) {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleString('id-ID')
 }
-
-// Watchers
-watch([page, itemsPerPage], () => {
-  fetchPatients()
-})
-
-// Initialize
-fetchPatients()
 </script>
 
 <style scoped>

@@ -1,3 +1,9 @@
+<route lang="yaml">
+meta:
+  layout: default
+  navActiveLink: rme-pasien
+</route>
+
 <template>
   <VCard>
     <!-- Dynamic Filter Component -->
@@ -10,7 +16,17 @@
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
-    />
+    >
+      <template #actions>
+        <VBtn
+          color="primary"
+          prepend-icon="tabler-plus"
+          :to="{ name: 'rme-pasien-create' }"
+        >
+          Tambah Pasien
+        </VBtn>
+      </template>
+    </DynamicFilter>
     
     <VDivider />
     <VDataTableServer
@@ -28,7 +44,7 @@
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
       <template #item.name="{ item }">
-        <RouterLink :to="`/rme/pasien/${item.id}`" class="text-primary text-decoration-underline font-weight-medium">
+        <RouterLink :to="{ name: 'rme-pasien-id', params: { id: item.id } }" class="text-primary text-decoration-underline font-weight-medium">
           {{ item.name }}
         </RouterLink>
       </template>
@@ -55,6 +71,26 @@
           <div class="text-caption text-medium-emphasis">{{ item.emergency_contact.relationship }}</div>
         </div>
         <div v-else class="text-medium-emphasis">-</div>
+      </template>
+      <template #item.actions="{ item }">
+        <div class="d-flex gap-2">
+          <VBtn
+            icon="tabler-eye"
+            size="small"
+            variant="text"
+            color="primary"
+            :to="{ name: 'rme-pasien-id', params: { id: item.id } }"
+            title="Lihat Detail"
+          />
+          <VBtn
+            icon="tabler-edit"
+            size="small"
+            variant="text"
+            color="warning"
+            :to="{ name: 'rme-pasien-edit-id', params: { id: item.id } }"
+            title="Edit Pasien"
+          />
+        </div>
       </template>
       <template #loading>
         <VSkeletonLoader
@@ -111,8 +147,9 @@
 import TablePagination from '@/@core/components/TablePagination.vue'
 import DynamicFilter from '@/components/DynamicFilter.vue'
 import { $api } from '@/utils/api'
+import { showErrorAlert } from '@/utils/errorHandler'
 import { paginationMeta } from '@/utils/paginationMeta'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 
 // State
@@ -219,11 +256,14 @@ const headers = [
   { title: 'Status Persetujuan', key: 'consent_status' },
   { title: 'Aktif', key: 'is_active', sortable: false },
   { title: 'Tanggal Input', key: 'created_at' },
+  { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
 async function fetchPatients() {
   loading.value = true
+  console.log('🔄 Starting fetchPatients...')
+  
   try {
     const requestBody = {
       page: page.value,
@@ -247,19 +287,30 @@ async function fetchPatients() {
       })
     }
 
+    console.log('📤 API Request body:', requestBody)
+    
     const res = await $api('/rme/patients/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
+    console.log('📥 API Response:', res)
+    
     patients.value = res.data || []
     totalPatients.value = res.meta?.total || 0
+    
+    console.log('✅ Patients loaded:', patients.value.length, 'total:', totalPatients.value)
   } catch (error) {
-    console.error('Error fetching patients:', error)
+    console.error('❌ Error fetching patients:', error)
+    await showErrorAlert(error, {
+      title: 'Gagal Memuat Data Pasien',
+      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.'
+    })
     patients.value = []
     totalPatients.value = 0
   } finally {
     loading.value = false
+    console.log('🏁 fetchPatients completed')
   }
 }
 
@@ -277,6 +328,10 @@ async function fetchBranches() {
     }))
   } catch (e) {
     console.error('Error fetching branches:', e)
+    await showErrorAlert(e, {
+      title: 'Gagal Memuat Data Cabang',
+      text: 'Tidak dapat memuat daftar cabang untuk filter.'
+    })
     branchOptions.value = []
   }
 }
@@ -340,8 +395,15 @@ watch([page, itemsPerPage], () => {
   fetchPatients()
 })
 
+// Always refresh data when component becomes active
+onActivated(() => {
+  console.log('🎯 Component onActivated triggered')
+  fetchPatients()
+})
+
 // Initialize filter config
 onMounted(async () => {
+  console.log('🚀 Component onMounted triggered')
   await fetchBranches()
   fetchPatients()
 })
