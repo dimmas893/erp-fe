@@ -74,4 +74,26 @@ export const routes = [
     name: 'profile',
     component: () => import('@/pages/profile.vue'),
   },
+  
+  // RME Kunjungan Routes
+  {
+    path: '/rme/kunjungan',
+    name: 'rme-kunjungan',
+    component: () => import('@/pages/rme/kunjungan/index.vue'),
+  },
+  {
+    path: '/rme/kunjungan/create',
+    name: 'rme-kunjungan-create',
+    component: () => import('@/pages/rme/kunjungan/create.vue'),
+  },
+  {
+    path: '/rme/kunjungan/:id',
+    name: 'rme-kunjungan-id',
+    component: () => import('@/pages/rme/kunjungan/[id].vue'),
+  },
+  {
+    path: '/rme/kunjungan/edit/:id',
+    name: 'rme-kunjungan-edit-id',
+    component: () => import('@/pages/rme/kunjungan/edit/[id].vue'),
+  },
 ]
