@@ -103,7 +103,7 @@ meta:
         />
       </template>
       <template #no-data>
-        <div class="text-center py-12">
+        <div v-if="shouldShowNoData" class="text-center py-12">
           <VIcon size="64" color="primary" class="mb-4">tabler-calendar-event</VIcon>
           <h3 class="text-h6 mb-2">Tidak ada data ditemukan</h3>
           <p class="text-body-2 text-medium-emphasis mb-4">
@@ -162,7 +162,8 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref('visit_date')
 const orderBy = ref('desc')
-const loading = ref(false)
+const loading = ref(true) // Start with loading true for initial load
+const initialLoadCompleted = ref(false)
 
 const visits = ref([])
 const totalVisits = ref(0)
@@ -251,6 +252,11 @@ const filterConfig = computed(() => ({
   fieldConfigs: fieldConfigs.value
 }))
 
+// Computed property to control no-data display
+const shouldShowNoData = computed(() => {
+  return !loading.value && initialLoadCompleted.value && visits.value.length === 0
+})
+
 const perPageOptions = [
   { value: 5, title: '5' },
   { value: 10, title: '10' },
@@ -327,6 +333,7 @@ async function fetchVisits() {
     totalVisits.value = 0
   } finally {
     loading.value = false
+    initialLoadCompleted.value = true
     console.log('🏁 fetchVisits completed')
   }
 }
@@ -393,12 +400,12 @@ function onUpdateOptions(options) {
   if (options.page !== page.value) page.value = options.page
   if (options.itemsPerPage !== itemsPerPage.value) itemsPerPage.value = options.itemsPerPage
   
-  // Handle sorting
+  // Handle sorting - just update the values, let the watcher handle fetching
   if (options.sortBy && options.sortBy.length > 0) {
     const sortItem = options.sortBy[0]
     sortBy.value = sortItem.key
     orderBy.value = sortItem.order
-    fetchVisits()
+    // Remove direct fetch call - let the watcher handle it
   }
 }
 
@@ -463,25 +470,35 @@ function formatCurrency(amount) {
 }
 
 // Watchers
-watch([page, itemsPerPage], () => {
-  fetchVisits()
+watch([page, itemsPerPage, sortBy, orderBy], () => {
+  // Only fetch if component is already mounted and not in initial loading
+  if (initialLoadCompleted.value) {
+    fetchVisits()
+  }
 })
 
 // Always refresh data when component becomes active
 onActivated(() => {
   console.log('🎯 Component onActivated triggered')
-  fetchVisits()
+  // Only fetch if we don't have data and initial load is completed
+  if (visits.value.length === 0 && initialLoadCompleted.value) {
+    fetchVisits()
+  }
 })
 
 // Initialize filter config
 onMounted(async () => {
   console.log('onMounted kunjungan');
+  // Ensure loading is true for initial load
+  loading.value = true
+  
   try {
     await fetchDoctors()
   } catch (e) {}
   try {
     await fetchBranches()
   } catch (e) {}
+  // Only fetch visits once on mount
   fetchVisits()
 })
 </script>
