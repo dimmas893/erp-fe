@@ -99,7 +99,7 @@ meta:
         />
       </template>
       <template #no-data>
-        <div class="text-center py-12">
+        <div v-if="shouldShowNoData" class="text-center py-12">
           <VIcon size="64" color="primary" class="mb-4">tabler-users</VIcon>
           <h3 class="text-h6 mb-2">Tidak ada data ditemukan</h3>
           <p class="text-body-2 text-medium-emphasis mb-4">
@@ -157,7 +157,8 @@ const itemsPerPage = ref(10)
 const page = ref(1)
 const sortBy = ref('createdAt')
 const orderBy = ref('desc')
-const loading = ref(false)
+const loading = ref(true) // Start with loading true for initial load
+const initialLoadCompleted = ref(false)
 
 const patients = ref([])
 const totalPatients = ref(0)
@@ -235,6 +236,11 @@ const filterConfig = computed(() => ({
   fieldConfigs: fieldConfigs.value
 }))
 
+// Computed property to control no-data display
+const shouldShowNoData = computed(() => {
+  return !loading.value && initialLoadCompleted.value && patients.value.length === 0
+})
+
 const perPageOptions = [
   { value: 5, title: '5' },
   { value: 10, title: '10' },
@@ -310,6 +316,7 @@ async function fetchPatients() {
     totalPatients.value = 0
   } finally {
     loading.value = false
+    initialLoadCompleted.value = true
     console.log('🏁 fetchPatients completed')
   }
 }
@@ -362,12 +369,12 @@ function onUpdateOptions(options) {
   if (options.page !== page.value) page.value = options.page
   if (options.itemsPerPage !== itemsPerPage.value) itemsPerPage.value = options.itemsPerPage
   
-  // Handle sorting
+  // Handle sorting - just update the values, let the watcher handle fetching
   if (options.sortBy && options.sortBy.length > 0) {
     const sortItem = options.sortBy[0]
     sortBy.value = sortItem.key
     orderBy.value = sortItem.order
-    fetchPatients()
+    // Remove direct fetch call - let the watcher handle it
   }
 }
 
@@ -391,20 +398,30 @@ function formatDateTime(dateStr) {
 }
 
 // Watchers
-watch([page, itemsPerPage], () => {
-  fetchPatients()
+watch([page, itemsPerPage, sortBy, orderBy], () => {
+  // Only fetch if component is already mounted and not in initial loading
+  if (initialLoadCompleted.value) {
+    fetchPatients()
+  }
 })
 
 // Always refresh data when component becomes active
 onActivated(() => {
   console.log('🎯 Component onActivated triggered')
-  fetchPatients()
+  // Only fetch if we don't have data and initial load is completed
+  if (patients.value.length === 0 && initialLoadCompleted.value) {
+    fetchPatients()
+  }
 })
 
 // Initialize filter config
 onMounted(async () => {
   console.log('🚀 Component onMounted triggered')
+  // Ensure loading is true for initial load
+  loading.value = true
+  
   await fetchBranches()
+  // Only fetch patients once on mount
   fetchPatients()
 })
 </script>
