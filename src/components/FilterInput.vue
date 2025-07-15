@@ -16,7 +16,10 @@
     <!-- Range Input (between/not_between) -->
     <div v-else-if="isRangeInput">
       <VRow no-gutters>
-        <VCol cols="6" class="pe-1">
+        <VCol
+          cols="6"
+          class="pe-1"
+        >
           <VTextField
             :model-value="localFilter.start_value"
             label="Nilai Awal"
@@ -27,7 +30,10 @@
             @update:model-value="updateField('start_value', $event)"
           />
         </VCol>
-        <VCol cols="6" class="ps-1">
+        <VCol
+          cols="6"
+          class="ps-1"
+        >
           <VTextField
             :model-value="localFilter.end_value"
             label="Nilai Akhir"
@@ -44,7 +50,10 @@
     <!-- Date Range Picker -->
     <div v-else-if="isDateRangeInput">
       <VRow no-gutters>
-        <VCol cols="6" class="pe-1">
+        <VCol
+          cols="6"
+          class="pe-1"
+        >
           <VTextField
             :model-value="localFilter.date_from"
             label="Dari Tanggal"
@@ -55,7 +64,10 @@
             @update:model-value="updateField('date_from', $event)"
           />
         </VCol>
-        <VCol cols="6" class="ps-1">
+        <VCol
+          cols="6"
+          class="ps-1"
+        >
           <VTextField
             :model-value="localFilter.date_to"
             label="Sampai Tanggal"
@@ -97,9 +109,15 @@
     />
     
     <!-- No Input for null checks -->
-    <VCard v-else-if="isNullCheck" variant="outlined" class="pa-3">
+    <VCard
+      v-else-if="isNullCheck"
+      variant="outlined"
+      class="pa-3"
+    >
       <div class="text-center text-medium-emphasis">
-        <VIcon class="mb-2">tabler-info-circle</VIcon>
+        <VIcon class="mb-2">
+          tabler-info-circle
+        </VIcon>
         <div class="text-caption">
           Operator ini tidak memerlukan nilai input
         </div>
@@ -115,12 +133,12 @@ import { computed, ref, watch } from 'vue'
 const props = defineProps({
   modelValue: {
     type: Object,
-    required: true
+    required: true,
   },
   fieldConfig: {
     type: Object,
-    default: () => ({})
-  }
+    default: () => ({}),
+  },
 })
 
 // Emits
@@ -171,17 +189,18 @@ function getInputType() {
   if (props.fieldConfig?.type === 'tel') {
     return 'tel'
   }
+  
   return 'text'
 }
 
 function getInputLabel(operator) {
   switch (operator) {
-    case 'between': return 'Nilai Awal'
-    case 'not_between': return 'Nilai Awal'
-    case 'in': return 'Daftar nilai (pisah dengan koma)'
-    case 'not_in': return 'Daftar nilai (pisah dengan koma)'
-    case 'array_overlap': return 'Daftar nilai (pisah dengan koma)'
-    default: return 'Nilai'
+  case 'between': return 'Nilai Awal'
+  case 'not_between': return 'Nilai Awal'
+  case 'in': return 'Daftar nilai (pisah dengan koma)'
+  case 'not_in': return 'Daftar nilai (pisah dengan koma)'
+  case 'array_overlap': return 'Daftar nilai (pisah dengan koma)'
+  default: return 'Nilai'
   }
 }
 
@@ -193,36 +212,36 @@ function getSelectItems() {
   
   // Default options for common fields
   switch (localFilter.value.search_by) {
-    case 'branch_id':
-      return props.fieldConfig?.options || []
-    case 'is_active':
-      return [
-        { title: 'Aktif', value: 'true' },
-        { title: 'Nonaktif', value: 'false' }
-      ]
-    case 'consent_status':
-      return [
-        { title: 'Diberikan', value: 'GIVEN' },
-        { title: 'Menunggu', value: 'PENDING' },
-        { title: 'Ditolak', value: 'DENIED' }
-      ]
-    case 'gender':
-      return [
-        { title: 'Laki-laki', value: 'MALE' },
-        { title: 'Perempuan', value: 'FEMALE' }
-      ]
-    default:
-      return []
+  case 'branch_id':
+    return props.fieldConfig?.options || []
+  case 'is_active':
+    return [
+      { title: 'Aktif', value: 'true' },
+      { title: 'Nonaktif', value: 'false' },
+    ]
+  case 'consent_status':
+    return [
+      { title: 'Diberikan', value: 'GIVEN' },
+      { title: 'Menunggu', value: 'PENDING' },
+      { title: 'Ditolak', value: 'DENIED' },
+    ]
+  case 'gender':
+    return [
+      { title: 'Laki-laki', value: 'MALE' },
+      { title: 'Perempuan', value: 'FEMALE' },
+    ]
+  default:
+    return []
   }
 }
 
 function getSelectLabel() {
   switch (localFilter.value.search_by) {
-    case 'branch_id': return 'Pilih Cabang'
-    case 'is_active': return 'Status'
-    case 'consent_status': return 'Status Persetujuan'
-    case 'gender': return 'Jenis Kelamin'
-    default: return props.fieldConfig?.label || 'Pilih nilai'
+  case 'branch_id': return 'Pilih Cabang'
+  case 'is_active': return 'Status'
+  case 'consent_status': return 'Status Persetujuan'
+  case 'gender': return 'Jenis Kelamin'
+  default: return props.fieldConfig?.label || 'Pilih nilai'
   }
 }
 
@@ -234,14 +253,15 @@ function isNumericField(field) {
 function updateField(field, value) {
   localFilter.value = {
     ...localFilter.value,
-    [field]: value
+    [field]: value,
   }
+
   // Emit directly instead of using watcher
   emit('update:modelValue', localFilter.value)
 }
 
 // Watch for changes from parent only (no circular update)
-watch(() => props.modelValue, (newValue) => {
+watch(() => props.modelValue, newValue => {
   localFilter.value = { ...newValue }
 }, { deep: true })
 </script> 

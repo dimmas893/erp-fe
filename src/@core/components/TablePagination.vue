@@ -12,6 +12,7 @@ const props = defineProps({
     type: Number,
     required: true,
   },
+
   // Tambahan agar bisa dikontrol dari luar jika ingin menampilkan meta
   showMeta: {
     type: Boolean,

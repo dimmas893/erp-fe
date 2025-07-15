@@ -27,11 +27,11 @@ const formData = ref({
   emergency_contact: {
     name: '',
     phone: '',
-    relation: ''
+    relation: '',
   },
   medical_history: '',
   allergies: '',
-  current_medications: ''
+  current_medications: '',
 })
 
 // Form validation
@@ -41,11 +41,11 @@ const isLoading = ref(false)
 // Options
 const genderOptions = [
   { title: 'Laki-laki', value: 'MALE' },
-  { title: 'Perempuan', value: 'FEMALE' }
+  { title: 'Perempuan', value: 'FEMALE' },
 ]
 
 const relationOptions = [
-  'Suami', 'Istri', 'Ayah', 'Ibu', 'Anak', 'Saudara', 'Teman', 'Lainnya'
+  'Suami', 'Istri', 'Ayah', 'Ibu', 'Anak', 'Saudara', 'Teman', 'Lainnya',
 ]
 
 // Branches data
@@ -60,16 +60,18 @@ onMounted(async () => {
 const loadBranches = async () => {
   try {
     loadingBranches.value = true
+
     const response = await $api('/wms/branches')
+
     branches.value = response.data.map(branch => ({
       title: `${branch.name} (${branch.code})`,
-      value: branch.id
+      value: branch.id,
     }))
   } catch (error) {
     console.error('Error loading branches:', error)
     await showErrorAlert(error, { 
       title: 'Gagal Memuat Data Cabang',
-      text: 'Tidak dapat memuat daftar cabang. Silakan refresh halaman.'
+      text: 'Tidak dapat memuat daftar cabang. Silakan refresh halaman.',
     })
   } finally {
     loadingBranches.value = false
@@ -77,21 +79,24 @@ const loadBranches = async () => {
 }
 
 // Validation rules
-const nikValidator = (value) => {
+const nikValidator = value => {
   if (!value) return 'NIK wajib diisi'
   if (!/^\d{16}$/.test(value)) return 'NIK harus 16 digit angka'
+  
   return true
 }
 
-const phoneValidator = (value) => {
+const phoneValidator = value => {
   if (!value) return 'Nomor telepon wajib diisi'
-  if (!/^(\+62|62|0)[0-9]{9,13}$/.test(value)) return 'Format nomor telepon tidak valid'
+  if (!/^(\+62|62|0)\d{9,13}$/.test(value)) return 'Format nomor telepon tidak valid'
+  
   return true
 }
 
-const emergencyPhoneValidator = (value) => {
+const emergencyPhoneValidator = value => {
   if (!value) return 'Nomor telepon kontak darurat wajib diisi'
-  if (!/^[0-9]{10,15}$/.test(value)) return 'Format nomor telepon tidak valid'
+  if (!/^\d{10,15}$/.test(value)) return 'Format nomor telepon tidak valid'
+  
   return true
 }
 
@@ -107,18 +112,19 @@ const submitForm = async () => {
     // Prepare data for API
     const submitData = {
       ...formData.value,
+
       // Ensure birth_date is in YYYY-MM-DD format
-      birth_date: formData.value.birth_date ? new Date(formData.value.birth_date).toISOString().split('T')[0] : ''
+      birth_date: formData.value.birth_date ? new Date(formData.value.birth_date).toISOString().split('T')[0] : '',
     }
     
     const response = await $api('/rme/patients', {
       method: 'POST',
-      body: submitData
+      body: submitData,
     })
 
     await showSuccessAlert(
       `Data pasien berhasil disimpan dengan nomor pasien: ${response.data.patient_number}`,
-      'Berhasil!'
+      'Berhasil!',
     )
 
     // Redirect to patient list
@@ -154,11 +160,11 @@ const resetForm = () => {
     emergency_contact: {
       name: '',
       phone: '',
-      relation: ''
+      relation: '',
     },
     medical_history: '',
     allergies: '',
-    current_medications: ''
+    current_medications: '',
   }
 }
 
@@ -411,8 +417,8 @@ const goBack = () => {
               <VBtn
                 color="secondary"
                 variant="tonal"
-                @click="resetForm"
                 :disabled="isLoading"
+                @click="resetForm"
               >
                 <VIcon
                   start
@@ -424,8 +430,8 @@ const goBack = () => {
               <VBtn
                 color="error"
                 variant="outlined"
-                @click="goBack"
                 :disabled="isLoading"
+                @click="goBack"
               >
                 <VIcon
                   start

@@ -3,14 +3,22 @@
     <!-- Search Cards Section -->
     <VRow class="mb-6">
       <!-- Search by NIK Card -->
-      <VCol cols="12" md="6">
+      <VCol
+        cols="12"
+        md="6"
+      >
         <VCard class="h-100">
           <VCardTitle class="d-flex align-center gap-2">
-            <VIcon color="primary">tabler-id-badge-2</VIcon>
+            <VIcon color="primary">
+              tabler-id-badge-2
+            </VIcon>
             <span>Cari Pasien SatuSehat by NIK</span>
           </VCardTitle>
           <VCardText>
-            <VForm ref="nikForm" @submit.prevent="searchByNIK">
+            <VForm
+              ref="nikForm"
+              @submit.prevent="searchByNIK"
+            >
               <VTextField
                 v-model="searchNIK"
                 label="Masukkan NIK"
@@ -32,7 +40,9 @@
                 block
                 class="mt-3"
               >
-                <VIcon start>tabler-search</VIcon>
+                <VIcon start>
+                  tabler-search
+                </VIcon>
                 Cari by NIK
               </VBtn>
             </VForm>
@@ -41,14 +51,22 @@
       </VCol>
 
       <!-- Search by ID Card -->
-      <VCol cols="12" md="6">
+      <VCol
+        cols="12"
+        md="6"
+      >
         <VCard class="h-100">
           <VCardTitle class="d-flex align-center gap-2">
-            <VIcon color="success">tabler-medical-cross</VIcon>
+            <VIcon color="success">
+              tabler-medical-cross
+            </VIcon>
             <span>Cari Pasien SatuSehat by ID</span>
           </VCardTitle>
           <VCardText>
-            <VForm ref="idForm" @submit.prevent="searchByID">
+            <VForm
+              ref="idForm"
+              @submit.prevent="searchByID"
+            >
               <VTextField
                 v-model="searchID"
                 label="Masukkan ID SatuSehat"
@@ -69,7 +87,9 @@
                 block
                 class="mt-3"
               >
-                <VIcon start>tabler-search</VIcon>
+                <VIcon start>
+                  tabler-search
+                </VIcon>
                 Cari by ID
               </VBtn>
             </VForm>
@@ -79,10 +99,15 @@
     </VRow>
 
     <!-- Search Results Card -->
-    <VCard v-if="searchResult" class="mb-6">
+    <VCard
+      v-if="searchResult"
+      class="mb-6"
+    >
       <VCardTitle class="d-flex align-center justify-space-between">
         <div class="d-flex align-center gap-2">
-          <VIcon color="info">tabler-user-check</VIcon>
+          <VIcon color="info">
+            tabler-user-check
+          </VIcon>
           <span>Hasil Pencarian</span>
         </div>
         <VBtn
@@ -105,7 +130,10 @@
         </VAlert>
         <div v-else-if="searchResult.data">
           <VRow>
-            <VCol cols="12" md="6">
+            <VCol
+              cols="12"
+              md="6"
+            >
               <VList>
                 <VListItem>
                   <VListItemTitle>ID SatuSehat</VListItemTitle>
@@ -121,7 +149,10 @@
                 </VListItem>
               </VList>
             </VCol>
-            <VCol cols="12" md="6">
+            <VCol
+              cols="12"
+              md="6"
+            >
               <VList>
                 <VListItem>
                   <VListItemTitle>IHS Number</VListItemTitle>
@@ -156,8 +187,8 @@
 // Add definePage for navigation
 definePage({
   meta: {
-    navActiveLink: 'satusehat-pasien'
-  }
+    navActiveLink: 'satusehat-pasien',
+  },
 })
 
 import { $api } from '@/utils/api'
@@ -199,16 +230,18 @@ const idSubmitted = ref(false)
 // Validation rules that only activate after submission
 const nikValidationRules = computed(() => {
   if (!nikSubmitted.value) return []
+  
   return [
     v => !!v || 'NIK wajib diisi',
-    v => v.length === 16 || 'NIK harus 16 digit'
+    v => v.length === 16 || 'NIK harus 16 digit',
   ]
 })
 
 const idValidationRules = computed(() => {
   if (!idSubmitted.value) return []
+  
   return [
-    v => !!v || 'ID SatuSehat wajib diisi'
+    v => !!v || 'ID SatuSehat wajib diisi',
   ]
 })
 
@@ -225,7 +258,7 @@ async function searchByNIK() {
 
   try {
     const result = await $api(`/satu-sehat/patient-by-nik?nik=${searchNIK.value}`, {
-      method: 'GET'
+      method: 'GET',
     })
     
     if (result.response_code === 200) {
@@ -253,7 +286,7 @@ async function searchByID() {
 
   try {
     const result = await $api(`/satu-sehat/patient-by-id/${searchID.value}`, {
-      method: 'GET'
+      method: 'GET',
     })
     
     if (result.response_code === 200) {
@@ -273,6 +306,7 @@ function clearSearchResult() {
   searchResult.value = null
   searchNIK.value = ''
   searchID.value = ''
+
   // Reset form validation states
   nikSubmitted.value = false
   idSubmitted.value = false
@@ -282,6 +316,7 @@ function clearSearchResult() {
 
 function formatDateTime(dateStr) {
   if (!dateStr) return '-'
+  
   return new Date(dateStr).toLocaleString('id-ID')
 }
 </script>

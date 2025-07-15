@@ -99,20 +99,20 @@ export function getErrorTitle(error) {
   const responseCode = errorData.response_code || error.status || error.code
   
   switch (responseCode) {
-    case 400:
-      return 'Data Tidak Valid'
-    case 401:
-      return 'Tidak Diotorisasi'
-    case 403:
-      return 'Akses Ditolak'
-    case 404:
-      return 'Data Tidak Ditemukan'
-    case 422:
-      return 'Validasi Gagal'
-    case 500:
-      return 'Kesalahan Server'
-    default:
-      return 'Terjadi Kesalahan'
+  case 400:
+    return 'Data Tidak Valid'
+  case 401:
+    return 'Tidak Diotorisasi'
+  case 403:
+    return 'Akses Ditolak'
+  case 404:
+    return 'Data Tidak Ditemukan'
+  case 422:
+    return 'Validasi Gagal'
+  case 500:
+    return 'Kesalahan Server'
+  default:
+    return 'Terjadi Kesalahan'
   }
 }
 
@@ -135,8 +135,8 @@ export async function showErrorAlert(error, options = {}) {
     customClass: {
       popup: 'error-popup',
       title: 'error-title',
-      htmlContainer: 'error-content'
-    }
+      htmlContainer: 'error-content',
+    },
   }
   
   const swalOptions = { ...defaultOptions, ...options }
@@ -161,8 +161,8 @@ export async function showValidationErrorAlert(error, customTitle = 'Periksa Dat
     allowOutsideClick: false,
     customClass: {
       popup: 'validation-error-popup',
-      confirmButton: 'swal2-confirm-validation'
-    }
+      confirmButton: 'swal2-confirm-validation',
+    },
   })
 }
 
@@ -178,7 +178,7 @@ export async function showSuccessAlert(message, title = 'Berhasil!', options = {
     title: title,
     text: message,
     confirmButtonText: 'OK',
-    allowOutsideClick: false
+    allowOutsideClick: false,
   }
   
   const swalOptions = { ...defaultOptions, ...options }
@@ -201,7 +201,7 @@ export async function showConfirmDialog(message, title = 'Konfirmasi', options =
     confirmButtonText: 'Ya',
     cancelButtonText: 'Batal',
     reverseButtons: true,
-    allowOutsideClick: false
+    allowOutsideClick: false,
   }
   
   const swalOptions = { ...defaultOptions, ...options }
