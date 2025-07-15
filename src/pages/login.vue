@@ -53,6 +53,8 @@ const login = async () => {
         errors.value = response._data.errors
       },
     })
+
+
     // Simpan token ke cookie
     useCookie('accessToken').value = res.data.token
     useCookie('refreshToken').value = res.data.refreshToken
@@ -184,12 +186,14 @@ const onSubmit = () => {
                     v-model="rememberMe"
                     label="Remember me"
                   />
-                  <!-- <RouterLink
+                  <!--
+                    <RouterLink
                     class="text-primary ms-2 mb-1"
                     :to="{ name: 'forgot-password' }"
-                  >
+                    >
                     Forgot Password?
-                  </RouterLink> -->
+                    </RouterLink> 
+                  -->
                 </div>
 
                 <VBtn
@@ -201,7 +205,6 @@ const onSubmit = () => {
               </VCol>
 
               <!-- create account -->
-              
             </VRow>
           </VForm>
         </VCardText>

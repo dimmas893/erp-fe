@@ -1,38 +1,32 @@
 <route lang="yaml">
 meta:
   layout: default
-  navActiveLink: rme-pasien
+  navActiveLink: transaction-consultations
 </route>
 
 <template>
   <VCard>
     <!-- Dynamic Filter Component -->
     <DynamicFilter
-      title="Data Pasien"
+      title="Data Konsultasi"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      quick-search-placeholder="Cari nama, NIK, telepon, atau email..."
-      :quick-search-fields="['name', 'nik', 'phone', 'email']"
+      quick-search-placeholder="Cari berdasarkan tipe konsultasi..."
+      :quick-search-fields="['consultation_type']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
     >
       <template #actions>
-        <VBtn
-          color="primary"
-          prepend-icon="tabler-plus"
-          :to="{ name: 'rme-pasien-create' }"
-        >
-          Tambah Pasien
-        </VBtn>
+        <!-- Create button removed as per requirement -->
       </template>
     </DynamicFilter>
     
     <VDivider />
     <VDataTableServer
       :headers="headers"
-      :items="patients"
-      :items-length="totalPatients"
+      :items="consultations"
+      :items-length="totalConsultations"
       :loading="loading"
       :items-per-page="itemsPerPage"
       :page="page"
@@ -43,56 +37,27 @@ meta:
       <template #item.no="{ index }">
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
-      <template #item.name="{ item }">
-        <RouterLink
-          :to="{ name: 'rme-pasien-id', params: { id: item.id } }"
-          class="text-primary text-decoration-underline font-weight-medium"
-        >
-          {{ item.name }}
-        </RouterLink>
+
+      <template #item.fee="{ item }">
+        {{ formatCurrency(item.fee) }}
       </template>
-      <template #item.birth_date="{ item }">
-        {{ formatDate(item.birth_date) }}
+      <template #item.consultation_type="{ item }">
+        <VChip
+          :color="getConsultationTypeColor(item.consultation_type)"
+          size="small"
+          label
+        >
+          {{ getConsultationTypeText(item.consultation_type) }}
+        </VChip>
+      </template>
+      <template #item.start_time="{ item }">
+        {{ formatDateTime(item.start_time) }}
+      </template>
+      <template #item.end_time="{ item }">
+        {{ item.end_time ? formatDateTime(item.end_time) : '-' }}
       </template>
       <template #item.created_at="{ item }">
         {{ formatDateTime(item.created_at) }}
-      </template>
-      <template #item.is_active="{ item }">
-        <VChip
-          :color="item.is_active ? 'success' : 'error'"
-          size="small"
-          label
-        >
-          {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
-        </VChip>
-      </template>
-      <template #item.consent_status="{ item }">
-        <VChip
-          :color="getConsentColor(item.consent_status)"
-          size="small"
-          label
-        >
-          {{ item.consent_status }}
-        </VChip>
-      </template>
-      <template #item.emergency_contact="{ item }">
-        <div v-if="item.emergency_contact">
-          <div class="font-weight-medium">
-            {{ item.emergency_contact.name }}
-          </div>
-          <div class="text-body-2">
-            {{ item.emergency_contact.phone }}
-          </div>
-          <div class="text-caption text-medium-emphasis">
-            {{ item.emergency_contact.relationship }}
-          </div>
-        </div>
-        <div
-          v-else
-          class="text-medium-emphasis"
-        >
-          -
-        </div>
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex gap-2">
@@ -101,17 +66,11 @@ meta:
             size="small"
             variant="text"
             color="primary"
-            :to="{ name: 'rme-pasien-id', params: { id: item.id } }"
+            :to="{ name: 'transaction-consultations-id', params: { id: item.id } }"
             title="Lihat Detail"
           />
-          <VBtn
-            icon="tabler-edit"
-            size="small"
-            variant="text"
-            color="warning"
-            :to="{ name: 'rme-pasien-edit-id', params: { id: item.id } }"
-            title="Edit Pasien"
-          />
+          <!-- Edit button removed as per requirement -->
+          <!-- Billing button removed as route might not exist -->
         </div>
       </template>
       <template #loading>
@@ -130,7 +89,7 @@ meta:
             color="primary"
             class="mb-4"
           >
-            tabler-users
+            tabler-stethoscope
           </VIcon>
           <h3 class="text-h6 mb-2">
             Tidak ada data ditemukan
@@ -143,7 +102,7 @@ meta:
             variant="tonal"
             @click="handleClearFilters"
           >
-            Reset Filter
+            Reset Filter  
           </VBtn>
         </div>
       </template>
@@ -164,12 +123,12 @@ meta:
             <span class="text-body-2 text-medium-emphasis">per halaman</span>
           </div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalPatients) }}
+            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalConsultations) }}
           </div>
           <TablePagination
             v-model:page="page"
             v-model:items-per-page="itemsPerPage"
-            :total-items="totalPatients"
+            :total-items="totalConsultations"
             :items-per-page-options="perPageOptions"
             hide-details
             :show-meta="false"
@@ -187,81 +146,36 @@ import { $api } from '@/utils/api'
 import { showErrorAlert } from '@/utils/errorHandler'
 import { paginationMeta } from '@/utils/paginationMeta'
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 // State
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref('createdAt')
+const sortBy = ref('start_time')
 const orderBy = ref('desc')
 const loading = ref(true) // Start with loading true for initial load
 const initialLoadCompleted = ref(false)
 
-const patients = ref([])
-const totalPatients = ref(0)
+const consultations = ref([])
+const totalConsultations = ref(0)
 const currentFilters = ref([])
 const currentQuickSearch = ref('')
 
-const branchOptions = ref([])
-
 // Reactive field configurations
 const allowedFields = [
-  'patient_number',
-  'nik', 
-  'name',
-  'gender',
-  'phone',
-  'email',
-  'branch_id',
-  'created_at',
+  'consultation_type',
 ]
 
 const fieldConfigs = computed(() => {
   return {
-    'patient_number': {
-      title: 'No. Pasien',
-      type: 'text',
-      operator: 'like',
-    },
-    'nik': {
-      title: 'NIK',
-      type: 'text',
-      operator: 'like',
-    },
-    'name': {
-      title: 'Nama',
-      type: 'text',
-      operator: 'like',
-    },
-    'gender': {
-      title: 'Jenis Kelamin',
+    'consultation_type': {
+      title: 'Tipe Konsultasi',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Laki-laki', value: 'MALE' },
-        { title: 'Perempuan', value: 'FEMALE' },
+        { title: 'Konsultasi Awal', value: 'INITIAL' },
+        { title: 'Konsultasi Lanjutan', value: 'FOLLOW_UP' },
+        { title: 'Konsultasi Darurat', value: 'EMERGENCY' },
       ],
-    },
-    'phone': {
-      title: 'Telepon',
-      type: 'tel',
-      operator: 'like',
-    },
-    'email': {
-      title: 'Email',
-      type: 'email',
-      operator: 'like',
-    },
-    'branch_id': {
-      title: 'Cabang',
-      type: 'select',
-      operator: 'equal',
-      options: branchOptions.value.slice(),
-    },
-    'created_at': {
-      title: 'Tanggal Dibuat',
-      type: 'date',
-      operator: 'date',
     },
   }
 })
@@ -283,7 +197,7 @@ const filterConfig = computed(() => ({
 
 // Computed property to control no-data display
 const shouldShowNoData = computed(() => {
-  return !loading.value && initialLoadCompleted.value && patients.value.length === 0
+  return !loading.value && initialLoadCompleted.value && consultations.value.length === 0
 })
 
 const perPageOptions = [
@@ -296,24 +210,21 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Nama', key: 'name' },
-  { title: 'NIK', key: 'nik' },
-  { title: 'Tgl Lahir', key: 'birth_date' },
-  { title: 'Gender', key: 'gender' },
-  { title: 'Telepon', key: 'phone' },
-  { title: 'Email', key: 'email' },
-  { title: 'Alamat', key: 'address' },
-  { title: 'Emergency Contact', key: 'emergency_contact', sortable: false },
-  { title: 'Status Persetujuan', key: 'consent_status' },
-  { title: 'Aktif', key: 'is_active', sortable: false },
-  { title: 'Tanggal Input', key: 'created_at' },
+  { title: 'Tipe Konsultasi', key: 'consultation_type' },
+  { title: 'Biaya', key: 'fee' },
+  { title: 'Waktu Mulai', key: 'start_time' },
+  { title: 'Waktu Selesai', key: 'end_time' },
+  { title: 'Diagnosis', key: 'diagnosis' },
+  { title: 'Rencana Perawatan', key: 'treatment_plan' },
+  { title: 'Catatan', key: 'consultation_notes' },
+  { title: 'Tanggal Dibuat', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
-async function fetchPatients() {
+async function fetchConsultations() {
   loading.value = true
-  console.log('🔄 Starting fetchPatients...')
+  console.log('🔄 Starting fetchConsultations...')
   
   try {
     const requestBody = {
@@ -332,7 +243,7 @@ async function fetchPatients() {
     if (currentQuickSearch.value?.trim()) {
       if (!requestBody.filters) requestBody.filters = []
       requestBody.filters.push({
-        search_by: 'name',
+        search_by: 'consultation_type',
         filter_type: 'like',
         search_query: currentQuickSearch.value.trim(),
       })
@@ -340,75 +251,51 @@ async function fetchPatients() {
 
     console.log('📤 API Request body:', requestBody)
     
-    const res = await $api('/rme/patients/paginated', {
+    const res = await $api('/rme/visit-consultations/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
     console.log('📥 API Response:', res)
     
-    patients.value = res.data || []
-    totalPatients.value = res.meta?.total || 0
+    consultations.value = res.data || []
+    totalConsultations.value = res.meta?.total || 0
     
-    console.log('✅ Patients loaded:', patients.value.length, 'total:', totalPatients.value)
+    console.log('✅ Consultations loaded:', consultations.value.length, 'total:', totalConsultations.value)
+    console.log('📋 Sample consultation data:', consultations.value[0])
   } catch (error) {
-    console.error('❌ Error fetching patients:', error)
+    console.error('❌ Error fetching consultations:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Pasien',
-      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Konsultasi',
+      text: 'Tidak dapat memuat data konsultasi. Silakan coba lagi.',
     })
-    patients.value = []
-    totalPatients.value = 0
+    consultations.value = []
+    totalConsultations.value = 0
   } finally {
     loading.value = false
     initialLoadCompleted.value = true
-    console.log('🏁 fetchPatients completed')
+    console.log('🏁 fetchConsultations completed')
   }
 }
-
-async function fetchBranches() {
-  try {
-    const res = await $api('/wms/branches', {
-      method: 'GET',
-      headers: {
-        // Authorization header will be set automatically if needed
-      },
-    })
-
-    branchOptions.value = (res.data || []).map(branch => ({
-      title: `${branch.name} (${branch.code})`,
-      value: branch.id,
-    }))
-  } catch (e) {
-    console.error('Error fetching branches:', e)
-    await showErrorAlert(e, {
-      title: 'Gagal Memuat Data Cabang',
-      text: 'Tidak dapat memuat daftar cabang untuk filter.',
-    })
-    branchOptions.value = []
-  }
-}
-
-// generateFilterConfig function is removed
 
 function handleApplyFilters({ filters, quickSearch }) {
   currentFilters.value = filters
   currentQuickSearch.value = quickSearch
   page.value = 1
-  fetchPatients()
+  fetchConsultations()
 }
 
 function handleClearFilters() {
   currentFilters.value = []
   currentQuickSearch.value = ''
   page.value = 1
-  fetchPatients()
+  fetchConsultations()
 }
 
 function handleApplyQuickSearch(searchQuery) {
   currentQuickSearch.value = searchQuery
   page.value = 1
-  fetchPatients()
+  fetchConsultations()
 }
 
 function onUpdateOptions(options) {
@@ -426,19 +313,33 @@ function onUpdateOptions(options) {
   }
 }
 
-function getConsentColor(status) {
-  switch (status) {
-  case 'GIVEN': return 'success'
-  case 'PENDING': return 'warning'
-  case 'DENIED': return 'error'
+function getConsultationTypeColor(type) {
+  switch (type) {
+  case 'INITIAL': return 'primary'
+  case 'FOLLOW_UP': return 'success'
+  case 'EMERGENCY': return 'error'
   default: return 'secondary'
   }
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '-'
+function getConsultationTypeText(type) {
+  switch (type) {
+  case 'INITIAL': return 'Konsultasi Awal'
+  case 'FOLLOW_UP': return 'Konsultasi Lanjutan'
+  case 'EMERGENCY': return 'Konsultasi Darurat'
+  default: return type
+  }
+}
+
+function formatCurrency(amount) {
+  if (!amount) return 'Rp 0'
   
-  return new Date(dateStr).toLocaleDateString('id-ID')
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
 
 function formatDateTime(dateStr) {
@@ -451,7 +352,7 @@ function formatDateTime(dateStr) {
 watch([page, itemsPerPage, sortBy, orderBy], () => {
   // Only fetch if component is already mounted and not in initial loading
   if (initialLoadCompleted.value) {
-    fetchPatients()
+    fetchConsultations()
   }
 })
 
@@ -460,8 +361,8 @@ onActivated(() => {
   console.log('🎯 Component onActivated triggered')
 
   // Only fetch if we don't have data and initial load is completed
-  if (patients.value.length === 0 && initialLoadCompleted.value) {
-    fetchPatients()
+  if (consultations.value.length === 0 && initialLoadCompleted.value) {
+    fetchConsultations()
   }
 })
 
@@ -472,10 +373,8 @@ onMounted(async () => {
   // Ensure loading is true for initial load
   loading.value = true
   
-  await fetchBranches()
-
-  // Only fetch patients once on mount
-  fetchPatients()
+  // Only fetch consultations once on mount
+  fetchConsultations()
 })
 </script>
 

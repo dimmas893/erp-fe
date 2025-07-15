@@ -7,6 +7,7 @@ import pages from './pages'
 import rme from './rme'
 import satusehat from './satusehat'
 import tables from './tables'
+import transaction from './transaction'
 import uiElements from './ui-elements'
 
-export default [...dashboard, ...rme, ...satusehat, ...apps, ...pages, ...uiElements, ...forms, ...tables, ...charts, ...misc]
+export default [...dashboard, ...rme, ...satusehat, ...transaction, ...apps, ...pages, ...uiElements, ...forms, ...tables, ...charts, ...misc]

@@ -28,12 +28,12 @@ const formData = ref({
   emergency_contact: {
     name: '',
     phone: '',
-    relation: ''
+    relation: '',
   },
   medical_history: '',
   allergies: '',
   current_medications: '',
-  is_active: true
+  is_active: true,
 })
 
 // Form validation
@@ -44,11 +44,11 @@ const isLoadingPatient = ref(true)
 // Options
 const genderOptions = [
   { title: 'Laki-laki', value: 'MALE' },
-  { title: 'Perempuan', value: 'FEMALE' }
+  { title: 'Perempuan', value: 'FEMALE' },
 ]
 
 const relationOptions = [
-  'Suami', 'Istri', 'Ayah', 'Ibu', 'Anak', 'Saudara', 'Teman', 'Lainnya'
+  'Suami', 'Istri', 'Ayah', 'Ibu', 'Anak', 'Saudara', 'Teman', 'Lainnya',
 ]
 
 // Branches data
@@ -62,23 +62,25 @@ const patient = ref(null)
 onMounted(async () => {
   await Promise.all([
     loadBranches(),
-    loadPatient()
+    loadPatient(),
   ])
 })
 
 const loadBranches = async () => {
   try {
     loadingBranches.value = true
+
     const response = await $api('/wms/branches')
+
     branches.value = response.data.map(branch => ({
       title: `${branch.name} (${branch.code})`,
-      value: branch.id
+      value: branch.id,
     }))
   } catch (error) {
     console.error('Error loading branches:', error)
     await showErrorAlert(error, { 
       title: 'Gagal Memuat Data Cabang',
-      text: 'Tidak dapat memuat daftar cabang. Silakan refresh halaman.'
+      text: 'Tidak dapat memuat daftar cabang. Silakan refresh halaman.',
     })
   } finally {
     loadingBranches.value = false
@@ -88,7 +90,9 @@ const loadBranches = async () => {
 const loadPatient = async () => {
   try {
     isLoadingPatient.value = true
+
     const response = await $api(`/rme/patients/${route.params.id}`)
+
     patient.value = response.data
     
     // Populate form with existing data
@@ -104,18 +108,18 @@ const loadPatient = async () => {
       emergency_contact: {
         name: patient.value.emergency_contact?.name || '',
         phone: patient.value.emergency_contact?.phone || '',
-        relation: patient.value.emergency_contact?.relation || patient.value.emergency_contact?.relationship || ''
+        relation: patient.value.emergency_contact?.relation || patient.value.emergency_contact?.relationship || '',
       },
       medical_history: patient.value.medical_history || '',
       allergies: patient.value.allergies || '',
       current_medications: patient.value.current_medications || '',
-      is_active: patient.value.is_active !== false
+      is_active: patient.value.is_active !== false,
     }
   } catch (error) {
     console.error('Error loading patient:', error)
     await showErrorAlert(error, {
       title: 'Gagal Memuat Data Pasien',
-      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.'
+      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.',
     })
     router.push({ name: 'rme-pasien' })
   } finally {
@@ -124,21 +128,24 @@ const loadPatient = async () => {
 }
 
 // Validation rules
-const nikValidator = (value) => {
+const nikValidator = value => {
   if (!value) return 'NIK wajib diisi'
   if (!/^\d{16}$/.test(value)) return 'NIK harus 16 digit angka'
+  
   return true
 }
 
-const phoneValidator = (value) => {
+const phoneValidator = value => {
   if (!value) return 'Nomor telepon wajib diisi'
-  if (!/^(\+62|62|0)[0-9]{9,13}$/.test(value)) return 'Format nomor telepon tidak valid'
+  if (!/^(\+62|62|0)\d{9,13}$/.test(value)) return 'Format nomor telepon tidak valid'
+  
   return true
 }
 
-const emergencyPhoneValidator = (value) => {
+const emergencyPhoneValidator = value => {
   if (!value) return 'Nomor telepon kontak darurat wajib diisi'
-  if (!/^[0-9]{10,15}$/.test(value)) return 'Format nomor telepon tidak valid'
+  if (!/^\d{10,15}$/.test(value)) return 'Format nomor telepon tidak valid'
+  
   return true
 }
 
@@ -154,18 +161,19 @@ const submitForm = async () => {
     // Prepare data for API
     const submitData = {
       ...formData.value,
+
       // Ensure birth_date is in YYYY-MM-DD format
-      birth_date: formData.value.birth_date ? new Date(formData.value.birth_date).toISOString().split('T')[0] : ''
+      birth_date: formData.value.birth_date ? new Date(formData.value.birth_date).toISOString().split('T')[0] : '',
     }
     
     const response = await $api(`/rme/patients/${route.params.id}`, {
       method: 'PATCH',
-      body: submitData
+      body: submitData,
     })
 
     await showSuccessAlert(
       'Data pasien berhasil diperbarui!',
-      'Berhasil!'
+      'Berhasil!',
     )
 
     // Redirect to patient detail page
@@ -214,21 +222,40 @@ const goToList = () => {
     </VCardItem>
 
     <!-- Loading State -->
-    <VProgressLinear v-if="isLoadingPatient" indeterminate color="primary" />
+    <VProgressLinear
+      v-if="isLoadingPatient"
+      indeterminate
+      color="primary"
+    />
     <VCardText v-if="isLoadingPatient">
       <!-- Loading skeleton -->
       <div class="d-flex align-center gap-4 mb-6">
-        <VSkeleton type="avatar" size="72" />
+        <VSkeleton
+          type="avatar"
+          size="72"
+        />
         <div class="flex-grow-1">
-          <VSkeleton type="heading" class="mb-2" />
-          <VSkeleton type="chip" width="80" />
+          <VSkeleton
+            type="heading"
+            class="mb-2"
+          />
+          <VSkeleton
+            type="chip"
+            width="80"
+          />
         </div>
       </div>
       <VRow>
-        <VCol cols="12" md="6">
+        <VCol
+          cols="12"
+          md="6"
+        >
           <VSkeletonLoader type="list-item-two-line@6" />
         </VCol>
-        <VCol cols="12" md="6">
+        <VCol
+          cols="12"
+          md="6"
+        >
           <VSkeletonLoader type="list-item-two-line@6" />
         </VCol>
       </VRow>
@@ -473,8 +500,8 @@ const goToList = () => {
               <VBtn
                 color="secondary"
                 variant="tonal"
-                @click="goBack"
                 :disabled="isLoading"
+                @click="goBack"
               >
                 <VIcon
                   start
@@ -486,8 +513,8 @@ const goToList = () => {
               <VBtn
                 color="error"
                 variant="outlined"
-                @click="goToList"
                 :disabled="isLoading"
+                @click="goToList"
               >
                 <VIcon
                   start

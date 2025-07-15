@@ -2,15 +2,17 @@
   <div>
     <!-- Header Controls -->
     <VCardText class="d-flex flex-wrap gap-4 align-center justify-space-between">
-      <h2 class="text-h4 font-weight-bold mb-0">{{ title }}</h2>
+      <h2 class="text-h4 font-weight-bold mb-0">
+        {{ title }}
+      </h2>
       <div class="d-flex gap-3 align-center flex-wrap">
         <VBtn 
           v-if="showDocumentationButton"
           color="info" 
           variant="tonal" 
           prepend-icon="tabler-help-circle" 
-          @click="showDocumentation = !showDocumentation"
           size="small"
+          @click="showDocumentation = !showDocumentation"
         >
           Panduan Filter
         </VBtn>
@@ -18,11 +20,16 @@
           color="primary" 
           variant="tonal" 
           prepend-icon="tabler-filter" 
-          @click="showFilters = !showFilters"
           :class="{ 'v-btn--active': showFilters }"
+          @click="showFilters = !showFilters"
         >
           Filter
-          <VChip v-if="activeFiltersCount > 0" size="small" color="error" class="ms-2">
+          <VChip
+            v-if="activeFiltersCount > 0"
+            size="small"
+            color="error"
+            class="ms-2"
+          >
             {{ activeFiltersCount }}
           </VChip>
         </VBtn>
@@ -44,15 +51,29 @@
     <VExpandTransition>
       <div v-show="showFilters">
         <VDivider />
-        <VCard flat class="ma-4" border>
+        <VCard
+          flat
+          class="ma-4"
+          border
+        >
           <VCardText class="pa-6">
             <div class="d-flex align-center mb-4">
-              <VIcon color="primary" class="me-2">tabler-adjustments-horizontal</VIcon>
-              <h3 class="text-h6 mb-0">Filter {{ title }}</h3>
+              <VIcon
+                color="primary"
+                class="me-2"
+              >
+                tabler-adjustments-horizontal
+              </VIcon>
+              <h3 class="text-h6 mb-0">
+                Filter {{ title }}
+              </h3>
             </div>
             
             <!-- Filter Items -->
-            <div v-if="localFilters.length > 0" class="mb-6">
+            <div
+              v-if="localFilters.length > 0"
+              class="mb-6"
+            >
               <VRow>
                 <VCol 
                   v-for="(filter, index) in localFilters" 
@@ -60,9 +81,19 @@
                   cols="12"
                   class="mb-2"
                 >
-                  <VCard variant="outlined" class="pa-4">
-                    <VRow align="center" no-gutters>
-                      <VCol cols="12" sm="3" class="pe-sm-2 mb-3 mb-sm-0">
+                  <VCard
+                    variant="outlined"
+                    class="pa-4"
+                  >
+                    <VRow
+                      align="center"
+                      no-gutters
+                    >
+                      <VCol
+                        cols="12"
+                        sm="3"
+                        class="pe-sm-2 mb-3 mb-sm-0"
+                      >
                         <VSelect
                           :model-value="filter.search_by"
                           :items="filterFields"
@@ -75,7 +106,11 @@
                           @update:model-value="updateFilterField(index, 'search_by', $event)"
                         />
                       </VCol>
-                      <VCol cols="12" sm="3" class="px-sm-2 mb-3 mb-sm-0">
+                      <VCol
+                        cols="12"
+                        sm="3"
+                        class="px-sm-2 mb-3 mb-sm-0"
+                      >
                         <VSelect
                           :model-value="filter.filter_type"
                           :items="getOperatorsForField(filter.search_by)"
@@ -88,7 +123,11 @@
                           @update:model-value="updateFilterField(index, 'filter_type', $event)"
                         />
                       </VCol>
-                      <VCol cols="12" sm="5" class="px-sm-2 mb-3 mb-sm-0">
+                      <VCol
+                        cols="12"
+                        sm="5"
+                        class="px-sm-2 mb-3 mb-sm-0"
+                      >
                         <FilterInput 
                           :model-value="filter"
                           :field-config="getFieldConfigForInput(filter.search_by)"
@@ -96,7 +135,11 @@
                           @apply="applyFilters"
                         />
                       </VCol>
-                      <VCol cols="12" sm="1" class="ps-sm-2 d-flex justify-center justify-sm-end">
+                      <VCol
+                        cols="12"
+                        sm="1"
+                        class="ps-sm-2 d-flex justify-center justify-sm-end"
+                      >
                         <VBtn
                           color="error"
                           variant="text"
@@ -112,9 +155,20 @@
             </div>
             
             <!-- Empty State -->
-            <div v-else class="text-center py-8 mb-6">
-              <VIcon size="48" color="primary" class="mb-3">tabler-filter-off</VIcon>
-              <p class="text-body-1 text-medium-emphasis mb-0">Belum ada filter ditambahkan</p>
+            <div
+              v-else
+              class="text-center py-8 mb-6"
+            >
+              <VIcon
+                size="48"
+                color="primary"
+                class="mb-3"
+              >
+                tabler-filter-off
+              </VIcon>
+              <p class="text-body-1 text-medium-emphasis mb-0">
+                Belum ada filter ditambahkan
+              </p>
             </div>
             
             <!-- Filter Actions -->
@@ -149,11 +203,21 @@
             <!-- Quick Search -->
             <VDivider class="mb-4" />
             <div class="d-flex align-center mb-3">
-              <VIcon color="primary" class="me-2">tabler-search</VIcon>
-              <h4 class="text-h6 mb-0">Pencarian Cepat</h4>
+              <VIcon
+                color="primary"
+                class="me-2"
+              >
+                tabler-search
+              </VIcon>
+              <h4 class="text-h6 mb-0">
+                Pencarian Cepat
+              </h4>
             </div>
             <VRow align="center">
-              <VCol cols="12" md="8">
+              <VCol
+                cols="12"
+                md="8"
+              >
                 <VTextField
                   v-model="quickSearch"
                   density="comfortable"
@@ -161,16 +225,19 @@
                   prepend-inner-icon="tabler-search"
                   variant="outlined"
                   hide-details
-                  @keyup.enter="applyQuickSearch"
                   clearable
+                  @keyup.enter="applyQuickSearch"
                 />
               </VCol>
-              <VCol cols="12" md="4">
+              <VCol
+                cols="12"
+                md="4"
+              >
                 <VBtn 
                   color="primary" 
-                  @click="applyQuickSearch" 
-                  prepend-icon="tabler-search"
+                  prepend-icon="tabler-search" 
                   block
+                  @click="applyQuickSearch"
                 >
                   Cari
                 </VBtn>
@@ -193,47 +260,54 @@ import FilterInput from './FilterInput.vue'
 const props = defineProps({
   title: {
     type: String,
-    default: 'Data'
+    default: 'Data',
   },
+
   // Fields configuration - can be array of objects or sample data to auto-generate
   fields: {
     type: [Array, Object],
-    required: true
+    required: true,
   },
+
   // Additional field configurations
   fieldConfigs: {
     type: Object,
-    default: () => ({})
+    default: () => ({}),
   },
+
   // Custom filter operators (optional)
   customOperators: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
+
   // Quick search configuration
   quickSearchFields: {
     type: Array,
-    default: () => ['name']
+    default: () => ['name'],
   },
   quickSearchPlaceholder: {
     type: String,
-    default: 'Cari data...'
+    default: 'Cari data...',
   },
+
   // Show documentation button
   showDocumentationButton: {
     type: Boolean,
-    default: true
+    default: true,
   },
+
   // Initial filters
   initialFilters: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
+
   // Initial quick search
   initialQuickSearch: {
     type: String,
-    default: ''
-  }
+    default: '',
+  },
 })
 
 // Emits
@@ -250,6 +324,7 @@ const filterFields = computed(() => {
   if (Array.isArray(props.fields)) {
     return props.fields
   }
+  
   return []
 })
 
@@ -262,6 +337,7 @@ const filterOperators = computed(() => {
   if (props.customOperators.length > 0) {
     return props.customOperators
   }
+  
   return getDefaultFilterOperators()
 })
 
@@ -271,18 +347,22 @@ const activeFiltersCount = computed(() => {
     if (['is_null', 'is_not_null'].includes(f.filter_type)) {
       return true
     }
+
     // For range operators, check if both values are provided
     if (['between', 'not_between'].includes(f.filter_type)) {
       return f.start_value && f.end_value
     }
+
     // For date range, check if both dates are provided
     if (f.filter_type === 'date_range' || isDateField(f.search_by)) {
       return f.date_from && f.date_to
     }
+
     // For list operators, check if values_list exists
     if (['in', 'not_in', 'array_overlap'].includes(f.filter_type)) {
       return f.values_list && f.values_list.trim()
     }
+
     // For other filters, check if search_query exists
     return f.search_query && f.search_query.trim()
   }).length
@@ -291,6 +371,7 @@ const activeFiltersCount = computed(() => {
 // Functions
 function addFilter() {
   const defaultField = filterFields.value[0]?.value || 'name'
+
   localFilters.value.push({
     search_by: defaultField,
     filter_type: 'like',
@@ -299,7 +380,7 @@ function addFilter() {
     date_to: '',
     start_value: '',
     end_value: '',
-    values_list: ''
+    values_list: '',
   })
 }
 
@@ -333,12 +414,12 @@ function updateFilterField(index, field, value) {
       date_to: '',
       start_value: '',
       end_value: '',
-      values_list: ''
+      values_list: '',
     }
   } else {
     localFilters.value[index] = {
       ...oldFilter,
-      [field]: value
+      [field]: value,
     }
   }
 }
@@ -356,15 +437,15 @@ function getOperatorsForField(fieldName) {
 
 function getFieldConfigForInput(fieldName) {
   // Custom function to ensure field config is properly returned
-  const config = getFieldConfig(fieldName, localFieldConfigs.value)
-  return config
+  return getFieldConfig(fieldName, localFieldConfigs.value)
 }
 
 function applyFilters() {
   const processedFilters = processFilters(localFilters.value)
+
   emit('apply-filters', {
     filters: processedFilters,
-    quickSearch: quickSearch.value?.trim() || ''
+    quickSearch: quickSearch.value?.trim() || '',
   })
 }
 
@@ -384,24 +465,28 @@ function processFilters(filters) {
     if (['is_null', 'is_not_null'].includes(f.filter_type)) {
       return true
     }
+
     // For range operators, check if both values are provided
     if (['between', 'not_between'].includes(f.filter_type)) {
       return f.start_value && f.end_value
     }
+
     // For date range, check if both dates are provided
     if (f.filter_type === 'date_range' || isDateField(f.search_by)) {
       return f.date_from && f.date_to
     }
+
     // For list operators, check if values_list exists
     if (['in', 'not_in', 'array_overlap'].includes(f.filter_type)) {
       return f.values_list && f.values_list.trim()
     }
+
     // For other filters, check if search_query exists
     return f.search_query && f.search_query.trim()
   }).map(f => {
     const filter = {
       search_by: f.search_by,
-      filter_type: f.filter_type
+      filter_type: f.filter_type,
     }
     
     // Handle different input types based on operator
@@ -422,15 +507,16 @@ function processFilters(filters) {
 
 function isDateField(field) {
   const fieldConfig = getFieldConfig(field, localFieldConfigs.value)
+  
   return fieldConfig?.type === 'date' || ['birth_date', 'createdAt', 'updatedAt', 'created_at', 'updated_at'].includes(field)
 }
 
 // Watch for external changes
-watch(() => props.initialFilters, (newFilters) => {
+watch(() => props.initialFilters, newFilters => {
   localFilters.value = [...newFilters]
 }, { deep: true })
 
-watch(() => props.initialQuickSearch, (newValue) => {
+watch(() => props.initialQuickSearch, newValue => {
   quickSearch.value = newValue
 })
 </script>

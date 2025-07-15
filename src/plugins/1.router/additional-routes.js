@@ -12,9 +12,10 @@ export const redirects = [
       // const userData = useCookie('userData')
       // const userRole = userData.value?.role
       // if (userRole === 'admin')
-        return { name: 'dashboards-crm' }
+      return { name: 'dashboards-crm' }
+
       // if (userRole === 'client')
-        // return { name: 'access-control' }
+      // return { name: 'access-control' }
       
       return { name: 'login', query: to.query }
     },
@@ -68,6 +69,7 @@ export const routes = [
     name: 'apps-ecommerce-dashboard',
     component: () => import('@/pages/dashboards/ecommerce.vue'),
   },
+
   // Profile
   {
     path: '/profile',
@@ -95,5 +97,40 @@ export const routes = [
     path: '/rme/kunjungan/edit/:id',
     name: 'rme-kunjungan-edit-id',
     component: () => import('@/pages/rme/kunjungan/edit/[id].vue'),
+  },
+  
+  // Transaction Billings Routes
+  {
+    path: '/transaction/billings',
+    name: 'transaction-billings',
+    component: () => import('@/pages/transaction/billings/index.vue'),
+  },
+  {
+    path: '/transaction/billings/create',
+    name: 'transaction-billings-create',
+    component: () => import('@/pages/transaction/billings/create.vue'),
+  },
+  {
+    path: '/transaction/billings/:id',
+    name: 'transaction-billings-id',
+    component: () => import('@/pages/transaction/billings/[id].vue'),
+  },
+    {
+    path: '/transaction/billings/edit/:id',
+    name: 'transaction-billings-edit-id',
+    component: () => import('@/pages/transaction/billings/edit/[id].vue'),
+  },
+  // Removed consultation route from billings as it doesn't exist
+  
+  // Transaction Consultations Routes
+  {
+    path: '/transaction/consultations',
+    name: 'transaction-consultations',
+    component: () => import('@/pages/transaction/consultations/index.vue'),
+  },
+  {
+    path: '/transaction/consultations/:id',
+    name: 'transaction-consultations-id',
+    component: () => import('@/pages/transaction/consultations/[id].vue'),
   },
 ]

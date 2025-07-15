@@ -25,7 +25,7 @@ export function generateFilterFields(fieldsOrSampleData, fieldConfigs = {}) {
       title,
       value: key,
       type: fieldConfig.type || inferFieldType(key, value),
-      ...fieldConfig
+      ...fieldConfig,
     })
   }
 
@@ -69,7 +69,7 @@ function generateFieldTitle(key) {
     'status': 'Status',
     'type': 'Tipe',
     'category': 'Kategori',
-    'description': 'Deskripsi'
+    'description': 'Deskripsi',
   }
 
   if (titleMap[key]) {
@@ -192,16 +192,17 @@ export function generateFieldConfigs(sampleData) {
 
   for (const [key, value] of Object.entries(sampleData)) {
     const type = inferFieldType(key, value)
+
     configs[key] = {
       type,
-      title: generateFieldTitle(key)
+      title: generateFieldTitle(key),
     }
 
     // Add specific configurations for certain field types
     if (key === 'gender') {
       configs[key].options = [
         { title: 'Laki-laki', value: 'MALE' },
-        { title: 'Perempuan', value: 'FEMALE' }
+        { title: 'Perempuan', value: 'FEMALE' },
       ]
     }
 
@@ -209,14 +210,14 @@ export function generateFieldConfigs(sampleData) {
       configs[key].options = [
         { title: 'Diberikan', value: 'GIVEN' },
         { title: 'Menunggu', value: 'PENDING' },
-        { title: 'Ditolak', value: 'DENIED' }
+        { title: 'Ditolak', value: 'DENIED' },
       ]
     }
 
     if (key === 'is_active') {
       configs[key].options = [
         { title: 'Aktif', value: 'true' },
-        { title: 'Nonaktif', value: 'false' }
+        { title: 'Nonaktif', value: 'false' },
       ]
     }
   }
@@ -245,7 +246,7 @@ export function createDynamicFilterConfig(apiResponse, customConfigs = {}) {
   
   return {
     fields: generateFilterFields(flattenedData, customConfigs),
-    fieldConfigs: { ...generateFieldConfigs(flattenedData), ...customConfigs }
+    fieldConfigs: { ...generateFieldConfigs(flattenedData), ...customConfigs },
   }
 }
 
@@ -280,6 +281,7 @@ function flattenObject(obj, prefix = '') {
  */
 export function isDateField(fieldName, fieldConfigs = {}) {
   const config = getFieldConfig(fieldName, fieldConfigs)
+  
   return config?.type === 'date' || 
          ['birth_date', 'createdAt', 'updatedAt', 'created_at', 'updated_at'].includes(fieldName)
 }
@@ -292,6 +294,7 @@ export function isDateField(fieldName, fieldConfigs = {}) {
  */
 export function isNumericField(fieldName, fieldConfigs = {}) {
   const config = getFieldConfig(fieldName, fieldConfigs)
+  
   return config?.type === 'number' || 
          ['age', 'patient_number', 'phone', 'id'].includes(fieldName)
 } 
@@ -302,89 +305,34 @@ export function isNumericField(fieldName, fieldConfigs = {}) {
  * @returns {Array} Array of available operators for the field type
  */
 export function getOperatorsByFieldType(fieldType) {
+  // Custom operator sets for each type
   const operatorGroups = {
-    // Text-based fields (text, email, tel)
     text: [
-      { title: 'Sama dengan (=)', value: 'equal' },
-      { title: 'Tidak sama dengan (≠)', value: 'not_equal' },
       { title: 'Mengandung (~)', value: 'like' },
-      { title: 'Mengandung (case insensitive)', value: 'ilike' },
-      { title: 'Tidak mengandung (!~)', value: 'not_like' },
-      { title: 'Tidak mengandung (case insensitive)', value: 'not_ilike' },
-      { title: 'Dimulai dengan (^)', value: 'starts_with' },
-      { title: 'Diakhiri dengan ($)', value: 'ends_with' },
-      { title: 'Kosong (∅)', value: 'is_null' },
-      { title: 'Tidak kosong (∃)', value: 'is_not_null' },
-      { title: 'Dalam daftar (∈)', value: 'in' },
-      { title: 'Tidak dalam daftar (∉)', value: 'not_in' }
     ],
-
-    // Number fields
+    email: [
+      { title: 'Mengandung (~)', value: 'like' },
+    ],
+    tel: [
+      { title: 'Mengandung (~)', value: 'like' },
+    ],
     number: [
       { title: 'Sama dengan (=)', value: 'equal' },
-      { title: 'Tidak sama dengan (≠)', value: 'not_equal' },
-      { title: 'Lebih besar dari (>)', value: 'greater_than' },
-      { title: 'Lebih besar atau sama dengan (≥)', value: 'greater_equal' },
-      { title: 'Lebih kecil dari (<)', value: 'less_than' },
-      { title: 'Lebih kecil atau sama dengan (≤)', value: 'less_equal' },
-      { title: 'Dalam rentang ([ ])', value: 'between' },
-      { title: 'Tidak dalam rentang (![ ])', value: 'not_between' },
-      { title: 'Kosong (∅)', value: 'is_null' },
-      { title: 'Tidak kosong (∃)', value: 'is_not_null' },
-      { title: 'Dalam daftar (∈)', value: 'in' },
-      { title: 'Tidak dalam daftar (∉)', value: 'not_in' }
     ],
-
-    // Date fields
-    date: [
+    integer: [
       { title: 'Sama dengan (=)', value: 'equal' },
-      { title: 'Tidak sama dengan (≠)', value: 'not_equal' },
-      { title: 'Setelah tanggal (>)', value: 'greater_than' },
-      { title: 'Setelah atau sama dengan (≥)', value: 'greater_equal' },
-      { title: 'Sebelum tanggal (<)', value: 'less_than' },
-      { title: 'Sebelum atau sama dengan (≤)', value: 'less_equal' },
-      { title: 'Dalam rentang tanggal ([ ])', value: 'date_range' },
-      { title: 'Kosong (∅)', value: 'is_null' },
-      { title: 'Tidak kosong (∃)', value: 'is_not_null' }
     ],
-
-    // Select/dropdown fields
+    decimal: [
+      { title: 'Sama dengan (=)', value: 'equal' },
+    ],
     select: [
       { title: 'Sama dengan (=)', value: 'equal' },
-      { title: 'Tidak sama dengan (≠)', value: 'not_equal' },
-      { title: 'Dalam daftar (∈)', value: 'in' },
-      { title: 'Tidak dalam daftar (∉)', value: 'not_in' },
-      { title: 'Kosong (∅)', value: 'is_null' },
-      { title: 'Tidak kosong (∃)', value: 'is_not_null' }
     ],
-
-    // Email fields (extends text with specific patterns)
-    email: [
-      { title: 'Sama dengan (=)', value: 'equal' },
-      { title: 'Tidak sama dengan (≠)', value: 'not_equal' },
-      { title: 'Mengandung (~)', value: 'like' },
-      { title: 'Mengandung (case insensitive)', value: 'ilike' },
-      { title: 'Tidak mengandung (!~)', value: 'not_like' },
-      { title: 'Diakhiri dengan domain ($)', value: 'ends_with' },
-      { title: 'Kosong (∅)', value: 'is_null' },
-      { title: 'Tidak kosong (∃)', value: 'is_not_null' },
-      { title: 'Dalam daftar (∈)', value: 'in' },
-      { title: 'Tidak dalam daftar (∉)', value: 'not_in' }
+    date: [
+      { title: 'Antara (range)', value: 'date_range' },
     ],
-
-    // Phone/tel fields (extends text with number patterns)
-    tel: [
-      { title: 'Sama dengan (=)', value: 'equal' },
-      { title: 'Tidak sama dengan (≠)', value: 'not_equal' },
-      { title: 'Mengandung (~)', value: 'like' },
-      { title: 'Dimulai dengan (^)', value: 'starts_with' },
-      { title: 'Diakhiri dengan ($)', value: 'ends_with' },
-      { title: 'Kosong (∅)', value: 'is_null' },
-      { title: 'Tidak kosong (∃)', value: 'is_not_null' },
-      { title: 'Dalam daftar (∈)', value: 'in' },
-      { title: 'Tidak dalam daftar (∉)', value: 'not_in' }
-    ]
   }
+
 
   // Return operators for the specified field type, fallback to text if not found
   return operatorGroups[fieldType] || operatorGroups.text
