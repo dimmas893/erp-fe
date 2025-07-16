@@ -320,7 +320,7 @@ const loadTreatments = async (branchId = null) => {
       }
       console.log('🔍 Mapped treatment item:', mappedItem)
       return mappedItem
-    }))
+      }))
     
     treatments.value = treatmentDetails
     console.log('✅ Treatments loaded with pricing:', treatments.value)
@@ -362,7 +362,7 @@ const loadProducts = async (branchId = null) => {
         priceFormatted: item.final_price_formatted,
         raw: item
       }
-    }))
+      }))
     
     products.value = productDetails
     console.log('✅ Products loaded with pricing:', products.value)
@@ -792,9 +792,9 @@ const submitForm = async () => {
       body: submitData,
     })
 
-    // Tambah insert visit consultation jika serviceType konsulta 
-      // TODO: Ganti hardcode dengan value dari UI jika sudah ada
+    // Tambah insert visit consultation jika serviceType konsulta  
       const consultationPayload = {
+        billing_id: response.data.id,
         visit_id: visitId,
         doctor_id: typeof selectedDoctor.value === 'object' && selectedDoctor.value !== null
           ? selectedDoctor.value.value
@@ -907,9 +907,11 @@ const goBack = () => {
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Cabang *
+            </label>
             <AppCombobox
               v-model="selectedBranch"
-              label="Cabang"
               placeholder="Pilih cabang..."
               :items="branches"
               :loading="loadingBranches"
@@ -923,9 +925,11 @@ const goBack = () => {
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Jenis Layanan *
+            </label>
             <AppCombobox
               v-model="serviceType"
-              label="Jenis Layanan"
               placeholder="Pilih jenis layanan..."
               :items="[
                 { title: 'Konsultasi', value: 'consultation' },
@@ -945,9 +949,11 @@ const goBack = () => {
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Jenis Konsultasi *
+            </label>
             <AppCombobox
               v-model="selectedConsultationService"
-              label="Jenis Konsultasi"
               placeholder="Pilih jenis konsultasi..."
               :items="consultationServices"
               :loading="loadingConsultationServices"
@@ -963,9 +969,11 @@ const goBack = () => {
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Kunjungan *
+            </label>
             <AppCombobox
               v-model="formData.visit_id"
-              label="Kunjungan"
               placeholder="Pilih kunjungan..."
               :items="visits"
               :loading="loadingVisits"
@@ -981,9 +989,11 @@ const goBack = () => {
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Dokter *
+            </label>
             <AppCombobox
               v-model="selectedDoctor"
-              label="Dokter"
               placeholder="Cari dokter..."
               :items="doctors"
               :loading="loadingDoctors"
@@ -993,15 +1003,15 @@ const goBack = () => {
               hide-details="auto"
             />
           </VCol>
-          
+
           <!-- Consultation Fee (only for consultation) -->
-          <VCol 
+          <VCol
             v-if="selectedBranch && isConsultationService" 
             cols="12"
             md="6"
           >
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Biaya Konsultasi
+              Biaya Konsultasi *
             </label>
             <VTextField
               v-model="consultationFee"
@@ -1020,9 +1030,11 @@ const goBack = () => {
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Tindakan *
+            </label>
             <AppCombobox
               v-model="selectedTreatment"
-              label="Tindakan"
               placeholder="Pilih tindakan..."
               :items="treatments"
               :loading="loadingTreatments"
@@ -1038,9 +1050,11 @@ const goBack = () => {
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Terapis *
+            </label>
             <AppCombobox
               v-model="selectedTherapist"
-              label="Terapis"
               placeholder="Pilih terapis..."
               :items="therapists"
               :loading="loadingTherapists"
@@ -1054,9 +1068,11 @@ const goBack = () => {
           <VCol
           v-if="selectedBranch && serviceType.value === 'product'" 
            cols="12" md="6">
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Produk (bisa lebih dari satu)
+            </label>
             <AppCombobox
               v-model="selectedProducts"
-              label="Produk (bisa lebih dari satu)"
               placeholder="Pilih produk..."
               :items="products"
               :loading="loadingProducts"
@@ -1072,15 +1088,85 @@ const goBack = () => {
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Promo (Opsional)
+            </label>
             <AppCombobox
               v-model="selectedPromo"
-              label="Promo (Opsional)"
               placeholder="Pilih promo..."
               :items="promos"
               :loading="loadingPromos"
               clearable
               hide-details="auto"
             />
+          </VCol>
+        </VRow>
+
+        <!-- Static Fee Section -->
+        <VRow v-if="(isConsultationService && consultationFee) || (isTreatmentService && selectedTreatment.length) || (isProductService && selectedProducts.length)">
+          <VCol cols="12">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="text-h6 mb-4">
+                <VIcon start color="primary">
+                  tabler-calculator
+                </VIcon>
+                Ringkasan Biaya
+              </VCardTitle>
+              <VRow>
+                <VCol cols="12" md="3">
+                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                    Biaya Konsultasi
+                  </label>
+                  <VTextField
+                    :model-value="isConsultationService ? consultationFee : 0"
+                    type="number"
+                    prefix="Rp"
+                    readonly
+                    density="comfortable"
+                    variant="outlined"
+                  />
+                </VCol>
+                <VCol cols="12" md="3">
+                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                    Biaya Tindakan
+                  </label>
+                  <VTextField
+                    :model-value="isTreatmentService ? calculateTreatmentTotal : 0"
+                    type="number"
+                    prefix="Rp"
+                    readonly
+                    density="comfortable"
+                    variant="outlined"
+                  />
+                </VCol>
+                <VCol cols="12" md="3">
+                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                    Biaya Produk
+                  </label>
+                  <VTextField
+                    :model-value="isProductService ? calculateProductTotal : 0"
+                    type="number"
+                    prefix="Rp"
+                    readonly
+                    density="comfortable"
+                    variant="outlined"
+                  />
+                </VCol>
+                <VCol cols="12" md="3">
+                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                    Total Biaya
+                  </label>
+                  <VTextField
+                    :model-value="formData.grand_total || 0"
+                    type="number"
+                    prefix="Rp"
+                    readonly
+                    density="comfortable"
+                    variant="outlined"
+                  />
+                </VCol>
+              </VRow>
+            </VCard>
           </VCol>
         </VRow>
         
@@ -1094,7 +1180,7 @@ const goBack = () => {
                     tabler-calculator
                   </VIcon>
                   <h6 class="text-subtitle-1 font-weight-medium mb-0">
-                    Ringkasan Biaya
+                    Detail Perhitungan
                   </h6>
                 </div>
                 
