@@ -11,6 +11,14 @@ export default [
         title: 'Konsultasi',
         to: 'transaction-consultations',
       },
+      {
+        title: 'Tindakan',
+        to: 'transaction-tindakan',
+      },
+      {
+        title: 'Produk',
+        to: 'transaction-produk',
+      },
 
       // {
       //   title: 'Tambah Billing',

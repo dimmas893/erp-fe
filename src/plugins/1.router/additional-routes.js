@@ -133,4 +133,28 @@ export const routes = [
     name: 'transaction-consultations-id',
     component: () => import('@/pages/transaction/consultations/[id].vue'),
   },
+  
+  // Transaction Treatments Routes
+  {
+    path: '/transaction/tindakan',
+    name: 'transaction-tindakan',
+    component: () => import('@/pages/transaction/tindakan/index.vue'),
+  },
+  {
+    path: '/transaction/tindakan/:id',
+    name: 'transaction-tindakan-id',
+    component: () => import('@/pages/transaction/tindakan/[id].vue'),
+  },
+  
+  // Transaction Products Routes
+  {
+    path: '/transaction/produk',
+    name: 'transaction-produk',
+    component: () => import('@/pages/transaction/produk/index.vue'),
+  },
+  {
+    path: '/transaction/produk/:id',
+    name: 'transaction-produk-id',
+    component: () => import('@/pages/transaction/produk/[id].vue'),
+  },
 ]
