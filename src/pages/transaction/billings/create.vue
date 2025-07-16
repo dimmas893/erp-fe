@@ -792,7 +792,8 @@ const submitForm = async () => {
       body: submitData,
     })
 
-    // Tambah insert visit consultation jika serviceType konsulta  
+        // Tambah insert visit consultation jika serviceType konsultasi
+    if (isConsultationService.value && consultationFee.value) {
       const consultationPayload = {
         billing_id: response.data.id,
         visit_id: visitId,
@@ -816,7 +817,101 @@ const submitForm = async () => {
           title: 'Gagal Membuat Visit Consultation',
           text: 'Tagihan berhasil, tapi pembuatan konsultasi gagal. Silakan cek data kunjungan.'
         })
-      } 
+      }
+    }
+
+    // Tambah insert visit treatment jika serviceType tindakan
+    if (isTreatmentService.value && selectedTreatment.value.length > 0) {
+      console.log('🔍 Creating visit treatments for selected treatments:', selectedTreatment.value)
+      
+      for (const treatmentId of selectedTreatment.value) {
+        console.log('🔄 Processing treatment ID:', treatmentId)
+        
+        const treatment = treatments.value.find(t => t.value === treatmentId)
+        if (!treatment) {
+          console.warn('⚠️ Treatment not found for ID:', treatmentId)
+          continue
+        }
+        
+        console.log('✅ Found treatment:', treatment)
+
+        // Get doctor and therapist for this specific treatment
+        // For now, use the global selectedDoctor and selectedTherapist
+        // In the future, this can be enhanced to use per-treatment selections
+        const doctorId = typeof selectedDoctor.value === 'object' && selectedDoctor.value !== null
+          ? selectedDoctor.value.value
+          : selectedDoctor.value
+        const therapistId = typeof selectedTherapist.value === 'object' && selectedTherapist.value !== null
+          ? selectedTherapist.value.value
+          : selectedTherapist.value
+
+        console.log('🔍 Using doctorId:', doctorId, 'therapistId:', therapistId)
+
+        // Validate required fields
+        if (!doctorId) {
+          console.error('❌ No doctor ID found for treatment:', treatmentId)
+          await showErrorAlert({
+            title: 'Dokter Belum Dipilih',
+            text: `Dokter untuk treatment "${treatment.title}" belum dipilih. Silakan pilih dokter terlebih dahulu.`
+          })
+          continue
+        }
+
+        if (!therapistId) {
+          console.error('❌ No therapist ID found for treatment:', treatmentId)
+          await showErrorAlert({
+            title: 'Terapis Belum Dipilih',
+            text: `Terapis untuk treatment "${treatment.title}" belum dipilih. Silakan pilih terapis terlebih dahulu.`
+          })
+          continue
+        }
+
+        const visitTreatmentPayload = {
+          visit_id: visitId,
+          treatment_id: treatmentId,
+          doctor_id: doctorId,
+          therapist_id: therapistId,
+          quantity: 1,
+          unit_price: treatment.price.toString(),
+          total_price: treatment.price.toString(),
+          treatment_notes: `Treatment created from billing ${response.data.id}`,
+          billing_id: response.data.id
+        }
+
+        console.log('📤 Creating visit treatment payload:', JSON.stringify(visitTreatmentPayload, null, 2))
+
+        try {
+          console.log('🔄 Making API call to /rme/visit-treatments...')
+          const visitTreatmentResponse = await $api('/rme/visit-treatments', {
+            method: 'POST',
+            body: visitTreatmentPayload,
+          })
+          console.log('✅ Visit treatment created successfully:', visitTreatmentResponse.data)
+        } catch (visitTreatmentError) {
+          console.error('❌ Error creating visit treatment:', visitTreatmentError)
+          console.error('❌ Error details:', {
+            message: visitTreatmentError.message,
+            response: visitTreatmentError.response,
+            data: visitTreatmentError.data,
+            status: visitTreatmentError.response?.status,
+            statusText: visitTreatmentError.response?.statusText
+          })
+          
+          // Show more detailed error message
+          let errorMessage = `Tagihan berhasil, tapi pembuatan treatment "${treatment.title}" gagal.`
+          if (visitTreatmentError.response?.data?.response_message) {
+            errorMessage += ` Error: ${visitTreatmentError.response.data.response_message}`
+          } else if (visitTreatmentError.message) {
+            errorMessage += ` Error: ${visitTreatmentError.message}`
+          }
+          
+          await showErrorAlert(visitTreatmentError, {
+            title: 'Gagal Membuat Visit Treatment',
+            text: errorMessage
+          })
+        }
+      }
+    } 
     console.log('response', serviceType.value)
     await showSuccessAlert(
       `Tagihan berhasil dibuat dengan ID: ${response.data.id}`,
@@ -1045,6 +1140,27 @@ const goBack = () => {
               hide-details="auto"
             />
           </VCol>
+          <!-- Doctor selection for treatment service -->
+          <VCol 
+            v-if="selectedBranch && isTreatmentService" 
+            cols="12"
+            md="6"
+          >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Dokter *
+            </label>
+            <AppCombobox
+              v-model="selectedDoctor"
+              placeholder="Pilih dokter..."
+              :items="doctors"
+              :loading="loadingDoctors"
+              :rules="[requiredValidator]"
+              required
+              clearable
+              hide-details="auto"
+            />
+          </VCol>
+          <!-- Therapist selection for treatment service -->
           <VCol
             v-if="selectedBranch && isTreatmentService" 
             cols="12"
