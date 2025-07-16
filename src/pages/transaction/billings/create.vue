@@ -824,20 +824,28 @@ const submitForm = async () => {
     if (isTreatmentService.value && selectedTreatment.value.length > 0) {
       console.log('🔍 Creating visit treatments for selected treatments:', selectedTreatment.value)
       
+      const createdTreatments = []
+      const failedTreatments = []
+      
       for (const treatmentId of selectedTreatment.value) {
-        console.log('🔄 Processing treatment ID:', treatmentId)
+        // Ensure treatmentId is properly extracted from Proxy object
+        const actualTreatmentId = typeof treatmentId === 'object' && treatmentId !== null 
+          ? treatmentId.value || treatmentId
+          : treatmentId
         
-        const treatment = treatments.value.find(t => t.value === treatmentId)
+        console.log('🔄 Processing treatment ID:', actualTreatmentId)
+        console.log('🔄 Original treatmentId object:', treatmentId)
+        
+        const treatment = treatments.value.find(t => t.value === actualTreatmentId)
         if (!treatment) {
-          console.warn('⚠️ Treatment not found for ID:', treatmentId)
+          console.warn('⚠️ Treatment not found for ID:', actualTreatmentId)
+          failedTreatments.push({ id: actualTreatmentId, reason: 'Treatment not found in list' })
           continue
         }
         
         console.log('✅ Found treatment:', treatment)
 
         // Get doctor and therapist for this specific treatment
-        // For now, use the global selectedDoctor and selectedTherapist
-        // In the future, this can be enhanced to use per-treatment selections
         const doctorId = typeof selectedDoctor.value === 'object' && selectedDoctor.value !== null
           ? selectedDoctor.value.value
           : selectedDoctor.value
@@ -849,26 +857,28 @@ const submitForm = async () => {
 
         // Validate required fields
         if (!doctorId) {
-          console.error('❌ No doctor ID found for treatment:', treatmentId)
-          await showErrorAlert({
-            title: 'Dokter Belum Dipilih',
-            text: `Dokter untuk treatment "${treatment.title}" belum dipilih. Silakan pilih dokter terlebih dahulu.`
+          console.error('❌ No doctor ID found for treatment:', actualTreatmentId)
+          failedTreatments.push({ 
+            id: actualTreatmentId, 
+            name: treatment.title,
+            reason: 'Dokter belum dipilih' 
           })
           continue
         }
 
         if (!therapistId) {
-          console.error('❌ No therapist ID found for treatment:', treatmentId)
-          await showErrorAlert({
-            title: 'Terapis Belum Dipilih',
-            text: `Terapis untuk treatment "${treatment.title}" belum dipilih. Silakan pilih terapis terlebih dahulu.`
+          console.error('❌ No therapist ID found for treatment:', actualTreatmentId)
+          failedTreatments.push({ 
+            id: actualTreatmentId, 
+            name: treatment.title,
+            reason: 'Terapis belum dipilih' 
           })
           continue
         }
 
         const visitTreatmentPayload = {
           visit_id: visitId,
-          treatment_id: treatmentId,
+          treatment_id: actualTreatmentId,
           doctor_id: doctorId,
           therapist_id: therapistId,
           quantity: 1,
@@ -887,6 +897,11 @@ const submitForm = async () => {
             body: visitTreatmentPayload,
           })
           console.log('✅ Visit treatment created successfully:', visitTreatmentResponse.data)
+          createdTreatments.push({
+            id: actualTreatmentId,
+            name: treatment.title,
+            response: visitTreatmentResponse.data
+          })
         } catch (visitTreatmentError) {
           console.error('❌ Error creating visit treatment:', visitTreatmentError)
           console.error('❌ Error details:', {
@@ -905,11 +920,29 @@ const submitForm = async () => {
             errorMessage += ` Error: ${visitTreatmentError.message}`
           }
           
-          await showErrorAlert(visitTreatmentError, {
-            title: 'Gagal Membuat Visit Treatment',
-            text: errorMessage
+          failedTreatments.push({ 
+            id: actualTreatmentId, 
+            name: treatment.title,
+            reason: errorMessage,
+            error: visitTreatmentError
           })
         }
+      }
+      
+      // Show summary of created and failed treatments
+      if (createdTreatments.length > 0) {
+        console.log('✅ Successfully created treatments:', createdTreatments)
+      }
+      
+      if (failedTreatments.length > 0) {
+        console.log('❌ Failed to create treatments:', failedTreatments)
+        
+        // Show detailed error message for failed treatments
+        const failedNames = failedTreatments.map(f => f.name).join(', ')
+        await showErrorAlert({
+          title: 'Beberapa Treatment Gagal Dibuat',
+          text: `Tagihan berhasil dibuat, tetapi ${failedTreatments.length} treatment gagal: ${failedNames}. Silakan cek data treatment.`
+        })
       }
     } 
     console.log('response', serviceType.value)
