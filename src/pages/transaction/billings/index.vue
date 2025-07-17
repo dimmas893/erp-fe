@@ -18,13 +18,32 @@ meta:
       @apply-quick-search="handleApplyQuickSearch"
     >
       <template #actions>
-        <VBtn
-          color="primary"
-          prepend-icon="tabler-plus"
-          :to="{ name: 'transaction-billings-create' }"
-        >
-          Tambah Tagihan
-        </VBtn>
+        <div class="d-flex gap-2">
+          <VBtn
+            color="primary"
+            prepend-icon="tabler-stethoscope"
+            :to="{ name: 'transaction-billings-consultation-create' }"
+            variant="tonal"
+          >
+            Konsultasi
+          </VBtn>
+          <VBtn
+            color="warning"
+            prepend-icon="tabler-activity"
+            :to="{ name: 'transaction-billings-treatment-create' }"
+            variant="tonal"
+          >
+            Treatment
+          </VBtn>
+          <VBtn
+            color="success"
+            prepend-icon="tabler-package"
+            :to="{ name: 'transaction-billings-product-create' }"
+            variant="tonal"
+          >
+            Produk
+          </VBtn>
+        </div>
       </template>
     </DynamicFilter>
     
@@ -229,6 +248,7 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
+  { title: 'Billing Number', key: 'billing_number' },
   { title: 'Total Amount', key: 'total_amount' },
   { title: 'Discount Amount', key: 'discount_amount' },
   { title: 'Tax Amount', key: 'tax_amount' },

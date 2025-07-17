@@ -106,11 +106,6 @@ export const routes = [
     component: () => import('@/pages/transaction/billings/index.vue'),
   },
   {
-    path: '/transaction/billings/create',
-    name: 'transaction-billings-create',
-    component: () => import('@/pages/transaction/billings/create.vue'),
-  },
-  {
     path: '/transaction/billings/:id',
     name: 'transaction-billings-id',
     component: () => import('@/pages/transaction/billings/[id].vue'),

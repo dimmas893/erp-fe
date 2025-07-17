@@ -14,7 +14,7 @@ import { VForm } from 'vuetify/components/VForm'
 // Initialize router
 const router = useRouter()
 
-// Update form data structure
+// Form data structure for consultation
 const formData = ref({
   patient_id: '',
   visit_id: '',
@@ -58,15 +58,6 @@ const branches = ref([])
 const loadingBranches = ref(false)
 const doctors = ref([])
 const loadingDoctors = ref(false)
-const treatments = ref([])
-const loadingTreatments = ref(false)
-const products = ref([])
-const loadingProducts = ref(false)
-const therapists = ref([])
-const loadingTherapists = ref(false)
-
-// Tambah state untuk multi select treatment
-const selectedTreatment = ref([])
 
 // Tambah state untuk jenis konsultasi
 const consultationServices = ref([])
@@ -74,14 +65,11 @@ const loadingConsultationServices = ref(false)
 const selectedConsultationService = ref('')
 const consultationFee = ref('') // Tambah state untuk fee konsultasi
 
-// Set default value of serviceType to empty string
-const serviceType = ref('') // '' means not selected
+// Set default value of serviceType to consultation
+const serviceType = ref('consultation') // Fixed to consultation
 // Change selectedBranch to be a string (branch id)
 const selectedBranch = ref('') // string, not object
 const selectedDoctor = ref('')
-const selectedTherapist = ref('')
-const selectedTreatments = ref([])
-const selectedProducts = ref([])
 
 // onMounted: load initial data
 onMounted(async () => {
@@ -212,172 +200,6 @@ const loadDoctors = async branchId => {
   }
 }
 
-// Fetch therapists for selected branch
-const loadTherapists = async branchId => {
-  console.log('loadTherapists called with:', branchId)
-  if (!branchId) {
-    therapists.value = []
-    
-    return
-  }
-  try {
-    loadingTherapists.value = true
-
-
-    // Try therapists endpoint first, fallback to doctors if not available
-    const response = await $api('/hris/therapists/paginated', {
-      method: 'POST',
-      body: {
-        page: 1,
-        per_page: 100,
-        sort_by: 'created_at',
-        sort_order: 'desc',
-        filters: [
-          {
-            search_by: 'branch_id',
-            filter_type: 'equal',
-            search_query: branchId,
-          },
-        ],
-      },
-    })
-
-    therapists.value = response.data.map(therapist => ({
-      title: therapist.name,
-      value: therapist.id,
-    }))
-    console.log('Therapists loaded:', therapists.value)
-  } catch (error) {
-    console.error('Error fetching therapists, using doctors as fallback:', error)
-
-    // Fallback: use doctors as therapists if therapists endpoint doesn't exist
-    // Try to get doctors for this branch as fallback
-    try {
-      const doctorResponse = await $api('/hris/doctors/paginated', {
-        method: 'POST',
-        body: {
-          page: 1,
-          per_page: 100,
-          sort_by: 'created_at',
-          sort_order: 'desc',
-          filters: [
-            {
-              search_by: 'branch_id',
-              filter_type: 'equal',
-              search_query: branchId,
-            },
-          ],
-        },
-      })
-
-      therapists.value = doctorResponse.data.map(doctor => ({
-        title: doctor.name,
-        value: doctor.id,
-      }))
-    } catch (fallbackError) {
-      console.error('Error fetching doctors as fallback:', fallbackError)
-      therapists.value = []
-    }
-  } finally {
-    loadingTherapists.value = false
-  }
-}
-
-// Fetch treatments for selected branch using branch-pricing endpoint
-const loadTreatments = async (branchId = null) => {
-  if (!branchId) {
-    treatments.value = []
-    
-    return
-  }
-  try {
-    loadingTreatments.value = true
-
-    const response = await $api(`/wms/branch-pricing/branch/${branchId}`, {
-      method: 'GET',
-    })
-    
-    const treatmentItems = (response.data || []).filter(item => item.item_type === 'TREATMENT')
-    console.log('🔍 Raw treatment items from API:', treatmentItems)
-    
-    // Fetch treatment details for each item
-    const treatmentDetails = await Promise.all(treatmentItems.map(async item => {
-      let treatmentName = item.item_id
-      try {
-        const detail = await $api(`/crm/treatments/${item.item_id}`, { method: 'GET' })
-        treatmentName = detail.data?.name || item.item_id
-        console.log('✅ Treatment detail fetched:', detail.data)
-      } catch (e) {
-        console.log('⚠️ Failed to fetch treatment detail for ID:', item.item_id, 'Error:', e)
-      }
-      
-      const mappedItem = {
-        title: `${treatmentName} - ${item.final_price_formatted}`,
-        value: item.item_id,
-        price: parseFloat(item.final_price),
-        priceFormatted: item.final_price_formatted,
-        raw: item,
-      }
-      console.log('🔍 Mapped treatment item:', mappedItem)
-      return mappedItem
-      }))
-    
-    treatments.value = treatmentDetails
-    console.log('✅ Treatments loaded with pricing:', treatments.value)
-  } catch (error) {
-    await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Treatment',
-      text: 'Tidak dapat memuat daftar treatment cabang. Silakan refresh halaman.',
-    })
-  } finally {
-    loadingTreatments.value = false
-  }
-}
-
-// Fetch products for selected branch using branch-pricing endpoint
-const loadProducts = async (branchId = null) => {
-  if (!branchId) {
-    products.value = []
-    return
-  }
-  try {
-    loadingProducts.value = true
-    const response = await $api(`/wms/branch-pricing/branch/${branchId}`, {
-      method: 'GET',
-    })
-    const productItems = (response.data || []).filter(item => item.item_type === 'PRODUCT')
-    
-    // Fetch product details for each item
-    const productDetails = await Promise.all(productItems.map(async item => {
-      let productName = item.item_id
-      try {
-        const detail = await $api(`/wms/products/${item.item_id}`, { method: 'GET' })
-        productName = detail.data?.name || item.item_id
-      } catch (e) {}
-      
-      return {
-        title: `${productName} - ${item.final_price_formatted}`,
-        value: item.item_id,
-        price: parseFloat(item.final_price),
-        priceFormatted: item.final_price_formatted,
-        raw: item
-      }
-      }))
-    
-    products.value = productDetails
-    console.log('✅ Products loaded with pricing:', products.value)
-  } catch (error) {
-    await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Produk',
-      text: 'Tidak dapat memuat daftar produk cabang. Silakan refresh halaman.'
-    })
-  } finally {
-    loadingProducts.value = false
-  }
-}
-
-
-
 // Fetch visits for selected branch
 const loadVisits = async branchId => {
   console.log('loadVisits called with:', branchId)
@@ -412,39 +234,19 @@ const loadVisits = async branchId => {
 watch(selectedBranch, async (val) => {
   const branchId = typeof val === 'object' && val !== null ? val.value : val
   selectedDoctor.value = ''
-  selectedTherapist.value = ''
   formData.value.visit_id = ''
   selectedVisit.value = null
-  selectedProducts.value = []
   selectedConsultationService.value = ''
   consultationFee.value = ''
 
   if (branchId) {
     await Promise.all([
       loadDoctors(branchId),
-      loadTherapists(branchId),
       loadVisits(branchId),
-      loadProducts(branchId),
-      loadTreatments(branchId)
     ])
   } else {
     doctors.value = []
-    therapists.value = []
     visits.value = []
-    products.value = []
-    treatments.value = []
-  }
-})
-
-// Watcher serviceType: hanya untuk produk dan konsultasi
-watch(serviceType, async (val) => {
-  if (val === 'product' && selectedBranch) {
-    const branchId = typeof selectedBranch === 'object' && selectedBranch !== null ? selectedBranch.value : selectedBranch
-    await loadProducts(branchId)
-    await loadTherapists(branchId)
-  }
-  if (val === 'consultation') {
-    await loadConsultationServices()
   }
 })
 
@@ -467,65 +269,6 @@ const formatCurrency = (amount) => {
     maximumFractionDigits: 0,
   }).format(amount)
 }
-
-// Computed property to get service type value
-const currentServiceType = computed(() => {
-  const serviceTypeValue = serviceType.value || serviceType
-  return typeof serviceTypeValue === 'object' && serviceTypeValue !== null 
-    ? serviceTypeValue.value 
-    : serviceTypeValue
-})
-
-// Computed property to check if it's consultation
-const isConsultationService = computed(() => {
-  return currentServiceType.value === 'consultation'
-})
-
-// Computed property to check if it's treatment
-const isTreatmentService = computed(() => {
-  return currentServiceType.value === 'tindakan'
-})
-
-// Computed property to check if it's product
-const isProductService = computed(() => {
-  return currentServiceType.value === 'product'
-})
-
-// Calculate total amount for treatments
-const calculateTreatmentTotal = computed(() => {
-  if (!selectedTreatment.value || selectedTreatment.value.length === 0) return 0
-  
-  // Debug log
-  console.log('🧮 selectedTreatment:', selectedTreatment.value)
-  console.log('🧮 treatments.value:', treatments.value)
-
-  const total = selectedTreatment.value.reduce((total, treatmentId) => {
-    // Pastikan treatmentId adalah string
-    const id = typeof treatmentId === 'object' && treatmentId !== null ? treatmentId.value : treatmentId
-    const treatment = treatments.value.find(t => t.value === id)
-    console.log('🧮 Processing treatmentId:', id, 'Found treatment:', treatment, 'Price:', treatment?.price)
-    return total + (treatment?.price || 0)
-  }, 0)
-  
-  console.log('🧮 Final treatment total:', total)
-  return total
-})
-
-// Calculate total amount for products
-const calculateProductTotal = computed(() => {
-  if (!selectedProducts.value || selectedProducts.value.length === 0) return 0
-  
-  const total = selectedProducts.value.reduce((total, productId) => {
-    // Pastikan productId adalah string
-    const id = typeof productId === 'object' && productId !== null ? productId.value : productId
-    const product = products.value.find(p => p.value === id)
-    console.log('🧮 Processing productId:', id, 'Found product:', product, 'Price:', product?.price)
-    return total + (product?.price || 0)
-  }, 0)
-  
-  console.log('🧮 Final product total:', total)
-  return total
-})
 
 // Calculate discount based on selected promo
 const calculateDiscount = computed(() => {
@@ -552,18 +295,8 @@ const calculateDiscount = computed(() => {
     return 0
   }
   
-  // Get the current total based on service type
-  let subtotal = 0
-  
-  if (isConsultationService.value && consultationFee.value) {
-    subtotal = parseFloat(consultationFee.value) || 0
-  } else if (isTreatmentService.value) {
-    subtotal = calculateTreatmentTotal.value
-  } else if (isProductService.value) {
-    subtotal = calculateProductTotal.value
-  } else {
-    subtotal = parseFloat(formData.value.total_amount) || 0
-  }
+  // Get the current total based on consultation fee
+  const subtotal = parseFloat(consultationFee.value) || 0
   
   console.log('🔍 Discount calculation debug:', {
     selectedPromo: selectedPromo.value,
@@ -572,12 +305,7 @@ const calculateDiscount = computed(() => {
     discountType: promo.discount_type,
     discountValue: promo.discount_value,
     minPurchase: promo.min_purchase,
-    isConsultation: isConsultationService.value,
-    consultationFee: consultationFee.value,
-    isTreatment: isTreatmentService.value,
-    treatmentTotal: calculateTreatmentTotal.value,
-    isProduct: isProductService.value,
-    productTotal: calculateProductTotal.value
+    consultationFee: consultationFee.value
   })
   
   // Check minimum purchase requirement
@@ -605,22 +333,8 @@ const calculateGrandTotal = () => {
   let total = 0
   
   // For consultation, use consultation fee as the base total
-  if (isConsultationService.value && consultationFee.value) {
-    total = parseFloat(consultationFee.value) || 0
-    formData.value.total_amount = total.toString()
-  }
-  
-  // For treatments, calculate total from selected treatments
-  if (isTreatmentService.value) {
-    total = calculateTreatmentTotal.value
-    formData.value.total_amount = total.toString()
-  }
-  
-  // For products, calculate total from selected products
-  if (isProductService.value) {
-    total = calculateProductTotal.value
-    formData.value.total_amount = total.toString()
-  }
+  total = parseFloat(consultationFee.value) || 0
+  formData.value.total_amount = total.toString()
   
   // Calculate discount from selected promo
   const promoDiscount = calculateDiscount.value
@@ -638,8 +352,6 @@ const calculateGrandTotal = () => {
     tax,
     grandTotal: formData.value.grand_total,
     consultationFee: consultationFee.value,
-    treatmentTotal: calculateTreatmentTotal.value,
-    productTotal: calculateProductTotal.value,
     promoDiscount,
     discountType: selectedPromo.value ? (() => {
       const promoId = typeof selectedPromo.value === 'object' && selectedPromo.value !== null 
@@ -656,8 +368,6 @@ watch([
   () => formData.value.discount_amount,
   () => formData.value.tax_amount,
   () => consultationFee.value,
-  () => selectedTreatment.value,
-  () => selectedProducts.value,
   () => selectedPromo.value,
   () => calculateDiscount.value, // Add discount calculation to watchers
 ], () => {
@@ -717,31 +427,11 @@ const submitForm = async () => {
       promo_id: promoId,
       discount_amount: parseFloat(formData.value.discount_amount) || 0,
       status: 'forwarded_to_doctor',
-      consultation_service_id: ((serviceType.value || serviceType) === 'consultation') ? selectedConsultationService.value : undefined,
+      consultation_service_id: selectedConsultationService.value,
     }
     
-    console.log('🔍 Debug info:', {
-      serviceType: serviceType.value,
-      currentServiceType: serviceType.value || serviceType,
-      consultationFee: consultationFee.value,
-      formDataGrandTotal: formData.value.grand_total,
-      isConsultation: (serviceType.value || serviceType) === 'consultation'
-    })
-    
-    // Add amounts based on service type
-    console.log('🔍 Service type check:', {
-      serviceType: serviceType.value,
-      serviceTypeRaw: serviceType,
-      currentServiceType: currentServiceType.value,
-      isConsultation: isConsultationService.value,
-      isTreatment: isTreatmentService.value,
-      isProduct: isProductService.value,
-      consultationFee: consultationFee.value,
-      treatmentTotal: calculateTreatmentTotal.value,
-      productTotal: calculateProductTotal.value
-    })
-    
-    if (isConsultationService.value && consultationFee.value) {
+    // Add amounts based on consultation service
+    if (consultationFee.value) {
       const fee = parseFloat(consultationFee.value)
       submitData.total_amount = fee
       submitData.grand_total = parseFloat(formData.value.grand_total) || fee
@@ -750,31 +440,11 @@ const submitForm = async () => {
         grand_total: submitData.grand_total,
         consultation_fee: consultationFee.value
       })
-    } else if (isTreatmentService.value && selectedTreatment.value.length > 0) {
-      const total = calculateTreatmentTotal.value
-      submitData.total_amount = total
-      submitData.grand_total = parseFloat(formData.value.grand_total) || total
-      console.log('📤 Billing data with treatment total:', {
-        total_amount: submitData.total_amount,
-        grand_total: submitData.grand_total,
-        treatment_total: total,
-        selected_treatments: selectedTreatment.value
-      })
-    } else if (isProductService.value && selectedProducts.value.length > 0) {
-      const total = calculateProductTotal.value
-      submitData.total_amount = total
-      submitData.grand_total = parseFloat(formData.value.grand_total) || total
-      console.log('📤 Billing data with product total:', {
-        total_amount: submitData.total_amount,
-        grand_total: submitData.grand_total,
-        product_total: total,
-        selected_products: selectedProducts.value
-      })
     } else {
-      // For non-consultation or when no fee, set default values
+      // For when no fee, set default values
       submitData.total_amount = parseFloat(formData.value.total_amount) || 0
       submitData.grand_total = parseFloat(formData.value.grand_total) || 0
-      console.log('📤 Billing data without specific service:', {
+      console.log('📤 Billing data without consultation fee:', {
         total_amount: submitData.total_amount,
         grand_total: submitData.grand_total
       })
@@ -782,18 +452,14 @@ const submitForm = async () => {
     
     console.log('📤 Final billing submit data:', submitData)
     console.log('📤 API call to /transaction/billings with body:', JSON.stringify(submitData, null, 2))
-    console.log('🔍 Promo ID debug:', {
-      selectedPromoValue: selectedPromo.value,
-      promoIdType: typeof promoId,
-      promoIdValue: promoId
-    })
+    
     const response = await $api('/transaction/billings', {
       method: 'POST',
       body: submitData,
     })
 
-        // Tambah insert visit consultation jika serviceType konsultasi
-    if (isConsultationService.value && consultationFee.value) {
+    // Tambah insert visit consultation
+    if (consultationFee.value) {
       const consultationPayload = {
         billing_id: response.data.id,
         visit_id: visitId,
@@ -820,134 +486,8 @@ const submitForm = async () => {
       }
     }
 
-    // Tambah insert visit treatment jika serviceType tindakan
-    if (isTreatmentService.value && selectedTreatment.value.length > 0) {
-      console.log('🔍 Creating visit treatments for selected treatments:', selectedTreatment.value)
-      
-      const createdTreatments = []
-      const failedTreatments = []
-      
-      for (const treatmentId of selectedTreatment.value) {
-        // Ensure treatmentId is properly extracted from Proxy object
-        const actualTreatmentId = typeof treatmentId === 'object' && treatmentId !== null 
-          ? treatmentId.value || treatmentId
-          : treatmentId
-        
-        console.log('🔄 Processing treatment ID:', actualTreatmentId)
-        console.log('🔄 Original treatmentId object:', treatmentId)
-        
-        const treatment = treatments.value.find(t => t.value === actualTreatmentId)
-        if (!treatment) {
-          console.warn('⚠️ Treatment not found for ID:', actualTreatmentId)
-          failedTreatments.push({ id: actualTreatmentId, reason: 'Treatment not found in list' })
-          continue
-        }
-        
-        console.log('✅ Found treatment:', treatment)
-
-        // Get doctor and therapist for this specific treatment
-        const doctorId = typeof selectedDoctor.value === 'object' && selectedDoctor.value !== null
-          ? selectedDoctor.value.value
-          : selectedDoctor.value
-        const therapistId = typeof selectedTherapist.value === 'object' && selectedTherapist.value !== null
-          ? selectedTherapist.value.value
-          : selectedTherapist.value
-
-        console.log('🔍 Using doctorId:', doctorId, 'therapistId:', therapistId)
-
-        // Validate required fields
-        if (!doctorId) {
-          console.error('❌ No doctor ID found for treatment:', actualTreatmentId)
-          failedTreatments.push({ 
-            id: actualTreatmentId, 
-            name: treatment.title,
-            reason: 'Dokter belum dipilih' 
-          })
-          continue
-        }
-
-        if (!therapistId) {
-          console.error('❌ No therapist ID found for treatment:', actualTreatmentId)
-          failedTreatments.push({ 
-            id: actualTreatmentId, 
-            name: treatment.title,
-            reason: 'Terapis belum dipilih' 
-          })
-          continue
-        }
-
-        const visitTreatmentPayload = {
-          visit_id: visitId,
-          treatment_id: actualTreatmentId,
-          doctor_id: doctorId,
-          therapist_id: therapistId,
-          quantity: 1,
-          unit_price: treatment.price.toString(),
-          total_price: treatment.price.toString(),
-          treatment_notes: `Treatment created from billing ${response.data.id}`,
-          billing_id: response.data.id
-        }
-
-        console.log('📤 Creating visit treatment payload:', JSON.stringify(visitTreatmentPayload, null, 2))
-
-        try {
-          console.log('🔄 Making API call to /rme/visit-treatments...')
-          const visitTreatmentResponse = await $api('/rme/visit-treatments', {
-            method: 'POST',
-            body: visitTreatmentPayload,
-          })
-          console.log('✅ Visit treatment created successfully:', visitTreatmentResponse.data)
-          createdTreatments.push({
-            id: actualTreatmentId,
-            name: treatment.title,
-            response: visitTreatmentResponse.data
-          })
-        } catch (visitTreatmentError) {
-          console.error('❌ Error creating visit treatment:', visitTreatmentError)
-          console.error('❌ Error details:', {
-            message: visitTreatmentError.message,
-            response: visitTreatmentError.response,
-            data: visitTreatmentError.data,
-            status: visitTreatmentError.response?.status,
-            statusText: visitTreatmentError.response?.statusText
-          })
-          
-          // Show more detailed error message
-          let errorMessage = `Tagihan berhasil, tapi pembuatan treatment "${treatment.title}" gagal.`
-          if (visitTreatmentError.response?.data?.response_message) {
-            errorMessage += ` Error: ${visitTreatmentError.response.data.response_message}`
-          } else if (visitTreatmentError.message) {
-            errorMessage += ` Error: ${visitTreatmentError.message}`
-          }
-          
-          failedTreatments.push({ 
-            id: actualTreatmentId, 
-            name: treatment.title,
-            reason: errorMessage,
-            error: visitTreatmentError
-          })
-        }
-      }
-      
-      // Show summary of created and failed treatments
-      if (createdTreatments.length > 0) {
-        console.log('✅ Successfully created treatments:', createdTreatments)
-      }
-      
-      if (failedTreatments.length > 0) {
-        console.log('❌ Failed to create treatments:', failedTreatments)
-        
-        // Show detailed error message for failed treatments
-        const failedNames = failedTreatments.map(f => f.name).join(', ')
-        await showErrorAlert({
-          title: 'Beberapa Treatment Gagal Dibuat',
-          text: `Tagihan berhasil dibuat, tetapi ${failedTreatments.length} treatment gagal: ${failedNames}. Silakan cek data treatment.`
-        })
-      }
-    } 
-    console.log('response', serviceType.value)
     await showSuccessAlert(
-      `Tagihan berhasil dibuat dengan ID: ${response.data.id}`,
+      `Tagihan konsultasi berhasil dibuat dengan ID: ${response.data.id}`,
       'Berhasil!',
     )
 
@@ -977,11 +517,6 @@ const resetForm = () => {
     status: '',
   }
   selectedDoctor.value = ''
-  selectedTherapist.value = ''
-  selectedTreatments.value = []
-  selectedProducts.value = []
-  selectedTreatment.value = []
-  serviceType.value = ''
   selectedBranch.value = ''
   selectedConsultationService.value = ''
   consultationFee.value = ''
@@ -1004,24 +539,12 @@ const goBack = () => {
           size="small"
           @click="goBack"
         />
-        Tambah Tagihan Baru
+        Tambah Tagihan Konsultasi
       </VCardTitle>
       <VCardSubtitle>
-        Lengkapi data tagihan untuk membuat tagihan baru
+        Lengkapi data tagihan konsultasi untuk membuat tagihan baru
       </VCardSubtitle>
     </VCardItem>
-
-    <!-- DEBUG LOG -->
-    <VCardText>
-      <div style="color: #888; font-size: 12px; margin-bottom: 8px;">
-        selectedBranch: {{ selectedBranch }} | serviceType: {{ serviceType }} | 
-        consultationFee: {{ consultationFee }} | 
-        selectedPromo: {{ selectedPromo }} | 
-        grandTotal: {{ formData.grand_total }} | 
-        totalAmount: {{ formData.total_amount }} | 
-        discountAmount: {{ formData.discount_amount }}
-      </div>
-    </VCardText>
 
     <VCardText>
       <VForm
@@ -1030,7 +553,7 @@ const goBack = () => {
         validate-on="submit"
       >
         <VRow>
-          <!-- Data Cabang & Layanan -->
+          <!-- Data Cabang -->
           <VCol
             cols="12"
             md="6"
@@ -1049,51 +572,9 @@ const goBack = () => {
               hide-details="auto"
             />
           </VCol>
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Jenis Layanan *
-            </label>
-            <AppCombobox
-              v-model="serviceType"
-              placeholder="Pilih jenis layanan..."
-              :items="[
-                { title: 'Konsultasi', value: 'consultation' },
-                { title: 'Tindakan', value: 'tindakan' },
-                { title: 'Produk', value: 'product' }
-              ]"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
 
-          <!-- Jenis Konsultasi (hanya untuk konsultasi) -->
-          <VCol 
-            v-if="selectedBranch && isConsultationService" 
-            cols="12"
-            md="6"
-          >
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Jenis Konsultasi *
-            </label>
-            <AppCombobox
-              v-model="selectedConsultationService"
-              placeholder="Pilih jenis konsultasi..."
-              :items="consultationServices"
-              :loading="loadingConsultationServices"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
           <!-- Visit Autocomplete (only show after branch is selected) -->
           <VCol
-            v-if="selectedBranch"
             cols="12"
             md="6"
           >
@@ -1111,9 +592,29 @@ const goBack = () => {
               hide-details="auto"
             />
           </VCol>
-          <!-- Doctor selection (only for consultation) -->
-          <VCol 
-            v-if="selectedBranch && isConsultationService" 
+
+          <!-- Jenis Konsultasi -->
+          <VCol  
+            cols="12"
+            md="6"
+          >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Jenis Konsultasi *
+            </label>
+            <AppCombobox
+              v-model="selectedConsultationService"
+              placeholder="Pilih jenis konsultasi..."
+              :items="consultationServices"
+              :loading="loadingConsultationServices"
+              :rules="[requiredValidator]"
+              required
+              clearable
+              hide-details="auto"
+            />
+          </VCol>
+
+          <!-- Doctor selection -->
+          <VCol  
             cols="12"
             md="6"
           >
@@ -1132,9 +633,8 @@ const goBack = () => {
             />
           </VCol>
 
-          <!-- Consultation Fee (only for consultation) -->
-          <VCol
-            v-if="selectedBranch && isConsultationService" 
+          <!-- Consultation Fee -->
+          <VCol 
             cols="12"
             md="6"
           >
@@ -1151,84 +651,10 @@ const goBack = () => {
               hide-details="auto"
               prepend-inner-icon="tabler-currency-dollar"
             />
-          </VCol>
-
-          <VCol
-            v-if="selectedBranch && isTreatmentService" 
-            cols="12"
-            md="6"
-          >
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Tindakan *
-            </label>
-            <AppCombobox
-              v-model="selectedTreatment"
-              placeholder="Pilih tindakan..."
-              :items="treatments"
-              :loading="loadingTreatments"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              multiple
-              hide-details="auto"
-            />
-          </VCol>
-          <!-- Doctor selection for treatment service -->
-          <VCol 
-            v-if="selectedBranch && isTreatmentService" 
-            cols="12"
-            md="6"
-          >
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Dokter *
-            </label>
-            <AppCombobox
-              v-model="selectedDoctor"
-              placeholder="Pilih dokter..."
-              :items="doctors"
-              :loading="loadingDoctors"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
-          <!-- Therapist selection for treatment service -->
-          <VCol
-            v-if="selectedBranch && isTreatmentService" 
-            cols="12"
-            md="6"
-          >
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Terapis *
-            </label>
-            <AppCombobox
-              v-model="selectedTherapist"
-              placeholder="Pilih terapis..."
-              :items="therapists"
-              :loading="loadingTherapists"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
-          <!-- Product & Therapist (only for produk) -->
-          <VCol
-          v-if="selectedBranch && serviceType.value === 'product'" 
-           cols="12" md="6">
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Produk (bisa lebih dari satu)
-            </label>
-            <AppCombobox
-              v-model="selectedProducts"
-              placeholder="Pilih produk..."
-              :items="products"
-              :loading="loadingProducts"
-              multiple
-              clearable
-              hide-details="auto"
-            />
+            <div class="text-caption text-medium-emphasis mt-1">
+              <VIcon size="14" class="me-1">tabler-info-circle</VIcon>
+              Biaya akan dihitung otomatis di ringkasan
+            </div>
           </VCol>
           
           <!-- Promo Selection -->
@@ -1251,23 +677,23 @@ const goBack = () => {
           </VCol>
         </VRow>
 
-        <!-- Static Fee Section -->
-        <VRow v-if="(isConsultationService && consultationFee) || (isTreatmentService && selectedTreatment.length) || (isProductService && selectedProducts.length)">
+        <!-- Cost Summary Section -->
+        <VRow>
           <VCol cols="12">
             <VCard variant="outlined" class="pa-4">
               <VCardTitle class="text-h6 mb-4">
                 <VIcon start color="primary">
                   tabler-calculator
                 </VIcon>
-                Ringkasan Biaya
+                Ringkasan Biaya Konsultasi
               </VCardTitle>
               <VRow>
-                <VCol cols="12" md="3">
+                <VCol cols="12" md="4">
                   <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
                     Biaya Konsultasi
                   </label>
                   <VTextField
-                    :model-value="isConsultationService ? consultationFee : 0"
+                    :model-value="consultationFee || 0"
                     type="number"
                     prefix="Rp"
                     readonly
@@ -1275,33 +701,21 @@ const goBack = () => {
                     variant="outlined"
                   />
                 </VCol>
-                <VCol cols="12" md="3">
+                <VCol cols="12" md="4">
                   <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Biaya Tindakan
+                    Diskon Promo
                   </label>
                   <VTextField
-                    :model-value="isTreatmentService ? calculateTreatmentTotal : 0"
+                    :model-value="calculateDiscount"
                     type="number"
                     prefix="Rp"
                     readonly
                     density="comfortable"
                     variant="outlined"
+                    color="success"
                   />
                 </VCol>
-                <VCol cols="12" md="3">
-                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Biaya Produk
-                  </label>
-                  <VTextField
-                    :model-value="isProductService ? calculateProductTotal : 0"
-                    type="number"
-                    prefix="Rp"
-                    readonly
-                    density="comfortable"
-                    variant="outlined"
-                  />
-                </VCol>
-                <VCol cols="12" md="3">
+                <VCol cols="12" md="4">
                   <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
                     Total Biaya
                   </label>
@@ -1312,6 +726,7 @@ const goBack = () => {
                     readonly
                     density="comfortable"
                     variant="outlined"
+                    color="primary"
                   />
                 </VCol>
               </VRow>
@@ -1320,7 +735,7 @@ const goBack = () => {
         </VRow>
         
         <!-- Combined Summary Card -->
-        <VRow v-if="(isConsultationService && consultationFee) || (isTreatmentService && selectedTreatment.length) || (isProductService && selectedProducts.length)">
+        <VRow>
           <VCol cols="12">
             <VCard variant="outlined" color="info">
               <VCardText class="pa-4">
@@ -1335,11 +750,9 @@ const goBack = () => {
                 
                 <!-- Subtotal Section -->
                 <div class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2">
-                    {{ isConsultationService ? 'Biaya Konsultasi:' : isTreatmentService ? 'Total Tindakan:' : 'Total Produk:' }}
-                  </span>
+                  <span class="text-body-2">Biaya Konsultasi:</span>
                   <span class="text-body-1 font-weight-medium">
-                    {{ formatCurrency(isConsultationService ? consultationFee : isTreatmentService ? calculateTreatmentTotal : calculateProductTotal) }}
+                    {{ formatCurrency(consultationFee) }}
                   </span>
                 </div>
                 
@@ -1357,9 +770,7 @@ const goBack = () => {
                     ? selectedPromo.value 
                     : selectedPromo
                   const promo = promos.find(p => p.value === promoId)?.data
-                  const subtotal = isConsultationService ? (parseFloat(consultationFee) || 0) : 
-                                 isTreatmentService ? calculateTreatmentTotal : 
-                                 isProductService ? calculateProductTotal : 0
+                  const subtotal = parseFloat(consultationFee) || 0
                   return promo?.min_purchase && subtotal < parseFloat(promo.min_purchase)
                 })()" class="d-flex align-center gap-2 mb-2 pa-2 bg-warning-lighten-5 rounded">
                   <VIcon size="16" color="warning">
@@ -1381,9 +792,7 @@ const goBack = () => {
                     ? selectedPromo.value 
                     : selectedPromo
                   const promo = promos.find(p => p.value === promoId)?.data
-                  const subtotal = isConsultationService ? (parseFloat(consultationFee) || 0) : 
-                                 isTreatmentService ? calculateTreatmentTotal : 
-                                 isProductService ? calculateProductTotal : 0
+                  const subtotal = parseFloat(consultationFee) || 0
                   return promo?.min_purchase && subtotal >= parseFloat(promo.min_purchase)
                 })()" class="d-flex align-center gap-2 mb-2 pa-2 bg-success-lighten-5 rounded">
                   <VIcon size="16" color="success">
@@ -1430,16 +839,16 @@ const goBack = () => {
         </VRow>
         
         <div class="d-flex justify-end mt-4">
-              <VBtn
-                type="submit"
-                :loading="isLoading"
-                :disabled="isLoading"
+          <VBtn
+            type="submit"
+            :loading="isLoading"
+            :disabled="isLoading || !consultationFee"
             color="primary"
-              >
+          >
             <VIcon start icon="tabler-device-floppy" />
-            Lanjutkan
-              </VBtn>
-            </div>
+            Buat Tagihan Konsultasi
+          </VBtn>
+        </div>
       </VForm>
     </VCardText>
   </VCard>
