@@ -199,4 +199,21 @@ export const routes = [
     component: () => import('@/pages/wms/product-categories/[id].vue'),
   },
 
+  // WMS Products Routes
+  {
+    path: '/wms/products',
+    name: 'wms-products',
+    component: () => import('@/pages/wms/products/index.vue'),
+  },
+  {
+    path: '/wms/products/create',
+    name: 'wms-products-create',
+    component: () => import('@/pages/wms/products/create.vue'),
+  },
+  {
+    path: '/wms/products/:id',
+    name: 'wms-products-id',
+    component: () => import('@/pages/wms/products/[id].vue'),
+  },
+
 ]

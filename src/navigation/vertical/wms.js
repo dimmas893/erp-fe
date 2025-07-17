@@ -15,6 +15,10 @@ export default [
         title: 'Product Categories',
         to: 'wms-product-categories',
       },
+      {
+        title: 'Products',
+        to: 'wms-products',
+      },
       // You can add more WMS-related menus here
     ],
   },
