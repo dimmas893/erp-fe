@@ -168,21 +168,25 @@ const loadDoctors = async branchId => {
   try {
     loadingDoctors.value = true
 
-    const response = await $api('/hris/doctors/paginated', {
-      method: 'POST',
-      body: {
-        page: 1,
-        per_page: 100,
-        sort_by: 'created_at',
-        sort_order: 'desc',
-        filters: [
-          {
-            search_by: 'branch_id',
-            filter_type: 'equal',
-            search_query: branchId,
-          },
-        ],
-      },
+    // const response = await $api('/hris/doctors/paginated', {
+    //   method: 'POST',
+    //   body: {
+    //     page: 1,
+    //     per_page: 100,
+    //     sort_by: 'created_at',
+    //     sort_order: 'desc',
+    //     filters: [
+    //       {
+    //         search_by: 'branch_id',
+    //         filter_type: 'equal',
+    //         search_query: branchId,
+    //       },
+    //     ],
+    //   },
+    // })
+
+    const response = await $api(`/hris/doctors/branch/${branchId}`, {
+      method: 'GET',
     })
 
     doctors.value = response.data.map(doctor => ({
