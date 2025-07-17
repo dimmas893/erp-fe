@@ -1,57 +1,38 @@
 <route lang="yaml">
 meta:
   layout: default
-  navActiveLink: transaction-billings
+  navActiveLink: wms-product-categories
 </route>
 
 <template>
   <VCard>
     <!-- Dynamic Filter Component -->
     <DynamicFilter
-      title="Data Tagihan"
+      title="Data Kategori Produk"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      quick-search-placeholder="Cari berdasarkan status..."
-      :quick-search-fields="['status']"
+      quick-search-placeholder="Cari nama, kode, atau deskripsi..."
+      :quick-search-fields="['name', 'code', 'description']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
     >
       <template #actions>
-        <div class="d-flex gap-2">
         <VBtn
           color="primary"
-            prepend-icon="tabler-stethoscope"
-            :to="{ name: 'transaction-billings-consultation-create' }"
-            variant="tonal"
-          >
-            Konsultasi
-          </VBtn>
-          <VBtn
-            color="warning"
-            prepend-icon="tabler-activity"
-            :to="{ name: 'transaction-billings-treatment-create' }"
-            variant="tonal"
-          >
-            Treatment
-          </VBtn>
-          <VBtn
-            color="success"
-            prepend-icon="tabler-package"
-            :to="{ name: 'transaction-billings-product-create' }"
-            variant="tonal"
-          >
-            Produk
+          prepend-icon="tabler-plus"
+          :to="{ name: 'wms-product-categories-create' }"
+        >
+          Tambah Kategori Produk
         </VBtn>
-        </div>
       </template>
     </DynamicFilter>
     
     <VDivider />
     <VDataTableServer
       :headers="headers"
-      :items="billings"
-      :items-length="totalBillings"
+      :items="productCategories"
+      :items-length="totalProductCategories"
       :loading="loading"
       :items-per-page="itemsPerPage"
       :page="page"
@@ -62,55 +43,69 @@ meta:
       <template #item.no="{ index }">
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
-
-      <template #item.total_amount="{ item }">
-        {{ formatCurrency(item.total_amount) }}
+      <template #item.name="{ item }">
+        <VBtn
+          variant="text"
+          color="primary"
+          class="font-weight-medium pa-0 text-none"
+          :to="{ name: 'wms-product-categories-id', params: { id: item.id } }"
+        >
+          {{ item?.name || '-' }}
+        </VBtn>
       </template>
-      <template #item.discount_amount="{ item }">
-        {{ formatCurrency(item.discount_amount) }}
-      </template>
-      <template #item.tax_amount="{ item }">
-        {{ formatCurrency(item.tax_amount) }}
-      </template>
-      <template #item.grand_total="{ item }">
-        <span class="font-weight-bold">{{ formatCurrency(item.grand_total) }}</span>
-      </template>
-      <template #item.status="{ item }">
+      <template #item.code="{ item }">
         <VChip
-          :color="getStatusColor(item.status)"
+          v-if="item && item.code"
+          color="primary"
           size="small"
           label
         >
-          {{ getStatusText(item.status) }}
+          {{ item.code }}
         </VChip>
+        <span v-else class="text-medium-emphasis">-</span>
       </template>
-      <template #item.paid_at="{ item }">
-        {{ item.paid_at ? formatDateTime(item.paid_at) : '-' }}
+      <template #item.parent="{ item }">
+        <div v-if="item && item.parent" class="d-flex align-center gap-2">
+          <VChip
+            :color="getParentColor(item.parent.code)"
+            size="small"
+            label
+          >
+            {{ item.parent.code }}
+          </VChip>
+          <span class="text-body-2">{{ item.parent.name }}</span>
+        </div>
+        <span v-else class="text-medium-emphasis">-</span>
+      </template>
+      <template #item.is_active="{ item }">
+        <VChip
+          v-if="item"
+          :color="item.is_active ? 'success' : 'error'"
+          size="small"
+          label
+        >
+          {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+        </VChip>
+        <span v-else class="text-medium-emphasis">-</span>
       </template>
       <template #item.created_at="{ item }">
-        {{ formatDateTime(item.created_at) }}
+        {{ item && item.created_at ? formatDateTime(item.created_at) : '-' }}
       </template>
+      
       <template #item.actions="{ item }">
-        <div class="d-flex gap-2">
+        <div class="d-flex gap-1">
           <VBtn
-            icon="tabler-eye"
             size="small"
             variant="text"
             color="primary"
-            :to="{ name: 'transaction-billings-id', params: { id: item.id } }"
-            title="Lihat Detail"
-          />
-          <VBtn
-            icon="tabler-edit"
-            size="small"
-            variant="text"
-            color="warning"
-            :to="{ name: 'transaction-billings-edit-id', params: { id: item.id } }"
-            title="Edit Tagihan"
-          />
-          <!-- Consultation button removed as route doesn't exist -->
+            :to="{ name: 'wms-product-categories-id', params: { id: item.id } }"
+            prepend-icon="tabler-eye"
+          >
+            Detail
+          </VBtn>
         </div>
       </template>
+
       <template #loading>
         <VSkeletonLoader
           class="mx-auto"
@@ -127,7 +122,7 @@ meta:
             color="primary"
             class="mb-4"
           >
-            tabler-receipt
+            tabler-category
           </VIcon>
           <h3 class="text-h6 mb-2">
             Tidak ada data ditemukan
@@ -140,7 +135,7 @@ meta:
             variant="tonal"
             @click="handleClearFilters"
           >
-            Reset Filter  
+            Reset Filter
           </VBtn>
         </div>
       </template>
@@ -161,12 +156,12 @@ meta:
             <span class="text-body-2 text-medium-emphasis">per halaman</span>
           </div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalBillings) }}
+            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalProductCategories) }}
           </div>
           <TablePagination
             v-model:page="page"
             v-model:items-per-page="itemsPerPage"
-            :total-items="totalBillings"
+            :total-items="totalProductCategories"
             :items-per-page-options="perPageOptions"
             hide-details
             :show-meta="false"
@@ -193,27 +188,59 @@ const orderBy = ref('desc')
 const loading = ref(true) // Start with loading true for initial load
 const initialLoadCompleted = ref(false)
 
-const billings = ref([])
-const totalBillings = ref(0)
+const productCategories = ref([])
+const totalProductCategories = ref(0)
 const currentFilters = ref([])
 const currentQuickSearch = ref('')
 
 // Reactive field configurations
 const allowedFields = [
-  'status',
+  'name',
+  'code', 
+  'description',
+  'parent_id',
+  'is_active',
+  'created_at',
 ]
+
+const parentCategoryOptions = ref([])
 
 const fieldConfigs = computed(() => {
   return {
-    'status': {
+    'name': {
+      title: 'Nama Kategori',
+      type: 'text',
+      operator: 'like',
+    },
+    'code': {
+      title: 'Kode Kategori',
+      type: 'text',
+      operator: 'like',
+    },
+    'description': {
+      title: 'Deskripsi',
+      type: 'text',
+      operator: 'like',
+    },
+    'parent_id': {
+      title: 'Kategori Induk',
+      type: 'select',
+      operator: 'equal',
+      options: parentCategoryOptions.value,
+    },
+    'is_active': {
       title: 'Status',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Draft', value: 'draft' },
-        { title: 'Unpaid', value: 'unpaid' },
-        { title: 'Paid', value: 'paid' },
+        { title: 'Aktif', value: true },
+        { title: 'Nonaktif', value: false },
       ],
+    },
+    'created_at': {
+      title: 'Tanggal Dibuat',
+      type: 'date',
+      operator: 'date',
     },
   }
 })
@@ -235,7 +262,7 @@ const filterConfig = computed(() => ({
 
 // Computed property to control no-data display
 const shouldShowNoData = computed(() => {
-  return !loading.value && initialLoadCompleted.value && billings.value.length === 0
+  return !loading.value && initialLoadCompleted.value && productCategories.value.length === 0
 })
 
 const perPageOptions = [
@@ -248,21 +275,19 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Billing Number', key: 'billing_number' },
-  { title: 'Total Amount', key: 'total_amount' },
-  { title: 'Discount Amount', key: 'discount_amount' },
-  { title: 'Tax Amount', key: 'tax_amount' },
-  { title: 'Grand Total', key: 'grand_total' },
-  { title: 'Status', key: 'status' },
-  { title: 'Tanggal Bayar', key: 'paid_at' },
+  { title: 'Nama Kategori', key: 'name' },
+  { title: 'Kode', key: 'code' },
+  { title: 'Deskripsi', key: 'description' },
+  { title: 'Kategori Induk', key: 'parent' },
+  { title: 'Status', key: 'is_active', sortable: false },
   { title: 'Tanggal Dibuat', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
-async function fetchBillings() {
+async function fetchProductCategories() {
   loading.value = true
-  console.log('🔄 Starting fetchBillings...')
+  console.log('🔄 Starting fetchProductCategories...')
   
   try {
     const requestBody = {
@@ -281,7 +306,7 @@ async function fetchBillings() {
     if (currentQuickSearch.value?.trim()) {
       if (!requestBody.filters) requestBody.filters = []
       requestBody.filters.push({
-        search_by: 'status',
+        search_by: 'name',
         filter_type: 'like',
         search_query: currentQuickSearch.value.trim(),
       })
@@ -289,30 +314,60 @@ async function fetchBillings() {
 
     console.log('📤 API Request body:', requestBody)
     
-    const res = await $api('/transaction/billings/paginated', {
+    const res = await $api('/wms/product-categories/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
     console.log('📥 API Response:', res)
     
-    billings.value = res.data || []
-    totalBillings.value = res.meta?.total || 0
+    // Handle the API response structure correctly
+    if (res.data && Array.isArray(res.data)) {
+      productCategories.value = res.data || []
+      totalProductCategories.value = res.meta?.total || 0
+    } else if (res.data && res.data.data) {
+      productCategories.value = res.data.data || []
+      totalProductCategories.value = res.data.meta?.total || 0
+    } else {
+      productCategories.value = res.data || []
+      totalProductCategories.value = res.meta?.total || 0
+    }
     
-    console.log('✅ Billings loaded:', billings.value.length, 'total:', totalBillings.value)
-    console.log('📋 Sample billing data:', billings.value[0])
+    console.log('✅ Product Categories loaded:', productCategories.value.length, 'total:', totalProductCategories.value)
   } catch (error) {
-    console.error('❌ Error fetching billings:', error)
+    console.error('❌ Error fetching product categories:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Tagihan',
-      text: 'Tidak dapat memuat data tagihan. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Kategori Produk',
+      text: 'Tidak dapat memuat data kategori produk. Silakan coba lagi.',
     })
-    billings.value = []
-    totalBillings.value = 0
+    productCategories.value = []
+    totalProductCategories.value = 0
   } finally {
     loading.value = false
     initialLoadCompleted.value = true
-    console.log('🏁 fetchBillings completed')
+    console.log('🏁 fetchProductCategories completed')
+  }
+}
+
+async function fetchParentCategories() {
+  try {
+    const res = await $api('/wms/product-categories', {
+      method: 'GET',
+    })
+    
+    if (res.data && Array.isArray(res.data)) {
+      const options = res.data
+        .filter(category => category.parent_id === null) // Only parent categories
+        .map(category => ({
+          title: category.name,
+          value: category.id,
+        }))
+      
+      // Update the parent category options
+      parentCategoryOptions.value = options
+    }
+  } catch (error) {
+    console.error('❌ Error fetching parent categories:', error)
   }
 }
 
@@ -320,20 +375,20 @@ function handleApplyFilters({ filters, quickSearch }) {
   currentFilters.value = filters
   currentQuickSearch.value = quickSearch
   page.value = 1
-  fetchBillings()
+  fetchProductCategories()
 }
 
 function handleClearFilters() {
   currentFilters.value = []
   currentQuickSearch.value = ''
   page.value = 1
-  fetchBillings()
+  fetchProductCategories()
 }
 
 function handleApplyQuickSearch(searchQuery) {
   currentQuickSearch.value = searchQuery
   page.value = 1
-  fetchBillings()
+  fetchProductCategories()
 }
 
 function onUpdateOptions(options) {
@@ -351,33 +406,15 @@ function onUpdateOptions(options) {
   }
 }
 
-function getStatusColor(status) {
-  switch (status) {
-  case 'paid': return 'success'
-  case 'unpaid': return 'warning'
-  case 'draft': return 'secondary'
+function getParentColor(parentCode) {
+  switch (parentCode) {
+  case 'MEDICINE': return 'primary'
+  case 'EQUIPMENT': return 'success'
+  case 'COSMETIC': return 'warning'
+  case 'DISPOSABLE': return 'info'
+  case 'SUPPLEMENT': return 'purple'
   default: return 'secondary'
   }
-}
-
-function getStatusText(status) {
-  switch (status) {
-  case 'paid': return 'Lunas'
-  case 'unpaid': return 'Belum Lunas'
-  case 'draft': return 'Draft'
-  default: return status
-  }
-}
-
-function formatCurrency(amount) {
-  if (!amount) return 'Rp 0'
-  
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
 }
 
 function formatDateTime(dateStr) {
@@ -390,7 +427,7 @@ function formatDateTime(dateStr) {
 watch([page, itemsPerPage, sortBy, orderBy], () => {
   // Only fetch if component is already mounted and not in initial loading
   if (initialLoadCompleted.value) {
-    fetchBillings()
+    fetchProductCategories()
   }
 })
 
@@ -399,8 +436,8 @@ onActivated(() => {
   console.log('🎯 Component onActivated triggered')
 
   // Only fetch if we don't have data and initial load is completed
-  if (billings.value.length === 0 && initialLoadCompleted.value) {
-    fetchBillings()
+  if (productCategories.value.length === 0 && initialLoadCompleted.value) {
+    fetchProductCategories()
   }
 })
 
@@ -411,8 +448,11 @@ onMounted(async () => {
   // Ensure loading is true for initial load
   loading.value = true
   
-  // Only fetch billings once on mount
-  fetchBillings()
+  // Fetch parent categories for filter options
+  await fetchParentCategories()
+  
+  // Only fetch product categories once on mount
+  fetchProductCategories()
 })
 </script>
 

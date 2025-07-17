@@ -155,5 +155,13 @@ declare module 'vue-router/auto-routes' {
     'wizard-examples-checkout': RouteRecordInfo<'wizard-examples-checkout', '/wizard-examples/checkout', Record<never, never>, Record<never, never>>,
     'wizard-examples-create-deal': RouteRecordInfo<'wizard-examples-create-deal', '/wizard-examples/create-deal', Record<never, never>, Record<never, never>>,
     'wizard-examples-property-listing': RouteRecordInfo<'wizard-examples-property-listing', '/wizard-examples/property-listing', Record<never, never>, Record<never, never>>,
+    'wms-branches': RouteRecordInfo<'wms-branches', '/wms/branches', Record<never, never>, Record<never, never>>,
+    'wms-branches-create': RouteRecordInfo<'wms-branches-create', '/wms/branches/create', Record<never, never>, Record<never, never>>,
+    'wms-product-categories': RouteRecordInfo<'wms-product-categories', '/wms/product-categories', Record<never, never>, Record<never, never>>,
+    'wms-product-categories-id': RouteRecordInfo<'wms-product-categories-id', '/wms/product-categories/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'wms-product-categories-create': RouteRecordInfo<'wms-product-categories-create', '/wms/product-categories/create', Record<never, never>, Record<never, never>>,
+    'wms-regional-warehouses': RouteRecordInfo<'wms-regional-warehouses', '/wms/regional-warehouses', Record<never, never>, Record<never, never>>,
+    'wms-regional-warehouses-id': RouteRecordInfo<'wms-regional-warehouses-id', '/wms/regional-warehouses/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'wms-regional-warehouses-create': RouteRecordInfo<'wms-regional-warehouses-create', '/wms/regional-warehouses/create', Record<never, never>, Record<never, never>>,
   }
 }

@@ -152,4 +152,51 @@ export const routes = [
     name: 'transaction-produk-id',
     component: () => import('@/pages/transaction/produk/[id].vue'),
   },
+
+  // WMS Branches Routes
+  {
+    path: '/wms/branches',
+    name: 'wms-branches',
+    component: () => import('@/pages/wms/branches/index.vue'),
+  },
+  {
+    path: '/wms/branches/create',
+    name: 'wms-branches-create',
+    component: () => import('@/pages/wms/branches/create.vue'),
+  },
+
+  // WMS Regional Warehouses Routes
+  {
+    path: '/wms/regional-warehouses',
+    name: 'wms-regional-warehouses',
+    component: () => import('@/pages/wms/regional-warehouses/index.vue'),
+  },
+  {
+    path: '/wms/regional-warehouses/create',
+    name: 'wms-regional-warehouses-create',
+    component: () => import('@/pages/wms/regional-warehouses/create.vue'),
+  },
+  {
+    path: '/wms/regional-warehouses/:id',
+    name: 'wms-regional-warehouses-id',
+    component: () => import('@/pages/wms/regional-warehouses/[id].vue'),
+  },
+
+  // WMS Product Categories Routes
+  {
+    path: '/wms/product-categories',
+    name: 'wms-product-categories',
+    component: () => import('@/pages/wms/product-categories/index.vue'),
+  },
+  {
+    path: '/wms/product-categories/create',
+    name: 'wms-product-categories-create',
+    component: () => import('@/pages/wms/product-categories/create.vue'),
+  },
+  {
+    path: '/wms/product-categories/:id',
+    name: 'wms-product-categories-id',
+    component: () => import('@/pages/wms/product-categories/[id].vue'),
+  },
+
 ]

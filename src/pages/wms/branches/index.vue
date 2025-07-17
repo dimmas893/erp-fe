@@ -1,57 +1,38 @@
 <route lang="yaml">
 meta:
   layout: default
-  navActiveLink: transaction-billings
+  navActiveLink: wms-branches
 </route>
 
 <template>
   <VCard>
     <!-- Dynamic Filter Component -->
     <DynamicFilter
-      title="Data Tagihan"
+      title="Data Cabang"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      quick-search-placeholder="Cari berdasarkan status..."
-      :quick-search-fields="['status']"
+      quick-search-placeholder="Cari nama, kode, telepon, atau email..."
+      :quick-search-fields="['name', 'code', 'phone', 'email']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
     >
       <template #actions>
-        <div class="d-flex gap-2">
         <VBtn
           color="primary"
-            prepend-icon="tabler-stethoscope"
-            :to="{ name: 'transaction-billings-consultation-create' }"
-            variant="tonal"
-          >
-            Konsultasi
-          </VBtn>
-          <VBtn
-            color="warning"
-            prepend-icon="tabler-activity"
-            :to="{ name: 'transaction-billings-treatment-create' }"
-            variant="tonal"
-          >
-            Treatment
-          </VBtn>
-          <VBtn
-            color="success"
-            prepend-icon="tabler-package"
-            :to="{ name: 'transaction-billings-product-create' }"
-            variant="tonal"
-          >
-            Produk
+          prepend-icon="tabler-plus"
+          :to="{ name: 'wms-branches-create' }"
+        >
+          Tambah Cabang
         </VBtn>
-        </div>
       </template>
     </DynamicFilter>
     
     <VDivider />
     <VDataTableServer
       :headers="headers"
-      :items="billings"
-      :items-length="totalBillings"
+      :items="branches"
+      :items-length="totalBranches"
       :loading="loading"
       :items-per-page="itemsPerPage"
       :page="page"
@@ -62,55 +43,46 @@ meta:
       <template #item.no="{ index }">
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
-
-      <template #item.total_amount="{ item }">
-        {{ formatCurrency(item.total_amount) }}
+      <template #item.name="{ item }">
+        <span class="font-weight-medium">{{ item?.name || '-' }}</span>
       </template>
-      <template #item.discount_amount="{ item }">
-        {{ formatCurrency(item.discount_amount) }}
-      </template>
-      <template #item.tax_amount="{ item }">
-        {{ formatCurrency(item.tax_amount) }}
-      </template>
-      <template #item.grand_total="{ item }">
-        <span class="font-weight-bold">{{ formatCurrency(item.grand_total) }}</span>
-      </template>
-      <template #item.status="{ item }">
+      <template #item.type="{ item }">
         <VChip
-          :color="getStatusColor(item.status)"
+          v-if="item && item.type"
+          :color="getTypeColor(item.type)"
           size="small"
           label
         >
-          {{ getStatusText(item.status) }}
+          {{ item.type }}
         </VChip>
+        <span v-else class="text-medium-emphasis">-</span>
       </template>
-      <template #item.paid_at="{ item }">
-        {{ item.paid_at ? formatDateTime(item.paid_at) : '-' }}
+      <template #item.is_active="{ item }">
+        <VChip
+          v-if="item"
+          :color="item.is_active ? 'success' : 'error'"
+          size="small"
+          label
+        >
+          {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
+        </VChip>
+        <span v-else class="text-medium-emphasis">-</span>
+      </template>
+      <template #item.auto_reorder_enabled="{ item }">
+        <VChip
+          v-if="item"
+          :color="item.auto_reorder_enabled ? 'success' : 'warning'"
+          size="small"
+          label
+        >
+          {{ item.auto_reorder_enabled ? 'Diaktifkan' : 'Dinonaktifkan' }}
+        </VChip>
+        <span v-else class="text-medium-emphasis">-</span>
       </template>
       <template #item.created_at="{ item }">
-        {{ formatDateTime(item.created_at) }}
+        {{ item && item.created_at ? formatDateTime(item.created_at) : '-' }}
       </template>
-      <template #item.actions="{ item }">
-        <div class="d-flex gap-2">
-          <VBtn
-            icon="tabler-eye"
-            size="small"
-            variant="text"
-            color="primary"
-            :to="{ name: 'transaction-billings-id', params: { id: item.id } }"
-            title="Lihat Detail"
-          />
-          <VBtn
-            icon="tabler-edit"
-            size="small"
-            variant="text"
-            color="warning"
-            :to="{ name: 'transaction-billings-edit-id', params: { id: item.id } }"
-            title="Edit Tagihan"
-          />
-          <!-- Consultation button removed as route doesn't exist -->
-        </div>
-      </template>
+
       <template #loading>
         <VSkeletonLoader
           class="mx-auto"
@@ -127,7 +99,7 @@ meta:
             color="primary"
             class="mb-4"
           >
-            tabler-receipt
+            tabler-building
           </VIcon>
           <h3 class="text-h6 mb-2">
             Tidak ada data ditemukan
@@ -140,7 +112,7 @@ meta:
             variant="tonal"
             @click="handleClearFilters"
           >
-            Reset Filter  
+            Reset Filter
           </VBtn>
         </div>
       </template>
@@ -161,12 +133,12 @@ meta:
             <span class="text-body-2 text-medium-emphasis">per halaman</span>
           </div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalBillings) }}
+            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalBranches) }}
           </div>
           <TablePagination
             v-model:page="page"
             v-model:items-per-page="itemsPerPage"
-            :total-items="totalBillings"
+            :total-items="totalBranches"
             :items-per-page-options="perPageOptions"
             hide-details
             :show-meta="false"
@@ -193,27 +165,83 @@ const orderBy = ref('desc')
 const loading = ref(true) // Start with loading true for initial load
 const initialLoadCompleted = ref(false)
 
-const billings = ref([])
-const totalBillings = ref(0)
+const branches = ref([])
+const totalBranches = ref(0)
 const currentFilters = ref([])
 const currentQuickSearch = ref('')
 
 // Reactive field configurations
 const allowedFields = [
-  'status',
+  'name',
+  'code', 
+  'type',
+  'phone',
+  'email',
+  'address',
+  'is_active',
+  'auto_reorder_enabled',
+  'created_at',
 ]
 
 const fieldConfigs = computed(() => {
   return {
-    'status': {
+    'name': {
+      title: 'Nama Cabang',
+      type: 'text',
+      operator: 'like',
+    },
+    'code': {
+      title: 'Kode Cabang',
+      type: 'text',
+      operator: 'like',
+    },
+    'type': {
+      title: 'Tipe Cabang',
+      type: 'select',
+      operator: 'equal',
+      options: [
+        { title: 'FLAGSHIP', value: 'FLAGSHIP' },
+        { title: 'STANDARD', value: 'STANDARD' },
+        { title: 'MINI', value: 'MINI' },
+      ],
+    },
+    'phone': {
+      title: 'Telepon',
+      type: 'tel',
+      operator: 'like',
+    },
+    'email': {
+      title: 'Email',
+      type: 'email',
+      operator: 'like',
+    },
+    'address': {
+      title: 'Alamat',
+      type: 'text',
+      operator: 'like',
+    },
+    'is_active': {
       title: 'Status',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Draft', value: 'draft' },
-        { title: 'Unpaid', value: 'unpaid' },
-        { title: 'Paid', value: 'paid' },
+        { title: 'Aktif', value: true },
+        { title: 'Nonaktif', value: false },
       ],
+    },
+    'auto_reorder_enabled': {
+      title: 'Auto Reorder',
+      type: 'select',
+      operator: 'equal',
+      options: [
+        { title: 'Diaktifkan', value: true },
+        { title: 'Dinonaktifkan', value: false },
+      ],
+    },
+    'created_at': {
+      title: 'Tanggal Dibuat',
+      type: 'date',
+      operator: 'date',
     },
   }
 })
@@ -235,7 +263,7 @@ const filterConfig = computed(() => ({
 
 // Computed property to control no-data display
 const shouldShowNoData = computed(() => {
-  return !loading.value && initialLoadCompleted.value && billings.value.length === 0
+  return !loading.value && initialLoadCompleted.value && branches.value.length === 0
 })
 
 const perPageOptions = [
@@ -248,21 +276,22 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Billing Number', key: 'billing_number' },
-  { title: 'Total Amount', key: 'total_amount' },
-  { title: 'Discount Amount', key: 'discount_amount' },
-  { title: 'Tax Amount', key: 'tax_amount' },
-  { title: 'Grand Total', key: 'grand_total' },
-  { title: 'Status', key: 'status' },
-  { title: 'Tanggal Bayar', key: 'paid_at' },
+  { title: 'Nama Cabang', key: 'name' },
+  { title: 'Kode', key: 'code' },
+  { title: 'Tipe', key: 'type' },
+  { title: 'Alamat', key: 'address' },
+  { title: 'Telepon', key: 'phone' },
+  { title: 'Email', key: 'email' },
+  { title: 'Kapasitas', key: 'max_stock_capacity_m3' },
+  { title: 'Auto Reorder', key: 'auto_reorder_enabled', sortable: false },
+  { title: 'Status', key: 'is_active', sortable: false },
   { title: 'Tanggal Dibuat', key: 'created_at' },
-  { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
-async function fetchBillings() {
+async function fetchBranches() {
   loading.value = true
-  console.log('🔄 Starting fetchBillings...')
+  console.log('🔄 Starting fetchBranches...')
   
   try {
     const requestBody = {
@@ -281,7 +310,7 @@ async function fetchBillings() {
     if (currentQuickSearch.value?.trim()) {
       if (!requestBody.filters) requestBody.filters = []
       requestBody.filters.push({
-        search_by: 'status',
+        search_by: 'name',
         filter_type: 'like',
         search_query: currentQuickSearch.value.trim(),
       })
@@ -289,30 +318,35 @@ async function fetchBillings() {
 
     console.log('📤 API Request body:', requestBody)
     
-    const res = await $api('/transaction/billings/paginated', {
+    const res = await $api('/wms/branches/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
     console.log('📥 API Response:', res)
     
-    billings.value = res.data || []
-    totalBillings.value = res.meta?.total || 0
+    // Handle the API response structure correctly
+    if (res.data && res.data.data) {
+      branches.value = res.data.data.rows || []
+      totalBranches.value = res.data.data.count || 0
+    } else {
+      branches.value = res.data?.rows || []
+      totalBranches.value = res.data?.count || 0
+    }
     
-    console.log('✅ Billings loaded:', billings.value.length, 'total:', totalBillings.value)
-    console.log('📋 Sample billing data:', billings.value[0])
+    console.log('✅ Branches loaded:', branches.value.length, 'total:', totalBranches.value)
   } catch (error) {
-    console.error('❌ Error fetching billings:', error)
+    console.error('❌ Error fetching branches:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Tagihan',
-      text: 'Tidak dapat memuat data tagihan. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Cabang',
+      text: 'Tidak dapat memuat data cabang. Silakan coba lagi.',
     })
-    billings.value = []
-    totalBillings.value = 0
+    branches.value = []
+    totalBranches.value = 0
   } finally {
     loading.value = false
     initialLoadCompleted.value = true
-    console.log('🏁 fetchBillings completed')
+    console.log('🏁 fetchBranches completed')
   }
 }
 
@@ -320,20 +354,20 @@ function handleApplyFilters({ filters, quickSearch }) {
   currentFilters.value = filters
   currentQuickSearch.value = quickSearch
   page.value = 1
-  fetchBillings()
+  fetchBranches()
 }
 
 function handleClearFilters() {
   currentFilters.value = []
   currentQuickSearch.value = ''
   page.value = 1
-  fetchBillings()
+  fetchBranches()
 }
 
 function handleApplyQuickSearch(searchQuery) {
   currentQuickSearch.value = searchQuery
   page.value = 1
-  fetchBillings()
+  fetchBranches()
 }
 
 function onUpdateOptions(options) {
@@ -351,33 +385,15 @@ function onUpdateOptions(options) {
   }
 }
 
-function getStatusColor(status) {
-  switch (status) {
-  case 'paid': return 'success'
-  case 'unpaid': return 'warning'
-  case 'draft': return 'secondary'
+
+
+function getTypeColor(type) {
+  switch (type) {
+  case 'FLAGSHIP': return 'primary'
+  case 'STANDARD': return 'success'
+  case 'MINI': return 'warning'
   default: return 'secondary'
   }
-}
-
-function getStatusText(status) {
-  switch (status) {
-  case 'paid': return 'Lunas'
-  case 'unpaid': return 'Belum Lunas'
-  case 'draft': return 'Draft'
-  default: return status
-  }
-}
-
-function formatCurrency(amount) {
-  if (!amount) return 'Rp 0'
-  
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
 }
 
 function formatDateTime(dateStr) {
@@ -390,7 +406,7 @@ function formatDateTime(dateStr) {
 watch([page, itemsPerPage, sortBy, orderBy], () => {
   // Only fetch if component is already mounted and not in initial loading
   if (initialLoadCompleted.value) {
-    fetchBillings()
+    fetchBranches()
   }
 })
 
@@ -399,8 +415,8 @@ onActivated(() => {
   console.log('🎯 Component onActivated triggered')
 
   // Only fetch if we don't have data and initial load is completed
-  if (billings.value.length === 0 && initialLoadCompleted.value) {
-    fetchBillings()
+  if (branches.value.length === 0 && initialLoadCompleted.value) {
+    fetchBranches()
   }
 })
 
@@ -411,8 +427,8 @@ onMounted(async () => {
   // Ensure loading is true for initial load
   loading.value = true
   
-  // Only fetch billings once on mount
-  fetchBillings()
+  // Only fetch branches once on mount
+  fetchBranches()
 })
 </script>
 

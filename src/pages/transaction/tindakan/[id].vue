@@ -757,6 +757,30 @@ async function completeTreatment() {
     // Update local data
     treatment.value = { ...treatment.value, ...res.data }
     
+    // Update billing status to confirmed
+    try {
+      // Get billing ID from treatment data or visit data
+      let billingId = res.data.billing_id
+      if (!billingId && treatment.value?.visit?.billing_id) {
+        billingId = treatment.value.visit.billing_id
+      }
+      if (billingId) {
+        console.log('📤 Updating billing status to confirmed:', billingId)
+        const billingRes = await $api(`/transaction/billings/${billingId}`, {
+          method: 'PATCH',
+          body: {
+            status: 'confirmed',
+          },
+        })
+        console.log('✅ Billing status updated:', billingRes.data)
+      } else {
+        console.log('⚠️ No billing ID found, skipping billing update')
+      }
+    } catch (billingError) {
+      console.error('❌ Error updating billing status:', billingError)
+      // Don't show error alert for billing update failure, just log it
+    }
+    
     await showSuccessAlert({
       title: 'Berhasil',
       text: 'Tindakan berhasil diselesaikan.',
