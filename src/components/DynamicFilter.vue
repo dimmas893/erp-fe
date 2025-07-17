@@ -360,11 +360,11 @@ const activeFiltersCount = computed(() => {
 
     // For list operators, check if values_list exists
     if (['in', 'not_in', 'array_overlap'].includes(f.filter_type)) {
-      return f.values_list && f.values_list.trim()
+      return f.values_list && typeof f.values_list === 'string' && f.values_list.trim()
     }
 
     // For other filters, check if search_query exists
-    return f.search_query && f.search_query.trim()
+    return f.search_query && typeof f.search_query === 'string' && f.search_query.trim()
   }).length
 })
 
@@ -478,11 +478,11 @@ function processFilters(filters) {
 
     // For list operators, check if values_list exists
     if (['in', 'not_in', 'array_overlap'].includes(f.filter_type)) {
-      return f.values_list && f.values_list.trim()
+      return f.values_list && typeof f.values_list === 'string' && f.values_list.trim()
     }
 
     // For other filters, check if search_query exists
-    return f.search_query && f.search_query.trim()
+    return f.search_query && typeof f.search_query === 'string' && f.search_query.trim()
   }).map(f => {
     const filter = {
       search_by: f.search_by,
@@ -496,9 +496,9 @@ function processFilters(filters) {
     } else if (f.filter_type === 'date_range' || isDateField(f.search_by)) {
       filter.search_query = `${f.date_from},${f.date_to}`
     } else if (['in', 'not_in', 'array_overlap'].includes(f.filter_type)) {
-      filter.values_list = f.values_list.trim()
+      filter.values_list = typeof f.values_list === 'string' ? f.values_list.trim() : ''
     } else if (!['is_null', 'is_not_null'].includes(f.filter_type)) {
-      filter.search_query = f.search_query.trim()
+      filter.search_query = typeof f.search_query === 'string' ? f.search_query.trim() : ''
     }
     
     return filter

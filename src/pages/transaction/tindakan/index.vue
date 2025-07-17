@@ -1,57 +1,32 @@
 <route lang="yaml">
 meta:
   layout: default
-  navActiveLink: transaction-billings
+  navActiveLink: transaction-tindakan
 </route>
 
 <template>
   <VCard>
     <!-- Dynamic Filter Component -->
     <DynamicFilter
-      title="Data Tagihan"
+      title="Data Tindakan"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      quick-search-placeholder="Cari berdasarkan status..."
-      :quick-search-fields="['status']"
+      quick-search-placeholder="Cari berdasarkan catatan tindakan..."
+      :quick-search-fields="['treatment_notes']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
     >
       <template #actions>
-        <div class="d-flex gap-2">
-          <VBtn
-            color="primary"
-            prepend-icon="tabler-stethoscope"
-            :to="{ name: 'transaction-billings-consultation-create' }"
-            variant="tonal"
-          >
-            Konsultasi
-          </VBtn>
-          <VBtn
-            color="warning"
-            prepend-icon="tabler-activity"
-            :to="{ name: 'transaction-billings-treatment-create' }"
-            variant="tonal"
-          >
-            Treatment
-          </VBtn>
-          <VBtn
-            color="success"
-            prepend-icon="tabler-package"
-            :to="{ name: 'transaction-billings-product-create' }"
-            variant="tonal"
-          >
-            Produk
-          </VBtn>
-        </div>
+        <!-- Create button removed as per requirement -->
       </template>
     </DynamicFilter>
     
     <VDivider />
     <VDataTableServer
       :headers="headers"
-      :items="billings"
-      :items-length="totalBillings"
+      :items="treatments"
+      :items-length="totalTreatments"
       :loading="loading"
       :items-per-page="itemsPerPage"
       :page="page"
@@ -63,32 +38,23 @@ meta:
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
 
-      <template #item.total_amount="{ item }">
-        {{ formatCurrency(item.total_amount) }}
+      <template #item.unit_price="{ item }">
+        {{ formatCurrency(item.unit_price) }}
       </template>
-      <template #item.discount_amount="{ item }">
-        {{ formatCurrency(item.discount_amount) }}
+      <template #item.total_price="{ item }">
+        {{ formatCurrency(item.total_price) }}
       </template>
-      <template #item.tax_amount="{ item }">
-        {{ formatCurrency(item.tax_amount) }}
+      <template #item.performed_at="{ item }">
+        {{ formatDateTime(item.performed_at) }}
       </template>
-      <template #item.grand_total="{ item }">
-        <span class="font-weight-bold">{{ formatCurrency(item.grand_total) }}</span>
-      </template>
-      <template #item.status="{ item }">
-        <VChip
-          :color="getStatusColor(item.status)"
-          size="small"
-          label
-        >
-          {{ getStatusText(item.status) }}
-        </VChip>
-      </template>
-      <template #item.paid_at="{ item }">
-        {{ item.paid_at ? formatDateTime(item.paid_at) : '-' }}
+      <template #item.completed_at="{ item }">
+        {{ item.completed_at ? formatDateTime(item.completed_at) : '-' }}
       </template>
       <template #item.created_at="{ item }">
         {{ formatDateTime(item.created_at) }}
+      </template>
+      <template #item.visit_number="{ item }">
+        {{ item.visit?.visit_number || '-' }}
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex gap-2">
@@ -97,18 +63,11 @@ meta:
             size="small"
             variant="text"
             color="primary"
-            :to="{ name: 'transaction-billings-id', params: { id: item.id } }"
+            :to="{ name: 'transaction-tindakan-id', params: { id: item.id } }"
             title="Lihat Detail"
           />
-          <VBtn
-            icon="tabler-edit"
-            size="small"
-            variant="text"
-            color="warning"
-            :to="{ name: 'transaction-billings-edit-id', params: { id: item.id } }"
-            title="Edit Tagihan"
-          />
-          <!-- Consultation button removed as route doesn't exist -->
+          <!-- Edit button removed as per requirement -->
+          <!-- Billing button removed as route might not exist -->
         </div>
       </template>
       <template #loading>
@@ -127,7 +86,7 @@ meta:
             color="primary"
             class="mb-4"
           >
-            tabler-receipt
+            tabler-stethoscope
           </VIcon>
           <h3 class="text-h6 mb-2">
             Tidak ada data ditemukan
@@ -161,12 +120,12 @@ meta:
             <span class="text-body-2 text-medium-emphasis">per halaman</span>
           </div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalBillings) }}
+            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalTreatments) }}
           </div>
           <TablePagination
             v-model:page="page"
             v-model:items-per-page="itemsPerPage"
-            :total-items="totalBillings"
+            :total-items="totalTreatments"
             :items-per-page-options="perPageOptions"
             hide-details
             :show-meta="false"
@@ -188,31 +147,51 @@ import { computed, onActivated, onMounted, ref, watch } from 'vue'
 // State
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref('created_at')
+const sortBy = ref('performed_at')
 const orderBy = ref('desc')
 const loading = ref(true) // Start with loading true for initial load
 const initialLoadCompleted = ref(false)
 
-const billings = ref([])
-const totalBillings = ref(0)
+const treatments = ref([])
+const totalTreatments = ref(0)
 const currentFilters = ref([])
 const currentQuickSearch = ref('')
 
 // Reactive field configurations
 const allowedFields = [
-  'status',
+  'treatment_notes',
+  'doctor_id',
+  'therapist_id',
 ]
 
 const fieldConfigs = computed(() => {
   return {
-    'status': {
-      title: 'Status',
+    'treatment_notes': {
+      title: 'Catatan Tindakan',
+      type: 'text',
+      operator: 'like',
+    },
+    'doctor_id': {
+      title: 'Dokter',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Draft', value: 'draft' },
-        { title: 'Unpaid', value: 'unpaid' },
-        { title: 'Paid', value: 'paid' },
+        { title: 'Dokter 1', value: 1 },
+        { title: 'Dokter 2', value: 2 },
+        { title: 'Dokter 3', value: 3 },
+        { title: 'Dokter 4', value: 4 },
+        { title: 'Dokter 5', value: 5 },
+      ],
+    },
+    'therapist_id': {
+      title: 'Terapis',
+      type: 'select',
+      operator: 'equal',
+      options: [
+        { title: 'Terapis 1', value: 1 },
+        { title: 'Terapis 2', value: 2 },
+        { title: 'Terapis 3', value: 3 },
+        { title: 'Terapis 4', value: 4 },
       ],
     },
   }
@@ -235,7 +214,7 @@ const filterConfig = computed(() => ({
 
 // Computed property to control no-data display
 const shouldShowNoData = computed(() => {
-  return !loading.value && initialLoadCompleted.value && billings.value.length === 0
+  return !loading.value && initialLoadCompleted.value && treatments.value.length === 0
 })
 
 const perPageOptions = [
@@ -248,21 +227,21 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Billing Number', key: 'billing_number' },
-  { title: 'Total Amount', key: 'total_amount' },
-  { title: 'Discount Amount', key: 'discount_amount' },
-  { title: 'Tax Amount', key: 'tax_amount' },
-  { title: 'Grand Total', key: 'grand_total' },
-  { title: 'Status', key: 'status' },
-  { title: 'Tanggal Bayar', key: 'paid_at' },
+  { title: 'Nomor Kunjungan', key: 'visit_number' },
+  { title: 'Harga Satuan', key: 'unit_price' },
+  { title: 'Total Harga', key: 'total_price' },
+  { title: 'Jumlah', key: 'quantity' },
+  { title: 'Waktu Dilakukan', key: 'performed_at' },
+  { title: 'Waktu Selesai', key: 'completed_at' },
+  { title: 'Catatan Tindakan', key: 'treatment_notes' },
   { title: 'Tanggal Dibuat', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
-async function fetchBillings() {
+async function fetchTreatments() {
   loading.value = true
-  console.log('🔄 Starting fetchBillings...')
+  console.log('🔄 Starting fetchTreatments...')
   
   try {
     const requestBody = {
@@ -281,7 +260,7 @@ async function fetchBillings() {
     if (currentQuickSearch.value?.trim()) {
       if (!requestBody.filters) requestBody.filters = []
       requestBody.filters.push({
-        search_by: 'status',
+        search_by: 'treatment_notes',
         filter_type: 'like',
         search_query: currentQuickSearch.value.trim(),
       })
@@ -289,30 +268,30 @@ async function fetchBillings() {
 
     console.log('📤 API Request body:', requestBody)
     
-    const res = await $api('/transaction/billings/paginated', {
+    const res = await $api('/rme/visit-treatments/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
     console.log('📥 API Response:', res)
     
-    billings.value = res.data || []
-    totalBillings.value = res.meta?.total || 0
+    treatments.value = res.data || []
+    totalTreatments.value = res.meta?.total || 0
     
-    console.log('✅ Billings loaded:', billings.value.length, 'total:', totalBillings.value)
-    console.log('📋 Sample billing data:', billings.value[0])
+    console.log('✅ Treatments loaded:', treatments.value.length, 'total:', totalTreatments.value)
+    console.log('📋 Sample treatment data:', treatments.value[0])
   } catch (error) {
-    console.error('❌ Error fetching billings:', error)
+    console.error('❌ Error fetching treatments:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Tagihan',
-      text: 'Tidak dapat memuat data tagihan. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Tindakan',
+      text: 'Tidak dapat memuat data tindakan. Silakan coba lagi.',
     })
-    billings.value = []
-    totalBillings.value = 0
+    treatments.value = []
+    totalTreatments.value = 0
   } finally {
     loading.value = false
     initialLoadCompleted.value = true
-    console.log('🏁 fetchBillings completed')
+    console.log('🏁 fetchTreatments completed')
   }
 }
 
@@ -320,20 +299,20 @@ function handleApplyFilters({ filters, quickSearch }) {
   currentFilters.value = filters
   currentQuickSearch.value = quickSearch
   page.value = 1
-  fetchBillings()
+  fetchTreatments()
 }
 
 function handleClearFilters() {
   currentFilters.value = []
   currentQuickSearch.value = ''
   page.value = 1
-  fetchBillings()
+  fetchTreatments()
 }
 
 function handleApplyQuickSearch(searchQuery) {
   currentQuickSearch.value = searchQuery
   page.value = 1
-  fetchBillings()
+  fetchTreatments()
 }
 
 function onUpdateOptions(options) {
@@ -348,24 +327,6 @@ function onUpdateOptions(options) {
     orderBy.value = sortItem.order
 
     // Remove direct fetch call - let the watcher handle it
-  }
-}
-
-function getStatusColor(status) {
-  switch (status) {
-  case 'paid': return 'success'
-  case 'unpaid': return 'warning'
-  case 'draft': return 'secondary'
-  default: return 'secondary'
-  }
-}
-
-function getStatusText(status) {
-  switch (status) {
-  case 'paid': return 'Lunas'
-  case 'unpaid': return 'Belum Lunas'
-  case 'draft': return 'Draft'
-  default: return status
   }
 }
 
@@ -390,7 +351,7 @@ function formatDateTime(dateStr) {
 watch([page, itemsPerPage, sortBy, orderBy], () => {
   // Only fetch if component is already mounted and not in initial loading
   if (initialLoadCompleted.value) {
-    fetchBillings()
+    fetchTreatments()
   }
 })
 
@@ -399,8 +360,8 @@ onActivated(() => {
   console.log('🎯 Component onActivated triggered')
 
   // Only fetch if we don't have data and initial load is completed
-  if (billings.value.length === 0 && initialLoadCompleted.value) {
-    fetchBillings()
+  if (treatments.value.length === 0 && initialLoadCompleted.value) {
+    fetchTreatments()
   }
 })
 
@@ -411,8 +372,8 @@ onMounted(async () => {
   // Ensure loading is true for initial load
   loading.value = true
   
-  // Only fetch billings once on mount
-  fetchBillings()
+  // Only fetch treatments once on mount
+  fetchTreatments()
 })
 </script>
 

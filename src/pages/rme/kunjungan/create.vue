@@ -47,51 +47,80 @@ meta:
         <VForm
           ref="form"
           @submit.prevent="handleSubmit"
+          validate-on="submit"
         >
           <VRow>
             <VCol
               cols="12"
               md="6"
             >
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Pasien *
+              </label>
               <VSelect
                 v-model="formData.patient_id"
                 :items="patientOptions"
                 item-title="title"
                 item-value="value"
-                label="Pasien *"
                 :rules="[v => !!v || 'Pasien harus dipilih']"
                 required
                 density="comfortable"
                 variant="outlined"
+                :loading="loadingPatients"
               />
             </VCol>
             <VCol
               cols="12"
               md="6"
             >
-              <VSelect
-                v-model="formData.doctor_id"
-                :items="doctorOptions"
-                item-title="title"
-                item-value="value"
-                label="Dokter *"
-                :rules="[v => !!v || 'Dokter harus dipilih']"
-                required
-                density="comfortable"
-                variant="outlined"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="6"
-            >
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Cabang *
+              </label>
               <VSelect
                 v-model="formData.branch_id"
                 :items="branchOptions"
                 item-title="title"
                 item-value="value"
-                label="Cabang *"
                 :rules="[v => !!v || 'Cabang harus dipilih']"
+                required
+                density="comfortable"
+                variant="outlined"
+                :loading="loadingBranches"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Dokter *
+              </label>
+              <VSelect
+                v-model="formData.doctor_id"
+                :items="doctorOptions"
+                item-title="title"
+                item-value="value"
+                :rules="[v => !!v || 'Dokter harus dipilih']"
+                required
+                density="comfortable"
+                variant="outlined"
+                :loading="loadingDoctors"
+                :disabled="!formData.branch_id"
+              />
+            </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Jenis Kunjungan *
+              </label>
+              <VSelect
+                v-model="formData.visit_type"
+                :items="visitTypeOptions"
+                item-title="title"
+                item-value="value"
+                :rules="[v => !!v || 'Jenis kunjungan harus dipilih']"
                 required
                 density="comfortable"
                 variant="outlined"
@@ -101,36 +130,158 @@ meta:
               cols="12"
               md="6"
             >
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Tanggal Kunjungan *
+              </label>
               <VTextField
                 v-model="formData.visit_date"
-                label="Tanggal Kunjungan *"
-                type="datetime-local"
+                type="date"
                 :rules="[v => !!v || 'Tanggal kunjungan harus diisi']"
                 required
                 density="comfortable"
                 variant="outlined"
               />
             </VCol>
+            <VCol
+              cols="12"
+              md="6"
+            >
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Waktu Terjadwal *
+              </label>
+              <VTextField
+                v-model="formData.scheduled_time"
+                type="datetime-local"
+                :rules="[v => !!v || 'Waktu terjadwal harus diisi']"
+                required
+                density="comfortable"
+                variant="outlined"
+              />
+            </VCol>
             <VCol cols="12">
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Keluhan Utama
+              </label>
               <VTextarea
                 v-model="formData.chief_complaint"
-                label="Keluhan Utama"
                 placeholder="Masukkan keluhan utama pasien"
                 rows="3"
                 density="comfortable"
                 variant="outlined"
               />
             </VCol>
+            <VCol cols="12">
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Catatan
+              </label>
+              <VTextarea
+                v-model="formData.notes"
+                placeholder="Masukkan catatan tambahan"
+                rows="2"
+                density="comfortable"
+                variant="outlined"
+              />
+            </VCol>
+
+            <!-- Vital Signs Section -->
+            <VCol cols="12">
+              <VCard variant="outlined" class="pa-4">
+                <VCardTitle class="text-h6 mb-4">
+                  <VIcon start color="primary">
+                    tabler-heartbeat
+                  </VIcon>
+                  Tanda Vital
+                </VCardTitle>
+                <VRow>
+                  <VCol cols="12" md="6">
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Tekanan Darah
+                    </label>
+                    <VTextField
+                      v-model="formData.vital_signs.blood_pressure"
+                      placeholder="120/80"
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                  <VCol cols="12" md="6">
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Suhu (°C)
+                    </label>
+                    <VTextField
+                      v-model="formData.vital_signs.temperature"
+                      placeholder="36.5"
+                      type="number"
+                      step="0.1"
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                  <VCol cols="12" md="6">
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Denyut Nadi (bpm)
+                    </label>
+                    <VTextField
+                      v-model="formData.vital_signs.heart_rate"
+                      placeholder="75"
+                      type="number"
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                  <VCol cols="12" md="6">
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Laju Pernapasan (rpm)
+                    </label>
+                    <VTextField
+                      v-model="formData.vital_signs.respiratory_rate"
+                      placeholder="18"
+                      type="number"
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                  <VCol cols="12" md="6">
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Berat Badan (kg)
+                    </label>
+                    <VTextField
+                      v-model="formData.vital_signs.weight"
+                      placeholder="65"
+                      type="number"
+                      step="0.1"
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                  <VCol cols="12" md="6">
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Tinggi Badan (cm)
+                    </label>
+                    <VTextField
+                      v-model="formData.vital_signs.height"
+                      placeholder="170"
+                      type="number"
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                </VRow>
+              </VCard>
+            </VCol>
+
             <VCol
               cols="12"
               md="6"
             >
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Status *
+              </label>
               <VSelect
                 v-model="formData.status"
                 :items="statusOptions"
                 item-title="title"
                 item-value="value"
-                label="Status *"
                 :rules="[v => !!v || 'Status harus dipilih']"
                 required
                 density="comfortable"
@@ -141,56 +292,97 @@ meta:
               cols="12"
               md="6"
             >
+              <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                Status Pembayaran *
+              </label>
               <VSelect
                 v-model="formData.payment_status"
                 :items="paymentStatusOptions"
                 item-title="title"
                 item-value="value"
-                label="Status Pembayaran *"
                 :rules="[v => !!v || 'Status pembayaran harus dipilih']"
                 required
                 density="comfortable"
                 variant="outlined"
               />
             </VCol>
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <VTextField
-                v-model="formData.total_consultation_fee"
-                label="Biaya Konsultasi"
-                type="number"
-                prefix="Rp"
-                density="comfortable"
-                variant="outlined"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <VTextField
-                v-model="formData.total_treatment_fee"
-                label="Biaya Treatment"
-                type="number"
-                prefix="Rp"
-                density="comfortable"
-                variant="outlined"
-              />
-            </VCol>
-            <VCol
-              cols="12"
-              md="4"
-            >
-              <VTextField
-                v-model="formData.total_product_fee"
-                label="Biaya Produk"
-                type="number"
-                prefix="Rp"
-                density="comfortable"
-                variant="outlined"
-              />
+
+            <!-- Fee Section (Static at 0) -->
+            <VCol cols="12">
+              <VCard variant="outlined" class="pa-4">
+                <VCardTitle class="text-h6 mb-4">
+                  <VIcon start color="primary">
+                    tabler-calculator
+                  </VIcon>
+                  Biaya (Statis)
+                </VCardTitle>
+                <VRow>
+                  <VCol
+                    cols="12"
+                    md="3"
+                  >
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Biaya Konsultasi
+                    </label>
+                    <VTextField
+                      :model-value="0"
+                      type="number"
+                      prefix="Rp"
+                      readonly
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="3"
+                  >
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Biaya Treatment
+                    </label>
+                    <VTextField
+                      :model-value="0"
+                      type="number"
+                      prefix="Rp"
+                      readonly
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="3"
+                  >
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Biaya Produk
+                    </label>
+                    <VTextField
+                      :model-value="0"
+                      type="number"
+                      prefix="Rp"
+                      readonly
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                  <VCol
+                    cols="12"
+                    md="3"
+                  >
+                    <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                      Total Biaya
+                    </label>
+                    <VTextField
+                      :model-value="0"
+                      type="number"
+                      prefix="Rp"
+                      readonly
+                      density="comfortable"
+                      variant="outlined"
+                    />
+                  </VCol>
+                </VRow>
+              </VCard>
             </VCol>
           </VRow>
 
@@ -225,24 +417,35 @@ meta:
 <script setup>
 import { $api } from '@/utils/api'
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const form = ref(null)
 const loading = ref(false)
+const loadingPatients = ref(false)
+const loadingBranches = ref(false)
+const loadingDoctors = ref(false)
 
 const formData = ref({
   patient_id: '',
   doctor_id: '',
   branch_id: '',
   visit_date: '',
+  scheduled_time: '',
   chief_complaint: '',
+  vital_signs: {
+    blood_pressure: '',
+    temperature: '',
+    heart_rate: '',
+    respiratory_rate: '',
+    weight: '',
+    height: '',
+  },
   status: 'SCHEDULED',
   payment_status: 'PENDING',
-  total_consultation_fee: '',
-  total_treatment_fee: '',
-  total_product_fee: '',
+  visit_type: 'CONSULTATION',
+  notes: '',
 })
 
 const patientOptions = ref([])
@@ -263,16 +466,18 @@ const paymentStatusOptions = [
   { title: 'Dikembalikan', value: 'REFUNDED' },
 ]
 
+const visitTypeOptions = [
+  { title: 'Konsultasi', value: 'CONSULTATION' },
+  { title: 'Treatment', value: 'TREATMENT' },
+  { title: 'Follow Up', value: 'FOLLOW_UP' },
+  { title: 'Emergency', value: 'EMERGENCY' },
+]
+
 async function fetchPatients() {
   try {
-    const res = await $api('/rme/patients/paginated', {
-      method: 'POST',
-      body: {
-        page: 1,
-        per_page: 1000,
-        sort_by: 'name',
-        sort_order: 'asc',
-      },
+    loadingPatients.value = true
+    const res = await $api('/rme/patients', {
+      method: 'GET',
     })
 
     patientOptions.value = (res.data || []).map(patient => ({
@@ -285,17 +490,26 @@ async function fetchPatients() {
       title: 'Gagal Memuat Data Pasien',
       text: 'Tidak dapat memuat daftar pasien.',
     })
+  } finally {
+    loadingPatients.value = false
   }
 }
 
-async function fetchDoctors() {
+async function fetchDoctors(branchId = null) {
   try {
-    const res = await $api('/hris/doctors', {
+    loadingDoctors.value = true
+    
+    if (!branchId) {
+      doctorOptions.value = []
+      return
+    }
+
+    const res = await $api(`/hris/doctors/branch/${branchId}`, {
       method: 'GET',
     })
 
     doctorOptions.value = (res.data || []).map(doctor => ({
-      title: doctor.name,
+      title: `${doctor.name} - ${doctor.specialization}`,
       value: String(doctor.id),
     }))
   } catch (e) {
@@ -304,11 +518,14 @@ async function fetchDoctors() {
       title: 'Gagal Memuat Data Dokter',
       text: 'Tidak dapat memuat daftar dokter.',
     })
+  } finally {
+    loadingDoctors.value = false
   }
 }
 
 async function fetchBranches() {
   try {
+    loadingBranches.value = true
     const res = await $api('/wms/branches', {
       method: 'GET',
     })
@@ -323,8 +540,22 @@ async function fetchBranches() {
       title: 'Gagal Memuat Data Cabang',
       text: 'Tidak dapat memuat daftar cabang.',
     })
+  } finally {
+    loadingBranches.value = false
   }
 }
+
+// Watch for branch selection changes
+watch(() => formData.value.branch_id, async (newBranchId) => {
+  // Clear doctor selection when branch changes
+  formData.value.doctor_id = ''
+  
+  if (newBranchId) {
+    await fetchDoctors(newBranchId)
+  } else {
+    doctorOptions.value = []
+  }
+})
 
 async function handleSubmit() {
   const { valid } = await form.value.validate()
@@ -340,20 +571,33 @@ async function handleSubmit() {
       patient_id: String(formData.value.patient_id),
       doctor_id: Number(formData.value.doctor_id),
       branch_id: String(formData.value.branch_id),
-      total_consultation_fee: parseFloat(formData.value.total_consultation_fee) || 0,
-      total_treatment_fee: parseFloat(formData.value.total_treatment_fee) || 0,
-      total_product_fee: parseFloat(formData.value.total_product_fee) || 0,
+      // Static fees at 0
+      total_consultation_fee: 0,
+      total_treatment_fee: 0,
+      total_product_fee: 0,
+      total_amount: 0,
+      // Convert vital signs to numbers where appropriate
+      vital_signs: {
+        ...formData.value.vital_signs,
+        temperature: parseFloat(formData.value.vital_signs.temperature) || null,
+        heart_rate: parseInt(formData.value.vital_signs.heart_rate) || null,
+        respiratory_rate: parseInt(formData.value.vital_signs.respiratory_rate) || null,
+        weight: parseFloat(formData.value.vital_signs.weight) || null,
+        height: parseInt(formData.value.vital_signs.height) || null,
+      },
     }
+
+    console.log('Submitting data:', submitData)
 
     const response = await $api('/rme/patient-visits', {
       method: 'POST',
       body: submitData,
     })
 
-    await showSuccessAlert({
-      title: 'Berhasil',
-      text: 'Kunjungan berhasil ditambahkan',
-    })
+    await showSuccessAlert(
+      'Kunjungan berhasil ditambahkan',
+      'Berhasil!'
+    )
 
     await router.push({ name: 'rme-kunjungan' })
   } catch (error) {
@@ -370,7 +614,6 @@ async function handleSubmit() {
 onMounted(async () => {
   await Promise.all([
     fetchPatients(),
-    fetchDoctors(),
     fetchBranches(),
   ])
 })

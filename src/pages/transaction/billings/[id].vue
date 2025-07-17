@@ -60,7 +60,7 @@ meta:
         </VAvatar>
         <div class="flex-grow-1">
           <h2 class="text-h4 font-weight-bold mb-1">
-            Tagihan #{{ billing.id }}
+            Tagihan #{{ billing.billing_number || billing.id }}
           </h2>
           <div class="d-flex align-center gap-2">
             <VChip
@@ -86,6 +86,15 @@ meta:
           cols="12"
           md="6"
         >
+          <div class="mb-4">
+            <div class="text-medium-emphasis mb-1">
+              Billing Number
+            </div>
+            <div class="text-h6 font-weight-medium">
+              {{ billing.billing_number || billing.id }}
+            </div>
+          </div>
+          
           <div class="mb-4">
             <div class="text-medium-emphasis mb-1">
               Status

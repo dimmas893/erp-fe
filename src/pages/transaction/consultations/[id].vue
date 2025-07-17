@@ -1628,7 +1628,7 @@ async function completeConsultation() {
     // Update billing status to forwarded_to_doctor
     try {
       // Get billing ID from consultation data or visit data
-      let billingId = consultation.value.billing_id
+      let billingId = res.data.billing_id
       
       if (!billingId && visitData.value) {
         // Try to get billing ID from visit data
@@ -1641,7 +1641,7 @@ async function completeConsultation() {
         const billingRes = await $api(`/transaction/billings/${billingId}`, {
           method: 'PATCH',
           body: {
-            status: 'completed'
+            status: 'confirmed'
           },
         })
 

@@ -1,57 +1,32 @@
 <route lang="yaml">
 meta:
   layout: default
-  navActiveLink: transaction-billings
+  navActiveLink: transaction-produk
 </route>
 
 <template>
   <VCard>
     <!-- Dynamic Filter Component -->
     <DynamicFilter
-      title="Data Tagihan"
+      title="Data Produk"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      quick-search-placeholder="Cari berdasarkan status..."
-      :quick-search-fields="['status']"
+      quick-search-placeholder="Cari berdasarkan instruksi..."
+      :quick-search-fields="['instructions']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
     >
       <template #actions>
-        <div class="d-flex gap-2">
-          <VBtn
-            color="primary"
-            prepend-icon="tabler-stethoscope"
-            :to="{ name: 'transaction-billings-consultation-create' }"
-            variant="tonal"
-          >
-            Konsultasi
-          </VBtn>
-          <VBtn
-            color="warning"
-            prepend-icon="tabler-activity"
-            :to="{ name: 'transaction-billings-treatment-create' }"
-            variant="tonal"
-          >
-            Treatment
-          </VBtn>
-          <VBtn
-            color="success"
-            prepend-icon="tabler-package"
-            :to="{ name: 'transaction-billings-product-create' }"
-            variant="tonal"
-          >
-            Produk
-          </VBtn>
-        </div>
+        <!-- Create button removed as per requirement -->
       </template>
     </DynamicFilter>
     
     <VDivider />
     <VDataTableServer
       :headers="headers"
-      :items="billings"
-      :items-length="totalBillings"
+      :items="products"
+      :items-length="totalProducts"
       :loading="loading"
       :items-per-page="itemsPerPage"
       :page="page"
@@ -63,32 +38,41 @@ meta:
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
 
-      <template #item.total_amount="{ item }">
-        {{ formatCurrency(item.total_amount) }}
+      <template #item.unit_cost="{ item }">
+        {{ formatCurrency(item.unit_cost) }}
       </template>
-      <template #item.discount_amount="{ item }">
-        {{ formatCurrency(item.discount_amount) }}
+      <template #item.unit_price="{ item }">
+        {{ formatCurrency(item.unit_price) }}
       </template>
-      <template #item.tax_amount="{ item }">
-        {{ formatCurrency(item.tax_amount) }}
+      <template #item.total_price="{ item }">
+        {{ formatCurrency(item.total_price) }}
       </template>
-      <template #item.grand_total="{ item }">
-        <span class="font-weight-bold">{{ formatCurrency(item.grand_total) }}</span>
-      </template>
-      <template #item.status="{ item }">
+      <template #item.usage_type="{ item }">
         <VChip
-          :color="getStatusColor(item.status)"
+          :color="getUsageTypeColor(item.usage_type)"
           size="small"
           label
         >
-          {{ getStatusText(item.status) }}
+          {{ getUsageTypeText(item.usage_type) }}
         </VChip>
       </template>
-      <template #item.paid_at="{ item }">
-        {{ item.paid_at ? formatDateTime(item.paid_at) : '-' }}
+      <template #item.dispensed_at="{ item }">
+        {{ formatDate(item.dispensed_at) }}
+      </template>
+      <template #item.expiry_date="{ item }">
+        {{ formatDate(item.expiry_date) }}
       </template>
       <template #item.created_at="{ item }">
         {{ formatDateTime(item.created_at) }}
+      </template>
+      <template #item.visit_status="{ item }">
+        <VChip
+          :color="getVisitStatusColor(item.visit?.status)"
+          size="small"
+          label
+        >
+          {{ getVisitStatusText(item.visit?.status) }}
+        </VChip>
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex gap-2">
@@ -97,18 +81,11 @@ meta:
             size="small"
             variant="text"
             color="primary"
-            :to="{ name: 'transaction-billings-id', params: { id: item.id } }"
+            :to="{ name: 'transaction-produk-id', params: { id: item.id } }"
             title="Lihat Detail"
           />
-          <VBtn
-            icon="tabler-edit"
-            size="small"
-            variant="text"
-            color="warning"
-            :to="{ name: 'transaction-billings-edit-id', params: { id: item.id } }"
-            title="Edit Tagihan"
-          />
-          <!-- Consultation button removed as route doesn't exist -->
+          <!-- Edit button removed as per requirement -->
+          <!-- Billing button removed as route might not exist -->
         </div>
       </template>
       <template #loading>
@@ -127,7 +104,7 @@ meta:
             color="primary"
             class="mb-4"
           >
-            tabler-receipt
+            tabler-package
           </VIcon>
           <h3 class="text-h6 mb-2">
             Tidak ada data ditemukan
@@ -161,12 +138,12 @@ meta:
             <span class="text-body-2 text-medium-emphasis">per halaman</span>
           </div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalBillings) }}
+            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalProducts) }}
           </div>
           <TablePagination
             v-model:page="page"
             v-model:items-per-page="itemsPerPage"
-            :total-items="totalBillings"
+            :total-items="totalProducts"
             :items-per-page-options="perPageOptions"
             hide-details
             :show-meta="false"
@@ -193,27 +170,63 @@ const orderBy = ref('desc')
 const loading = ref(true) // Start with loading true for initial load
 const initialLoadCompleted = ref(false)
 
-const billings = ref([])
-const totalBillings = ref(0)
+const products = ref([])
+const totalProducts = ref(0)
 const currentFilters = ref([])
 const currentQuickSearch = ref('')
 
 // Reactive field configurations
 const allowedFields = [
-  'status',
+  'instructions',
+  'usage_type',
+  'prescribed_by',
+  'dispensed_by',
+  'batch_number',
 ]
 
 const fieldConfigs = computed(() => {
   return {
-    'status': {
-      title: 'Status',
+    'instructions': {
+      title: 'Instruksi',
+      type: 'text',
+      operator: 'like',
+    },
+    'usage_type': {
+      title: 'Tipe Penggunaan',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Draft', value: 'draft' },
-        { title: 'Unpaid', value: 'unpaid' },
-        { title: 'Paid', value: 'paid' },
+        { title: 'Resep', value: 'PRESCRIPTION' },
+        { title: 'Konsumsi Perawatan', value: 'TREATMENT_CONSUMPTION' },
       ],
+    },
+    'prescribed_by': {
+      title: 'Diresepkan Oleh',
+      type: 'select',
+      operator: 'equal',
+      options: [
+        { title: 'Dokter 1', value: 1 },
+        { title: 'Dokter 2', value: 2 },
+        { title: 'Dokter 3', value: 3 },
+        { title: 'Dokter 4', value: 4 },
+        { title: 'Dokter 5', value: 5 },
+      ],
+    },
+    'dispensed_by': {
+      title: 'Dibagikan Oleh',
+      type: 'select',
+      operator: 'equal',
+      options: [
+        { title: 'Apoteker 1', value: 1 },
+        { title: 'Apoteker 2', value: 2 },
+        { title: 'Apoteker 3', value: 3 },
+        { title: 'Apoteker 4', value: 4 },
+      ],
+    },
+    'batch_number': {
+      title: 'Nomor Batch',
+      type: 'text',
+      operator: 'like',
     },
   }
 })
@@ -235,7 +248,7 @@ const filterConfig = computed(() => ({
 
 // Computed property to control no-data display
 const shouldShowNoData = computed(() => {
-  return !loading.value && initialLoadCompleted.value && billings.value.length === 0
+  return !loading.value && initialLoadCompleted.value && products.value.length === 0
 })
 
 const perPageOptions = [
@@ -248,21 +261,23 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Billing Number', key: 'billing_number' },
-  { title: 'Total Amount', key: 'total_amount' },
-  { title: 'Discount Amount', key: 'discount_amount' },
-  { title: 'Tax Amount', key: 'tax_amount' },
-  { title: 'Grand Total', key: 'grand_total' },
-  { title: 'Status', key: 'status' },
-  { title: 'Tanggal Bayar', key: 'paid_at' },
+  { title: 'Tipe Penggunaan', key: 'usage_type' },
+  { title: 'Jumlah', key: 'quantity' },
+  { title: 'Harga Satuan', key: 'unit_price' },
+  { title: 'Total Harga', key: 'total_price' },
+  { title: 'Nomor Batch', key: 'batch_number' },
+  { title: 'Tanggal Kadaluarsa', key: 'expiry_date' },
+  { title: 'Tanggal Dibagikan', key: 'dispensed_at' },
+  { title: 'Instruksi', key: 'instructions' },
+  { title: 'Status Kunjungan', key: 'visit_status' },
   { title: 'Tanggal Dibuat', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
-async function fetchBillings() {
+async function fetchProducts() {
   loading.value = true
-  console.log('🔄 Starting fetchBillings...')
+  console.log('🔄 Starting fetchProducts...')
   
   try {
     const requestBody = {
@@ -281,7 +296,7 @@ async function fetchBillings() {
     if (currentQuickSearch.value?.trim()) {
       if (!requestBody.filters) requestBody.filters = []
       requestBody.filters.push({
-        search_by: 'status',
+        search_by: 'instructions',
         filter_type: 'like',
         search_query: currentQuickSearch.value.trim(),
       })
@@ -289,30 +304,30 @@ async function fetchBillings() {
 
     console.log('📤 API Request body:', requestBody)
     
-    const res = await $api('/transaction/billings/paginated', {
+    const res = await $api('/rme/visit-products/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
     console.log('📥 API Response:', res)
     
-    billings.value = res.data || []
-    totalBillings.value = res.meta?.total || 0
+    products.value = res.data || []
+    totalProducts.value = res.meta?.total || 0
     
-    console.log('✅ Billings loaded:', billings.value.length, 'total:', totalBillings.value)
-    console.log('📋 Sample billing data:', billings.value[0])
+    console.log('✅ Products loaded:', products.value.length, 'total:', totalProducts.value)
+    console.log('📋 Sample product data:', products.value[0])
   } catch (error) {
-    console.error('❌ Error fetching billings:', error)
+    console.error('❌ Error fetching products:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Tagihan',
-      text: 'Tidak dapat memuat data tagihan. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Produk',
+      text: 'Tidak dapat memuat data produk. Silakan coba lagi.',
     })
-    billings.value = []
-    totalBillings.value = 0
+    products.value = []
+    totalProducts.value = 0
   } finally {
     loading.value = false
     initialLoadCompleted.value = true
-    console.log('🏁 fetchBillings completed')
+    console.log('🏁 fetchProducts completed')
   }
 }
 
@@ -320,20 +335,20 @@ function handleApplyFilters({ filters, quickSearch }) {
   currentFilters.value = filters
   currentQuickSearch.value = quickSearch
   page.value = 1
-  fetchBillings()
+  fetchProducts()
 }
 
 function handleClearFilters() {
   currentFilters.value = []
   currentQuickSearch.value = ''
   page.value = 1
-  fetchBillings()
+  fetchProducts()
 }
 
 function handleApplyQuickSearch(searchQuery) {
   currentQuickSearch.value = searchQuery
   page.value = 1
-  fetchBillings()
+  fetchProducts()
 }
 
 function onUpdateOptions(options) {
@@ -351,21 +366,37 @@ function onUpdateOptions(options) {
   }
 }
 
-function getStatusColor(status) {
-  switch (status) {
-  case 'paid': return 'success'
-  case 'unpaid': return 'warning'
-  case 'draft': return 'secondary'
+function getUsageTypeColor(type) {
+  switch (type) {
+  case 'PRESCRIPTION': return 'primary'
+  case 'TREATMENT_CONSUMPTION': return 'success'
   default: return 'secondary'
   }
 }
 
-function getStatusText(status) {
+function getUsageTypeText(type) {
+  switch (type) {
+  case 'PRESCRIPTION': return 'Resep'
+  case 'TREATMENT_CONSUMPTION': return 'Konsumsi Perawatan'
+  default: return type
+  }
+}
+
+function getVisitStatusColor(status) {
   switch (status) {
-  case 'paid': return 'Lunas'
-  case 'unpaid': return 'Belum Lunas'
-  case 'draft': return 'Draft'
-  default: return status
+  case 'COMPLETED': return 'success'
+  case 'IN_PROGRESS': return 'warning'
+  case 'CANCELLED': return 'error'
+  default: return 'secondary'
+  }
+}
+
+function getVisitStatusText(status) {
+  switch (status) {
+  case 'COMPLETED': return 'Selesai'
+  case 'IN_PROGRESS': return 'Sedang Berlangsung'
+  case 'CANCELLED': return 'Dibatalkan'
+  default: return status || '-'
   }
 }
 
@@ -380,6 +411,12 @@ function formatCurrency(amount) {
   }).format(amount)
 }
 
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  
+  return new Date(dateStr).toLocaleDateString('id-ID')
+}
+
 function formatDateTime(dateStr) {
   if (!dateStr) return '-'
   
@@ -390,7 +427,7 @@ function formatDateTime(dateStr) {
 watch([page, itemsPerPage, sortBy, orderBy], () => {
   // Only fetch if component is already mounted and not in initial loading
   if (initialLoadCompleted.value) {
-    fetchBillings()
+    fetchProducts()
   }
 })
 
@@ -399,8 +436,8 @@ onActivated(() => {
   console.log('🎯 Component onActivated triggered')
 
   // Only fetch if we don't have data and initial load is completed
-  if (billings.value.length === 0 && initialLoadCompleted.value) {
-    fetchBillings()
+  if (products.value.length === 0 && initialLoadCompleted.value) {
+    fetchProducts()
   }
 })
 
@@ -411,8 +448,8 @@ onMounted(async () => {
   // Ensure loading is true for initial load
   loading.value = true
   
-  // Only fetch billings once on mount
-  fetchBillings()
+  // Only fetch products once on mount
+  fetchProducts()
 })
 </script>
 

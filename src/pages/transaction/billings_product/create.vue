@@ -14,7 +14,7 @@ import { VForm } from 'vuetify/components/VForm'
 // Initialize router
 const router = useRouter()
 
-// Update form data structure
+// Form data structure for product
 const formData = ref({
   patient_id: '',
   visit_id: '',
@@ -27,6 +27,9 @@ const formData = ref({
   status: '',
 })
 
+// Product-specific form data - will be an object with product IDs as keys
+const productFormData = ref({})
+
 // Form validation
 const refForm = ref()
 const isLoading = ref(false)
@@ -36,6 +39,13 @@ const statusOptions = [
   { title: 'Draft', value: 'draft' },
   { title: 'Unpaid', value: 'unpaid' },
   { title: 'Paid', value: 'paid' },
+]
+
+// Usage type options for products
+const usageTypeOptions = [
+  { title: 'Resep', value: 'PRESCRIPTION' },
+  { title: 'Administrasi', value: 'ADMINISTRATION' },
+  { title: 'Prosedur', value: 'PROCEDURE' },
 ]
 
 // Data for dropdowns
@@ -53,35 +63,23 @@ const selectedPromo = ref(null)
 // Selected visit data
 const selectedVisit = ref(null)
 
-// Add new refs and state for branch, doctor, service type, treatments, products
+// Add new refs and state for branch, therapist, products
 const branches = ref([])
 const loadingBranches = ref(false)
-const doctors = ref([])
-const loadingDoctors = ref(false)
-const treatments = ref([])
-const loadingTreatments = ref(false)
-const products = ref([])
-const loadingProducts = ref(false)
 const therapists = ref([])
 const loadingTherapists = ref(false)
+const products = ref([])
+const loadingProducts = ref(false)
 
-// Tambah state untuk multi select treatment
-const selectedTreatment = ref([])
+// Tambah state untuk multi select product
+const selectedProducts = ref([]) // Array of product IDs for multi-select
+const selectedProductObjects = ref([]) // Array of product objects with therapist
 
-// Tambah state untuk jenis konsultasi
-const consultationServices = ref([])
-const loadingConsultationServices = ref(false)
-const selectedConsultationService = ref('')
-const consultationFee = ref('') // Tambah state untuk fee konsultasi
-
-// Set default value of serviceType to empty string
-const serviceType = ref('') // '' means not selected
+// Set default value of serviceType to product
+const serviceType = ref('product') // Fixed to product
 // Change selectedBranch to be a string (branch id)
 const selectedBranch = ref('') // string, not object
-const selectedDoctor = ref('')
 const selectedTherapist = ref('')
-const selectedTreatments = ref([])
-const selectedProducts = ref([])
 
 // onMounted: load initial data
 onMounted(async () => {
@@ -90,7 +88,6 @@ onMounted(async () => {
     loadPromos(),
     loadPaymentMethods(),
   ])
-  await loadConsultationServices()
 })
 
 // Auto-fill form when visit is selected
@@ -103,7 +100,6 @@ const onVisitSelected = visitId => {
     formData.value.patient_id = visit.patient_id
     // Jangan set formData.value.visit_id di sini, biarkan dari combobox
     selectedBranch.value = visit.branch_id
-    selectedDoctor.value = visit.doctor_id
     
     // Auto-calculate amounts
     const consultationFee = parseFloat(visit.total_consultation_fee) || 0
@@ -169,49 +165,6 @@ const loadBranches = async () => {
   }
 }
 
-// Fetch doctors for selected branch
-const loadDoctors = async branchId => {
-  console.log('loadDoctors called with:', branchId)
-  if (!branchId) {
-    doctors.value = []
-    
-    return
-  }
-  try {
-    loadingDoctors.value = true
-
-    const response = await $api('/hris/doctors/paginated', {
-      method: 'POST',
-      body: {
-        page: 1,
-        per_page: 100,
-        sort_by: 'created_at',
-        sort_order: 'desc',
-        filters: [
-          {
-            search_by: 'branch_id',
-            filter_type: 'equal',
-            search_query: branchId,
-          },
-        ],
-      },
-    })
-
-    doctors.value = response.data.map(doctor => ({
-      title: doctor.name,
-      value: doctor.id,
-    }))
-    console.log('Doctors loaded:', doctors.value)
-  } catch (error) {
-    await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Dokter',
-      text: 'Tidak dapat memuat daftar dokter. Silakan refresh halaman.',
-    })
-  } finally {
-    loadingDoctors.value = false
-  }
-}
-
 // Fetch therapists for selected branch
 const loadTherapists = async branchId => {
   console.log('loadTherapists called with:', branchId)
@@ -222,7 +175,6 @@ const loadTherapists = async branchId => {
   }
   try {
     loadingTherapists.value = true
-
 
     // Try therapists endpoint first, fallback to doctors if not available
     const response = await $api('/hris/therapists/paginated', {
@@ -283,57 +235,6 @@ const loadTherapists = async branchId => {
   }
 }
 
-// Fetch treatments for selected branch using branch-pricing endpoint
-const loadTreatments = async (branchId = null) => {
-  if (!branchId) {
-    treatments.value = []
-    
-    return
-  }
-  try {
-    loadingTreatments.value = true
-
-    const response = await $api(`/wms/branch-pricing/branch/${branchId}`, {
-      method: 'GET',
-    })
-    
-    const treatmentItems = (response.data || []).filter(item => item.item_type === 'TREATMENT')
-    console.log('🔍 Raw treatment items from API:', treatmentItems)
-    
-    // Fetch treatment details for each item
-    const treatmentDetails = await Promise.all(treatmentItems.map(async item => {
-      let treatmentName = item.item_id
-      try {
-        const detail = await $api(`/crm/treatments/${item.item_id}`, { method: 'GET' })
-        treatmentName = detail.data?.name || item.item_id
-        console.log('✅ Treatment detail fetched:', detail.data)
-      } catch (e) {
-        console.log('⚠️ Failed to fetch treatment detail for ID:', item.item_id, 'Error:', e)
-      }
-      
-      const mappedItem = {
-        title: `${treatmentName} - ${item.final_price_formatted}`,
-        value: item.item_id,
-        price: parseFloat(item.final_price),
-        priceFormatted: item.final_price_formatted,
-        raw: item,
-      }
-      console.log('🔍 Mapped treatment item:', mappedItem)
-      return mappedItem
-    }))
-    
-    treatments.value = treatmentDetails
-    console.log('✅ Treatments loaded with pricing:', treatments.value)
-  } catch (error) {
-    await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Treatment',
-      text: 'Tidak dapat memuat daftar treatment cabang. Silakan refresh halaman.',
-    })
-  } finally {
-    loadingTreatments.value = false
-  }
-}
-
 // Fetch products for selected branch using branch-pricing endpoint
 const loadProducts = async (branchId = null) => {
   if (!branchId) {
@@ -362,7 +263,7 @@ const loadProducts = async (branchId = null) => {
         priceFormatted: item.final_price_formatted,
         raw: item
       }
-    }))
+      }))
     
     products.value = productDetails
     console.log('✅ Products loaded with pricing:', products.value)
@@ -375,8 +276,6 @@ const loadProducts = async (branchId = null) => {
     loadingProducts.value = false
   }
 }
-
-
 
 // Fetch visits for selected branch
 const loadVisits = async branchId => {
@@ -411,40 +310,22 @@ const loadVisits = async branchId => {
 // Watcher for selectedBranch
 watch(selectedBranch, async (val) => {
   const branchId = typeof val === 'object' && val !== null ? val.value : val
-  selectedDoctor.value = ''
   selectedTherapist.value = ''
   formData.value.visit_id = ''
   selectedVisit.value = null
   selectedProducts.value = []
-  selectedConsultationService.value = ''
-  consultationFee.value = ''
+  selectedProductObjects.value = []
 
   if (branchId) {
     await Promise.all([
-      loadDoctors(branchId),
       loadTherapists(branchId),
       loadVisits(branchId),
-      loadProducts(branchId),
-      loadTreatments(branchId)
+      loadProducts(branchId)
     ])
   } else {
-    doctors.value = []
     therapists.value = []
     visits.value = []
     products.value = []
-    treatments.value = []
-  }
-})
-
-// Watcher serviceType: hanya untuk produk dan konsultasi
-watch(serviceType, async (val) => {
-  if (val === 'product' && selectedBranch) {
-    const branchId = typeof selectedBranch === 'object' && selectedBranch !== null ? selectedBranch.value : selectedBranch
-    await loadProducts(branchId)
-    await loadTherapists(branchId)
-  }
-  if (val === 'consultation') {
-    await loadConsultationServices()
   }
 })
 
@@ -468,62 +349,103 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
-// Computed property to get service type value
-const currentServiceType = computed(() => {
-  const serviceTypeValue = serviceType.value || serviceType
-  return typeof serviceTypeValue === 'object' && serviceTypeValue !== null 
-    ? serviceTypeValue.value 
-    : serviceTypeValue
-})
-
-// Computed property to check if it's consultation
-const isConsultationService = computed(() => {
-  return currentServiceType.value === 'consultation'
-})
-
-// Computed property to check if it's treatment
-const isTreatmentService = computed(() => {
-  return currentServiceType.value === 'tindakan'
-})
-
-// Computed property to check if it's product
-const isProductService = computed(() => {
-  return currentServiceType.value === 'product'
-})
-
-// Calculate total amount for treatments
-const calculateTreatmentTotal = computed(() => {
-  if (!selectedTreatment.value || selectedTreatment.value.length === 0) return 0
+// Helper function to create product object
+const createProductObject = (productId, productData) => {
+  // Extract just the product name without the price
+  const productName = productData.title.split(' - ')[0]
   
-  // Debug log
-  console.log('🧮 selectedTreatment:', selectedTreatment.value)
-  console.log('🧮 treatments.value:', treatments.value)
+  return {
+    id: productId,
+    name: productName,
+    price: productData.price,
+    therapist_id: '',
+    therapist_name: ''
+  }
+}
 
-  const total = selectedTreatment.value.reduce((total, treatmentId) => {
-    // Pastikan treatmentId adalah string
-    const id = typeof treatmentId === 'object' && treatmentId !== null ? treatmentId.value : treatmentId
-    const treatment = treatments.value.find(t => t.value === id)
-    console.log('🧮 Processing treatmentId:', id, 'Found treatment:', treatment, 'Price:', treatment?.price)
-    return total + (treatment?.price || 0)
-  }, 0)
+// Helper function to initialize product form data
+const initializeProductFormData = (productId) => {
+  if (!productFormData.value[productId]) {
+    productFormData.value[productId] = {
+      usage_type: 'PRESCRIPTION',
+      quantity: 1,
+      batch_number: '',
+      expiry_date: '',
+      instructions: '',
+    }
+  }
+}
+
+// Handle multi-select product selection
+const handleProductSelection = (selectedIds) => {
+  console.log('🔄 handleProductSelection called with:', selectedIds)
   
-  console.log('🧮 Final treatment total:', total)
-  return total
-})
+  // Clear existing product objects
+  selectedProductObjects.value = []
+  
+  // Create product objects for each selected ID
+  selectedIds.forEach(productId => {
+    const product = products.value.find(p => p.value === productId)
+    if (product) {
+      const newProduct = createProductObject(productId, product)
+      selectedProductObjects.value.push(newProduct)
+      
+      // Initialize form data for this product
+      initializeProductFormData(productId)
+    }
+  })
+  
+  console.log('📋 Updated selectedProductObjects:', selectedProductObjects.value)
+}
+
+// Remove product from selected products
+const removeProduct = (productId) => {
+  const index = selectedProductObjects.value.findIndex(p => p.id === productId)
+  if (index > -1) {
+    selectedProductObjects.value.splice(index, 1)
+    
+    // Also remove from the multi-select array
+    const selectIndex = selectedProducts.value.indexOf(productId)
+    if (selectIndex > -1) {
+      selectedProducts.value.splice(selectIndex, 1)
+    }
+    
+    // Clean up form data for this product
+    if (productFormData.value[productId]) {
+      delete productFormData.value[productId]
+    }
+  }
+}
+
+// Update therapist for specific product
+const updateProductTherapist = (productId, therapistId) => {
+  const product = selectedProductObjects.value.find(p => p.id === productId)
+  if (product) {
+    // Handle Proxy object - extract the actual value
+    let actualTherapistId = therapistId
+    if (therapistId && typeof therapistId === 'object' && therapistId.value !== undefined) {
+      actualTherapistId = therapistId.value
+    }
+    
+    product.therapist_id = actualTherapistId
+    const therapist = therapists.value.find(t => t.value === actualTherapistId)
+    product.therapist_name = therapist ? therapist.title : ''
+  }
+}
 
 // Calculate total amount for products
 const calculateProductTotal = computed(() => {
-  if (!selectedProducts.value || selectedProducts.value.length === 0) return 0
+  let total = 0
   
-  const total = selectedProducts.value.reduce((total, productId) => {
-    // Pastikan productId adalah string
-    const id = typeof productId === 'object' && productId !== null ? productId.value : productId
-    const product = products.value.find(p => p.value === id)
-    console.log('🧮 Processing productId:', id, 'Found product:', product, 'Price:', product?.price)
-    return total + (product?.price || 0)
-  }, 0)
+  // Add selected products total with quantities
+  if (selectedProductObjects.value && selectedProductObjects.value.length > 0) {
+    const productsTotal = selectedProductObjects.value.reduce((sum, product) => {
+      const quantity = parseInt(productFormData.value[product.id]?.quantity) || 1
+      return sum + (parseFloat(product?.price) || 0) * quantity
+    }, 0)
+    total += productsTotal
+  }
   
-  console.log('🧮 Final product total:', total)
   return total
 })
 
@@ -552,18 +474,8 @@ const calculateDiscount = computed(() => {
     return 0
   }
   
-  // Get the current total based on service type
-  let subtotal = 0
-  
-  if (isConsultationService.value && consultationFee.value) {
-    subtotal = parseFloat(consultationFee.value) || 0
-  } else if (isTreatmentService.value) {
-    subtotal = calculateTreatmentTotal.value
-  } else if (isProductService.value) {
-    subtotal = calculateProductTotal.value
-  } else {
-    subtotal = parseFloat(formData.value.total_amount) || 0
-  }
+  // Get the current total based on product total
+  const subtotal = calculateProductTotal.value
   
   console.log('🔍 Discount calculation debug:', {
     selectedPromo: selectedPromo.value,
@@ -572,11 +484,6 @@ const calculateDiscount = computed(() => {
     discountType: promo.discount_type,
     discountValue: promo.discount_value,
     minPurchase: promo.min_purchase,
-    isConsultation: isConsultationService.value,
-    consultationFee: consultationFee.value,
-    isTreatment: isTreatmentService.value,
-    treatmentTotal: calculateTreatmentTotal.value,
-    isProduct: isProductService.value,
     productTotal: calculateProductTotal.value
   })
   
@@ -604,23 +511,9 @@ const calculateDiscount = computed(() => {
 const calculateGrandTotal = () => {
   let total = 0
   
-  // For consultation, use consultation fee as the base total
-  if (isConsultationService.value && consultationFee.value) {
-    total = parseFloat(consultationFee.value) || 0
-    formData.value.total_amount = total.toString()
-  }
-  
-  // For treatments, calculate total from selected treatments
-  if (isTreatmentService.value) {
-    total = calculateTreatmentTotal.value
-    formData.value.total_amount = total.toString()
-  }
-  
   // For products, calculate total from selected products
-  if (isProductService.value) {
-    total = calculateProductTotal.value
-    formData.value.total_amount = total.toString()
-  }
+  total = calculateProductTotal.value
+  formData.value.total_amount = total.toString()
   
   // Calculate discount from selected promo
   const promoDiscount = calculateDiscount.value
@@ -637,8 +530,6 @@ const calculateGrandTotal = () => {
     discount,
     tax,
     grandTotal: formData.value.grand_total,
-    consultationFee: consultationFee.value,
-    treatmentTotal: calculateTreatmentTotal.value,
     productTotal: calculateProductTotal.value,
     promoDiscount,
     discountType: selectedPromo.value ? (() => {
@@ -655,34 +546,21 @@ watch([
   () => formData.value.total_amount,
   () => formData.value.discount_amount,
   () => formData.value.tax_amount,
-  () => consultationFee.value,
-  () => selectedTreatment.value,
-  () => selectedProducts.value,
+  () => selectedProductObjects.value,
   () => selectedPromo.value,
   () => calculateDiscount.value, // Add discount calculation to watchers
 ], () => {
   calculateGrandTotal()
 })
 
-// Fetch consultation services
-const loadConsultationServices = async () => {
-  try {
-    loadingConsultationServices.value = true
-    const response = await $api('/crm/services', { method: 'GET' })
-    consultationServices.value = (response.data || []).filter(s => s.service_type === 'CONSULTATION' && s.is_active).map(s => ({
-      title: s.name,
-      value: s.id,
-      raw: s
-    }))
-  } catch (error) {
-    await showErrorAlert(error, {
-      title: 'Gagal Memuat Jenis Konsultasi',
-      text: 'Tidak dapat memuat daftar jenis konsultasi. Silakan refresh halaman.'
-    })
-  } finally {
-    loadingConsultationServices.value = false
+// Watch usage_type to ensure it's always valid
+watch(() => productFormData.value.usage_type, (newValue) => {
+  const allowedUsageTypes = ['PRESCRIPTION', 'ADMINISTRATION', 'PROCEDURE']
+  if (newValue && !allowedUsageTypes.includes(newValue)) {
+    console.warn('Invalid usage_type detected:', newValue, 'Resetting to PRESCRIPTION')
+    productFormData.value.usage_type = 'PRESCRIPTION'
   }
-}
+})
 
 // Submit form
 const submitForm = async () => {
@@ -717,50 +595,10 @@ const submitForm = async () => {
       promo_id: promoId,
       discount_amount: parseFloat(formData.value.discount_amount) || 0,
       status: 'forwarded_to_doctor',
-      consultation_service_id: ((serviceType.value || serviceType) === 'consultation') ? selectedConsultationService.value : undefined,
     }
     
-    console.log('🔍 Debug info:', {
-      serviceType: serviceType.value,
-      currentServiceType: serviceType.value || serviceType,
-      consultationFee: consultationFee.value,
-      formDataGrandTotal: formData.value.grand_total,
-      isConsultation: (serviceType.value || serviceType) === 'consultation'
-    })
-    
-    // Add amounts based on service type
-    console.log('🔍 Service type check:', {
-      serviceType: serviceType.value,
-      serviceTypeRaw: serviceType,
-      currentServiceType: currentServiceType.value,
-      isConsultation: isConsultationService.value,
-      isTreatment: isTreatmentService.value,
-      isProduct: isProductService.value,
-      consultationFee: consultationFee.value,
-      treatmentTotal: calculateTreatmentTotal.value,
-      productTotal: calculateProductTotal.value
-    })
-    
-    if (isConsultationService.value && consultationFee.value) {
-      const fee = parseFloat(consultationFee.value)
-      submitData.total_amount = fee
-      submitData.grand_total = parseFloat(formData.value.grand_total) || fee
-      console.log('📤 Billing data with consultation fee:', {
-        total_amount: submitData.total_amount,
-        grand_total: submitData.grand_total,
-        consultation_fee: consultationFee.value
-      })
-    } else if (isTreatmentService.value && selectedTreatment.value.length > 0) {
-      const total = calculateTreatmentTotal.value
-      submitData.total_amount = total
-      submitData.grand_total = parseFloat(formData.value.grand_total) || total
-      console.log('📤 Billing data with treatment total:', {
-        total_amount: submitData.total_amount,
-        grand_total: submitData.grand_total,
-        treatment_total: total,
-        selected_treatments: selectedTreatment.value
-      })
-    } else if (isProductService.value && selectedProducts.value.length > 0) {
+    // Add amounts based on product service
+    if (selectedProductObjects.value.length > 0) {
       const total = calculateProductTotal.value
       submitData.total_amount = total
       submitData.grand_total = parseFloat(formData.value.grand_total) || total
@@ -768,13 +606,13 @@ const submitForm = async () => {
         total_amount: submitData.total_amount,
         grand_total: submitData.grand_total,
         product_total: total,
-        selected_products: selectedProducts.value
+        selected_products: selectedProductObjects.value
       })
     } else {
-      // For non-consultation or when no fee, set default values
+      // For when no products selected, set default values
       submitData.total_amount = parseFloat(formData.value.total_amount) || 0
       submitData.grand_total = parseFloat(formData.value.grand_total) || 0
-      console.log('📤 Billing data without specific service:', {
+      console.log('📤 Billing data without products:', {
         total_amount: submitData.total_amount,
         grand_total: submitData.grand_total
       })
@@ -782,46 +620,107 @@ const submitForm = async () => {
     
     console.log('📤 Final billing submit data:', submitData)
     console.log('📤 API call to /transaction/billings with body:', JSON.stringify(submitData, null, 2))
-    console.log('🔍 Promo ID debug:', {
-      selectedPromoValue: selectedPromo.value,
-      promoIdType: typeof promoId,
-      promoIdValue: promoId
-    })
-    const response = await $api('/transaction/billings', {
+    
+    // First, create the billing
+    const billingResponse = await $api('/transaction/billings', {
       method: 'POST',
       body: submitData,
     })
 
-    // Tambah insert visit consultation jika serviceType konsulta 
-      // TODO: Ganti hardcode dengan value dari UI jika sudah ada
-      const consultationPayload = {
-        visit_id: visitId,
-        doctor_id: typeof selectedDoctor.value === 'object' && selectedDoctor.value !== null
-          ? selectedDoctor.value.value
-          : selectedDoctor.value,
-        service_id: typeof selectedConsultationService.value === 'object' && selectedConsultationService.value !== null
-          ? selectedConsultationService.value.value
-          : selectedConsultationService.value,
-        consultation_type: 'INITIAL', // hardcoded, ganti jika ada field
-        fee: consultationFee.value || '0'
+    const billingId = billingResponse.data.id
+    console.log('✅ Billing created with ID:', billingId)
+
+    // Then create visit products for each selected product
+    if (selectedProductObjects.value.length > 0) {
+      const visitProductPromises = selectedProductObjects.value.map(async (product) => {
+        try {
+          // Get product details from the products array
+          const productData = products.value.find(p => p.value === product.id)
+          
+          if (!productData) {
+            throw new Error(`Product data not found for ID: ${product.id}`)
+          }
+
+          // Get product-specific form data
+          const productForm = productFormData.value[product.id] || {}
+          
+          // Prepare visit product data according to API spec
+          const visitProductData = {
+            visit_id: visitId,
+            product_id: typeof product.id === 'object' && product.id !== null 
+              ? product.id.value 
+              : product.id,
+            branch_id: typeof selectedBranch.value === 'object' && selectedBranch.value !== null 
+              ? selectedBranch.value.value 
+              : selectedBranch.value,
+            billing_id: billingId,
+            usage_type: productForm.usage_type || 'PRESCRIPTION',
+            quantity: parseInt(productForm.quantity) || 1,
+            unit_cost: productData.price,
+            unit_price: productData.price,
+            total_price: (productData.price * (parseInt(productForm.quantity) || 1)),
+            batch_number: productForm.batch_number || '',
+            expiry_date: productForm.expiry_date || '',
+            instructions: productForm.instructions || '',
+            dispensed_at: new Date().toISOString().split('T')[0], // Today's date
+          }
+
+          console.log('📤 Creating visit product:', visitProductData)
+          console.log('🔍 Debug branch_id type:', typeof visitProductData.branch_id, 'value:', visitProductData.branch_id)
+          console.log('🔍 Debug product_id type:', typeof visitProductData.product_id, 'value:', visitProductData.product_id)
+          console.log('🔍 Debug usage_type:', visitProductData.usage_type)
+          
+          // Validate required fields
+          if (!visitProductData.visit_id || !visitProductData.product_id || !visitProductData.branch_id) {
+            throw new Error(`Missing required fields: visit_id=${visitProductData.visit_id}, product_id=${visitProductData.product_id}, branch_id=${visitProductData.branch_id}`)
+          }
+          
+          // Validate usage_type
+          const allowedUsageTypes = ['PRESCRIPTION', 'ADMINISTRATION', 'PROCEDURE']
+          if (!allowedUsageTypes.includes(visitProductData.usage_type)) {
+            throw new Error(`Invalid usage_type: ${visitProductData.usage_type}. Must be one of: ${allowedUsageTypes.join(', ')}`)
+          }
+
+          const visitProductResponse = await $api('/rme/visit-products', {
+            method: 'POST',
+            body: visitProductData,
+          })
+
+          console.log('✅ Visit product created:', visitProductResponse.data)
+          return { success: true, product: product.name, data: visitProductResponse.data }
+        } catch (error) {
+          console.error('❌ Error creating visit product for', product.name, ':', error)
+          return { success: false, product: product.name, error: error.message }
+        }
+      })
+
+      // Wait for all visit products to be created
+      const results = await Promise.all(visitProductPromises)
+      
+      // Check if all were successful
+      const failedProducts = results.filter(result => !result.success)
+      
+      if (failedProducts.length > 0) {
+        // Some products failed to create
+        const failedNames = failedProducts.map(f => f.product).join(', ')
+        await showErrorAlert(new Error(`Gagal membuat beberapa produk: ${failedNames}`), {
+          title: 'Peringatan',
+          text: 'Tagihan berhasil dibuat, tetapi beberapa produk gagal ditambahkan. Silakan cek kembali.',
+        })
+      } else {
+        // All products created successfully
+        await showSuccessAlert(
+          `Tagihan produk berhasil dibuat dengan ID: ${billingId}. Semua produk (${selectedProductObjects.value.length}) berhasil ditambahkan.`,
+          'Berhasil!',
+        )
       }
-      try {
-        await $api('/rme/visit-consultations', {
-          method: 'POST',
-          body: consultationPayload,
-        })
-      } catch (consultationError) {
-        // Jika gagal, tetap lanjut, tapi tampilkan error
-        await showErrorAlert(consultationError, {
-          title: 'Gagal Membuat Visit Consultation',
-          text: 'Tagihan berhasil, tapi pembuatan konsultasi gagal. Silakan cek data kunjungan.'
-        })
-      } 
-    console.log('response', serviceType.value)
-    await showSuccessAlert(
-      `Tagihan berhasil dibuat dengan ID: ${response.data.id}`,
-      'Berhasil!',
-    )
+    } else {
+      // No products selected, just show billing success
+      await showSuccessAlert(
+        `Tagihan produk berhasil dibuat dengan ID: ${billingId}`,
+        'Berhasil!',
+      )
+    }
 
     // Redirect to previous page
     await router.back()
@@ -848,15 +747,10 @@ const resetForm = () => {
     grand_total: '',
     status: '',
   }
-  selectedDoctor.value = ''
+  productFormData.value = {}
   selectedTherapist.value = ''
-  selectedTreatments.value = []
   selectedProducts.value = []
-  selectedTreatment.value = []
-  serviceType.value = ''
   selectedBranch.value = ''
-  selectedConsultationService.value = ''
-  consultationFee.value = ''
   selectedPromo.value = null
 }
 
@@ -876,24 +770,12 @@ const goBack = () => {
           size="small"
           @click="goBack"
         />
-        Tambah Tagihan Baru
+        Tambah Tagihan Produk
       </VCardTitle>
       <VCardSubtitle>
-        Lengkapi data tagihan untuk membuat tagihan baru
+        Lengkapi data tagihan produk untuk membuat tagihan baru
       </VCardSubtitle>
     </VCardItem>
-
-    <!-- DEBUG LOG -->
-    <VCardText>
-      <div style="color: #888; font-size: 12px; margin-bottom: 8px;">
-        selectedBranch: {{ selectedBranch }} | serviceType: {{ serviceType }} | 
-        consultationFee: {{ consultationFee }} | 
-        selectedPromo: {{ selectedPromo }} | 
-        grandTotal: {{ formData.grand_total }} | 
-        totalAmount: {{ formData.total_amount }} | 
-        discountAmount: {{ formData.discount_amount }}
-      </div>
-    </VCardText>
 
     <VCardText>
       <VForm
@@ -902,14 +784,16 @@ const goBack = () => {
         validate-on="submit"
       >
         <VRow>
-          <!-- Data Cabang & Layanan -->
+          <!-- Data Cabang -->
           <VCol
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Cabang *
+            </label>
             <AppCombobox
               v-model="selectedBranch"
-              label="Cabang"
               placeholder="Pilih cabang..."
               :items="branches"
               :loading="loadingBranches"
@@ -919,53 +803,17 @@ const goBack = () => {
               hide-details="auto"
             />
           </VCol>
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <AppCombobox
-              v-model="serviceType"
-              label="Jenis Layanan"
-              placeholder="Pilih jenis layanan..."
-              :items="[
-                { title: 'Konsultasi', value: 'consultation' },
-                { title: 'Tindakan', value: 'tindakan' },
-                { title: 'Produk', value: 'product' }
-              ]"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
 
-          <!-- Jenis Konsultasi (hanya untuk konsultasi) -->
-          <VCol 
-            v-if="selectedBranch && isConsultationService" 
-            cols="12"
-            md="6"
-          >
-            <AppCombobox
-              v-model="selectedConsultationService"
-              label="Jenis Konsultasi"
-              placeholder="Pilih jenis konsultasi..."
-              :items="consultationServices"
-              :loading="loadingConsultationServices"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
           <!-- Visit Autocomplete (only show after branch is selected) -->
           <VCol
-            v-if="selectedBranch"
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Kunjungan *
+            </label>
             <AppCombobox
               v-model="formData.visit_id"
-              label="Kunjungan"
               placeholder="Pilih kunjungan..."
               :items="visits"
               :loading="loadingVisits"
@@ -975,106 +823,41 @@ const goBack = () => {
               hide-details="auto"
             />
           </VCol>
-          <!-- Doctor selection (only for consultation) -->
-          <VCol 
-            v-if="selectedBranch && isConsultationService" 
-            cols="12"
-            md="6"
-          >
-            <AppCombobox
-              v-model="selectedDoctor"
-              label="Dokter"
-              placeholder="Cari dokter..."
-              :items="doctors"
-              :loading="loadingDoctors"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
-          
-          <!-- Consultation Fee (only for consultation) -->
-          <VCol 
-            v-if="selectedBranch && isConsultationService" 
+
+          <!-- Product selection -->
+          <VCol
             cols="12"
             md="6"
           >
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Biaya Konsultasi
+              Produk (bisa lebih dari satu)
             </label>
-            <VTextField
-              v-model="consultationFee"
-              placeholder="Masukkan biaya konsultasi..."
-              type="number"
-              variant="outlined"
-              :rules="[requiredValidator, amountValidator]"
-              required
-              hide-details="auto"
-              prepend-inner-icon="tabler-currency-dollar"
-            />
-          </VCol>
-
-          <VCol
-            v-if="selectedBranch && isTreatmentService" 
-            cols="12"
-            md="6"
-          >
-            <AppCombobox
-              v-model="selectedTreatment"
-              label="Tindakan"
-              placeholder="Pilih tindakan..."
-              :items="treatments"
-              :loading="loadingTreatments"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              multiple
-              hide-details="auto"
-            />
-          </VCol>
-          <VCol
-            v-if="selectedBranch && isTreatmentService" 
-            cols="12"
-            md="6"
-          >
-            <AppCombobox
-              v-model="selectedTherapist"
-              label="Terapis"
-              placeholder="Pilih terapis..."
-              :items="therapists"
-              :loading="loadingTherapists"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
-          <!-- Product & Therapist (only for produk) -->
-          <VCol
-          v-if="selectedBranch && serviceType.value === 'product'" 
-           cols="12" md="6">
-            <AppCombobox
+            <VSelect
               v-model="selectedProducts"
-              label="Produk (bisa lebih dari satu)"
-              placeholder="Pilih produk..."
               :items="products"
               :loading="loadingProducts"
               multiple
+              chips
+              closable-chips
               clearable
               hide-details="auto"
+              placeholder="Pilih produk..."
+              item-title="title"
+              item-value="value"
+              @update:model-value="handleProductSelection"
             />
           </VCol>
           
           <!-- Promo Selection -->
           <VCol
-            v-if="selectedBranch && formData.visit_id"
             cols="12"
             md="6"
           >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Promo (Opsional)
+            </label>
             <AppCombobox
               v-model="selectedPromo"
-              label="Promo (Opsional)"
               placeholder="Pilih promo..."
               :items="promos"
               :loading="loadingPromos"
@@ -1083,9 +866,186 @@ const goBack = () => {
             />
           </VCol>
         </VRow>
+
+        <!-- Product Details Section -->
+        <VRow v-if="selectedProductObjects.length > 0">
+          <VCol cols="12">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="text-h6 mb-4">
+                <VIcon start color="info">
+                  tabler-settings
+                </VIcon>
+                Detail Produk ({{ selectedProductObjects.length }} produk)
+              </VCardTitle>
+              
+              <!-- Individual Product Details -->
+              <div v-for="(product, index) in selectedProductObjects" :key="product.id" class="mb-6">
+                <VCard variant="tonal" class="pa-4">
+                  <VCardTitle class="text-subtitle-1 mb-3">
+                    <VIcon start color="primary">
+                      tabler-package
+                    </VIcon>
+                    {{ product.name }} - {{ formatCurrency(product.price) }}
+                  </VCardTitle>
+                  
+                  <VRow>
+                    <VCol cols="12" md="6">
+                      <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                        Jenis Penggunaan
+                      </label>
+                      <VSelect
+                        v-model="productFormData[product.id].usage_type"
+                        :items="usageTypeOptions"
+                        placeholder="Pilih jenis penggunaan..."
+                        hide-details="auto"
+                      />
+                    </VCol>
+                    
+                    <VCol cols="12" md="6">
+                      <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                        Jumlah
+                      </label>
+                      <VTextField
+                        v-model="productFormData[product.id].quantity"
+                        type="number"
+                        min="1"
+                        placeholder="Masukkan jumlah..."
+                        hide-details="auto"
+                      />
+                    </VCol>
+                    
+                    <VCol cols="12" md="6">
+                      <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                        Nomor Batch (Opsional)
+                      </label>
+                      <VTextField
+                        v-model="productFormData[product.id].batch_number"
+                        placeholder="Masukkan nomor batch..."
+                        hide-details="auto"
+                      />
+                    </VCol>
+                    
+                    <VCol cols="12" md="6">
+                      <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                        Tanggal Kadaluarsa (Opsional)
+                      </label>
+                      <VTextField
+                        v-model="productFormData[product.id].expiry_date"
+                        type="date"
+                        placeholder="Pilih tanggal kadaluarsa..."
+                        hide-details="auto"
+                      />
+                    </VCol>
+                    
+                    <VCol cols="12">
+                      <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                        Instruksi (Opsional)
+                      </label>
+                      <VTextarea
+                        v-model="productFormData[product.id].instructions"
+                        placeholder="Masukkan instruksi penggunaan..."
+                        rows="3"
+                        hide-details="auto"
+                      />
+                    </VCol>
+                  </VRow>
+                </VCard>
+              </div>
+            </VCard>
+          </VCol>
+        </VRow>
+
+        <!-- Selected Products with Therapist -->
+        <VRow v-if="selectedProductObjects.length > 0">
+          <VCol cols="12">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="text-h6 mb-4">
+                <VIcon start color="success">
+                  tabler-package
+                </VIcon>
+                Produk yang Dipilih ({{ selectedProductObjects.length }} produk)
+              </VCardTitle>
+              
+              <div v-for="(product, index) in selectedProductObjects" :key="product.id" class="mb-4">
+                <VCard variant="tonal" class="pa-3">
+                  <div class="d-flex align-center justify-space-between mb-3">
+                    <div>
+                      <h6 class="text-subtitle-1 font-weight-medium mb-1">{{ product.name }}</h6>
+                      <span class="text-body-2 text-medium-emphasis">{{ formatCurrency(product.price) }}</span>
+                    </div>
+                    <VBtn
+                      icon="tabler-x"
+                      size="small"
+                      variant="text"
+                      color="error"
+                      @click="removeProduct(product.id)"
+                    />
+                  </div>
+                </VCard>
+              </div>
+            </VCard>
+          </VCol>
+        </VRow>
+
+        <!-- Cost Summary Section -->
+        <VRow>
+          <VCol cols="12">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="text-h6 mb-4">
+                <VIcon start color="primary">
+                  tabler-calculator
+                </VIcon>
+                Ringkasan Biaya Produk
+              </VCardTitle>
+              <VRow>
+                <VCol cols="12" md="4">
+                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                    Total Produk
+                  </label>
+                  <VTextField
+                    :model-value="calculateProductTotal"
+                    type="number"
+                    prefix="Rp"
+                    readonly
+                    density="comfortable"
+                    variant="outlined"
+                  />
+                </VCol>
+                <VCol cols="12" md="4">
+                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                    Diskon Promo
+                  </label>
+                  <VTextField
+                    :model-value="calculateDiscount"
+                    type="number"
+                    prefix="Rp"
+                    readonly
+                    density="comfortable"
+                    variant="outlined"
+                    color="success"
+                  />
+                </VCol>
+                <VCol cols="12" md="4">
+                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                    Total Biaya
+                  </label>
+                  <VTextField
+                    :model-value="formData.grand_total || 0"
+                    type="number"
+                    prefix="Rp"
+                    readonly
+                    density="comfortable"
+                    variant="outlined"
+                    color="primary"
+                  />
+                </VCol>
+              </VRow>
+            </VCard>
+          </VCol>
+        </VRow>
         
         <!-- Combined Summary Card -->
-        <VRow v-if="(isConsultationService && consultationFee) || (isTreatmentService && selectedTreatment.length) || (isProductService && selectedProducts.length)">
+        <VRow>
           <VCol cols="12">
             <VCard variant="outlined" color="info">
               <VCardText class="pa-4">
@@ -1094,17 +1054,15 @@ const goBack = () => {
                     tabler-calculator
                   </VIcon>
                   <h6 class="text-subtitle-1 font-weight-medium mb-0">
-                    Ringkasan Biaya
+                    Detail Perhitungan
                   </h6>
                 </div>
                 
                 <!-- Subtotal Section -->
                 <div class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2">
-                    {{ isConsultationService ? 'Biaya Konsultasi:' : isTreatmentService ? 'Total Tindakan:' : 'Total Produk:' }}
-                  </span>
+                  <span class="text-body-2">Total Produk:</span>
                   <span class="text-body-1 font-weight-medium">
-                    {{ formatCurrency(isConsultationService ? consultationFee : isTreatmentService ? calculateTreatmentTotal : calculateProductTotal) }}
+                    {{ formatCurrency(calculateProductTotal) }}
                   </span>
                 </div>
                 
@@ -1122,9 +1080,7 @@ const goBack = () => {
                     ? selectedPromo.value 
                     : selectedPromo
                   const promo = promos.find(p => p.value === promoId)?.data
-                  const subtotal = isConsultationService ? (parseFloat(consultationFee) || 0) : 
-                                 isTreatmentService ? calculateTreatmentTotal : 
-                                 isProductService ? calculateProductTotal : 0
+                  const subtotal = calculateProductTotal
                   return promo?.min_purchase && subtotal < parseFloat(promo.min_purchase)
                 })()" class="d-flex align-center gap-2 mb-2 pa-2 bg-warning-lighten-5 rounded">
                   <VIcon size="16" color="warning">
@@ -1146,9 +1102,7 @@ const goBack = () => {
                     ? selectedPromo.value 
                     : selectedPromo
                   const promo = promos.find(p => p.value === promoId)?.data
-                  const subtotal = isConsultationService ? (parseFloat(consultationFee) || 0) : 
-                                 isTreatmentService ? calculateTreatmentTotal : 
-                                 isProductService ? calculateProductTotal : 0
+                  const subtotal = calculateProductTotal
                   return promo?.min_purchase && subtotal >= parseFloat(promo.min_purchase)
                 })()" class="d-flex align-center gap-2 mb-2 pa-2 bg-success-lighten-5 rounded">
                   <VIcon size="16" color="success">
@@ -1195,16 +1149,16 @@ const goBack = () => {
         </VRow>
         
         <div class="d-flex justify-end mt-4">
-              <VBtn
-                type="submit"
-                :loading="isLoading"
-                :disabled="isLoading"
+          <VBtn
+            type="submit"
+            :loading="isLoading"
+            :disabled="isLoading || selectedProductObjects.length === 0"
             color="primary"
-              >
+          >
             <VIcon start icon="tabler-device-floppy" />
-            Lanjutkan
-              </VBtn>
-            </div>
+            Buat Tagihan Produk
+          </VBtn>
+        </div>
       </VForm>
     </VCardText>
   </VCard>
