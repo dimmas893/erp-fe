@@ -19,6 +19,14 @@ export default [
         title: 'Products',
         to: 'wms-products',
       },
+      {
+        title: 'Regional Inventory',
+        to: 'wms-regional-inventory',
+      },
+      {
+        title: 'Central Inventory',
+        to: 'wms-central-inventory',
+      },
       // You can add more WMS-related menus here
     ],
   },

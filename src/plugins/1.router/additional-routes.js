@@ -216,4 +216,38 @@ export const routes = [
     component: () => import('@/pages/wms/products/[id].vue'),
   },
 
+  // WMS Regional Inventory Routes
+  {
+    path: '/wms/regional-inventory',
+    name: 'wms-regional-inventory',
+    component: () => import('@/pages/wms/regional-inventory/index.vue'),
+  },
+  {
+    path: '/wms/regional-inventory/create',
+    name: 'wms-regional-inventory-create',
+    component: () => import('@/pages/wms/regional-inventory/create.vue'),
+  },
+  {
+    path: '/wms/regional-inventory/:id',
+    name: 'wms-regional-inventory-id',
+    component: () => import('@/pages/wms/regional-inventory/[id].vue'),
+  },
+
+  // WMS Central Inventory Routes
+  {
+    path: '/wms/central-inventory',
+    name: 'wms-central-inventory',
+    component: () => import('@/pages/wms/central-inventory/index.vue'),
+  },
+  {
+    path: '/wms/central-inventory/create',
+    name: 'wms-central-inventory-create',
+    component: () => import('@/pages/wms/central-inventory/create.vue'),
+  },
+  {
+    path: '/wms/central-inventory/:id',
+    name: 'wms-central-inventory-id',
+    component: () => import('@/pages/wms/central-inventory/[id].vue'),
+  },
+
 ]
