@@ -27,6 +27,10 @@ export default [
         title: 'Central Inventory',
         to: 'wms-central-inventory',
       },
+      {
+        title: 'Branch Inventory',
+        to: 'wms-branch-inventory',
+      },
       // You can add more WMS-related menus here
     ],
   },

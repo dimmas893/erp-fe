@@ -250,4 +250,21 @@ export const routes = [
     component: () => import('@/pages/wms/central-inventory/[id].vue'),
   },
 
+  // WMS Branch Inventory Routes
+  {
+    path: '/wms/branch-inventory',
+    name: 'wms-branch-inventory',
+    component: () => import('@/pages/wms/branch-inventory/index.vue'),
+  },
+  {
+    path: '/wms/branch-inventory/create',
+    name: 'wms-branch-inventory-create',
+    component: () => import('@/pages/wms/branch-inventory/create.vue'),
+  },
+  {
+    path: '/wms/branch-inventory/:id',
+    name: 'wms-branch-inventory-id',
+    component: () => import('@/pages/wms/branch-inventory/[id].vue'),
+  },
+
 ]
