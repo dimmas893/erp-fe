@@ -301,4 +301,38 @@ export const routes = [
     component: () => import('@/pages/hris/employees/[id].vue'),
   },
 
+  // HRIS Leave Types Routes
+  {
+    path: '/hris/leave-types',
+    name: 'hris-leave-types',
+    component: () => import('@/pages/hris/leave-types/index.vue'),
+  },
+  {
+    path: '/hris/leave-types/create',
+    name: 'hris-leave-types-create',
+    component: () => import('@/pages/hris/leave-types/create.vue'),
+  },
+  {
+    path: '/hris/leave-types/:id',
+    name: 'hris-leave-types-id',
+    component: () => import('@/pages/hris/leave-types/[id].vue'),
+  },
+
+  // HRIS Doctors Routes
+  {
+    path: '/hris/doctors',
+    name: 'hris-doctors',
+    component: () => import('@/pages/hris/doctors/index.vue'),
+  },
+  {
+    path: '/hris/doctors/create',
+    name: 'hris-doctors-create',
+    component: () => import('@/pages/hris/doctors/create.vue'),
+  },
+  {
+    path: '/hris/doctors/:id',
+    name: 'hris-doctors-id',
+    component: () => import('@/pages/hris/doctors/[id].vue'),
+  },
+
 ]
