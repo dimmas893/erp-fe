@@ -19,6 +19,10 @@ export default [
         title: 'Doctors',
         to: 'hris-doctors',
       },
+      {
+        title: 'Therapists',
+        to: 'hris-therapists',
+      },
       // You can add more HRIS-related menus here
     ],
   },

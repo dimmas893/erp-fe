@@ -335,4 +335,21 @@ export const routes = [
     component: () => import('@/pages/hris/doctors/[id].vue'),
   },
 
+  // HRIS Therapists Routes
+  {
+    path: '/hris/therapists',
+    name: 'hris-therapists',
+    component: () => import('@/pages/hris/therapists/index.vue'),
+  },
+  {
+    path: '/hris/therapists/create',
+    name: 'hris-therapists-create',
+    component: () => import('@/pages/hris/therapists/create.vue'),
+  },
+  {
+    path: '/hris/therapists/:id',
+    name: 'hris-therapists-id',
+    component: () => import('@/pages/hris/therapists/[id].vue'),
+  },
+
 ]
