@@ -1,5 +1,6 @@
 import apps from './apps'
 import charts from './charts'
+import crm from './crm'
 import dashboard from './dashboard'
 import forms from './forms'
 import hris from './hris'
@@ -12,4 +13,4 @@ import transaction from './transaction'
 import uiElements from './ui-elements'
 import wms from './wms'
 
-export default [...dashboard, ...rme, ...satusehat, ...transaction, ...wms, ...hris, ...apps, ...pages, ...uiElements, ...forms, ...tables, ...charts, ...misc]
+export default [...dashboard, ...rme, ...satusehat, ...transaction, ...wms, ...hris, ...crm, ...apps, ...pages, ...uiElements, ...forms, ...tables, ...charts, ...misc]

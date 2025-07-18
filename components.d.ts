@@ -14,7 +14,6 @@ declare module 'vue' {
     AddPaymentMethodDialog: typeof import('./src/components/dialogs/AddPaymentMethodDialog.vue')['default']
     AppAutocomplete: typeof import('./src/@core/components/app-form-elements/AppAutocomplete.vue')['default']
     AppBarSearch: typeof import('./src/@core/components/AppBarSearch.vue')['default']
-    AppBranchSelect: typeof import('./src/@core/components/AppBranchSelect.vue')['default']
     AppCardActions: typeof import('./src/@core/components/cards/AppCardActions.vue')['default']
     AppCardCode: typeof import('./src/@core/components/cards/AppCardCode.vue')['default']
     AppCombobox: typeof import('./src/@core/components/app-form-elements/AppCombobox.vue')['default']

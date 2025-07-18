@@ -12,7 +12,7 @@ export const redirects = [
       // const userData = useCookie('userData')
       // const userRole = userData.value?.role
       // if (userRole === 'admin')
-      return { name: 'dashboards-crm' }
+      return { name: 'dashboards-analytics' }
 
       // if (userRole === 'client')
       // return { name: 'access-control' }
@@ -350,6 +350,23 @@ export const routes = [
     path: '/hris/therapists/:id',
     name: 'hris-therapists-id',
     component: () => import('@/pages/hris/therapists/[id].vue'),
+  },
+
+  // CRM Promos Routes
+  {
+    path: '/crm/promos',
+    name: 'crm-promos',
+    component: () => import('@/pages/crm/promos/index.vue'),
+  },
+  {
+    path: '/crm/promos/create',
+    name: 'crm-promos-create',
+    component: () => import('@/pages/crm/promos/create.vue'),
+  },
+  {
+    path: '/crm/promos/:id',
+    name: 'crm-promos-id',
+    component: () => import('@/pages/crm/promos/[id].vue'),
   },
 
 ]
