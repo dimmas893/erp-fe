@@ -6,7 +6,7 @@
         {{ title }}
       </h2>
       <div class="d-flex gap-3 align-center flex-wrap">
-        <VBtn 
+        <!-- <VBtn 
           v-if="showDocumentationButton"
           color="info" 
           variant="tonal" 
@@ -15,7 +15,7 @@
           @click="showDocumentation = !showDocumentation"
         >
           Panduan Filter
-        </VBtn>
+        </VBtn> -->
         <VBtn 
           color="primary" 
           variant="tonal" 

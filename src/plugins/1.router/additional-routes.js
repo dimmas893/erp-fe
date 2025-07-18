@@ -280,7 +280,7 @@ export const routes = [
   },
   {
     path: '/hris/departments/:id',
-    name: 'hris-departments-detail',
+    name: 'hris-departments-id',
     component: () => import('@/pages/hris/departments/[id].vue'),
   },
 
