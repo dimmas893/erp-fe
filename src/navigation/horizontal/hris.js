@@ -11,6 +11,10 @@ export default [
         title: 'Employees',
         to: 'hris-employees',
       },
+      {
+        title: 'Leave Types',
+        to: 'hris-leave-types',
+      },
       // You can add more HRIS-related menus here
     ],
   },
