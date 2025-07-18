@@ -267,4 +267,21 @@ export const routes = [
     component: () => import('@/pages/wms/branch-inventory/[id].vue'),
   },
 
+  // HRIS Departments Routes
+  {
+    path: '/hris/departments',
+    name: 'hris-departments',
+    component: () => import('@/pages/hris/departments/index.vue'),
+  },
+  {
+    path: '/hris/departments/create',
+    name: 'hris-departments-create',
+    component: () => import('@/pages/hris/departments/create.vue'),
+  },
+  {
+    path: '/hris/departments/:id',
+    name: 'hris-departments-detail',
+    component: () => import('@/pages/hris/departments/[id].vue'),
+  },
+
 ]

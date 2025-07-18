@@ -279,3 +279,4 @@ Branch Inventory ditambahkan ke menu WMS di navigation vertical dengan title "Br
 1. Di halaman index, klik pada nama produk atau tombol "Detail"
 2. Sistem akan menampilkan informasi lengkap inventori cabang
 3. Informasi termasuk product details, branch details, stock information, dan timestamps 
+ 

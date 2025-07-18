@@ -247,3 +247,4 @@ WMS
 - **Real-time Updates**: WebSocket for live updates
 - **Reporting**: Advanced inventory reports
 - **Audit Trail**: Complete change history 
+ 
