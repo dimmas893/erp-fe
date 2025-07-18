@@ -7,6 +7,10 @@ export default [
         title: 'Departments',
         to: 'hris-departments',
       },
+      {
+        title: 'Employees',
+        to: 'hris-employees',
+      },
       // You can add more HRIS-related menus here
     ],
   },

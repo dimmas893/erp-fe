@@ -284,4 +284,21 @@ export const routes = [
     component: () => import('@/pages/hris/departments/[id].vue'),
   },
 
+  // HRIS Employees Routes
+  {
+    path: '/hris/employees',
+    name: 'hris-employees',
+    component: () => import('@/pages/hris/employees/index.vue'),
+  },
+  {
+    path: '/hris/employees/create',
+    name: 'hris-employees-create',
+    component: () => import('@/pages/hris/employees/create.vue'),
+  },
+  {
+    path: '/hris/employees/:id',
+    name: 'hris-employees-id',
+    component: () => import('@/pages/hris/employees/[id].vue'),
+  },
+
 ]
