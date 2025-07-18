@@ -369,4 +369,21 @@ export const routes = [
     component: () => import('@/pages/crm/promos/[id].vue'),
   },
 
+  // CRM Services Routes
+  {
+    path: '/crm/services',
+    name: 'crm-services',
+    component: () => import('@/pages/crm/services/index.vue'),
+  },
+  {
+    path: '/crm/services/create',
+    name: 'crm-services-create',
+    component: () => import('@/pages/crm/services/create.vue'),
+  },
+  {
+    path: '/crm/services/:id',
+    name: 'crm-services-id',
+    component: () => import('@/pages/crm/services/[id].vue'),
+  },
+
 ]
