@@ -419,6 +419,10 @@
     "createSimpleValidator": true,
     "createVueFormValidators": true,
     "fieldValidators": true,
-    "formConfigs": true
+    "formConfigs": true,
+    "formatBillingAmount": true,
+    "getBillingStatusColor": true,
+    "getTimeAgo": true,
+    "transformBillingToNotifications": true
   }
 }

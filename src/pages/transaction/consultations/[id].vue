@@ -995,7 +995,6 @@ meta:
                       <VBtn
                         color="success"
                         :loading="savingRecommendation"
-                        :disabled="!isRecommendationFormValid"
                         @click="submitRecommendation"
                       >
                         Buat Rekomendasi
@@ -1619,40 +1618,6 @@ async function completeConsultation() {
       method: 'PATCH',
       body: requestData,
     })
-
-    console.log('✅ Consultation completed:', res.data)
-
-    // Update local data
-    consultation.value = { ...consultation.value, ...res.data }
-
-    // Update billing status to forwarded_to_doctor
-    try {
-      // Get billing ID from consultation data or visit data
-      let billingId = res.data.billing_id
-      
-      if (!billingId && visitData.value) {
-        // Try to get billing ID from visit data
-        billingId = visitData.value.billing_id
-      }
-
-      if (billingId) {
-        console.log('📤 Updating billing status to forwarded_to_doctor:', billingId)
-        
-        const billingRes = await $api(`/transaction/billings/${billingId}`, {
-          method: 'PATCH',
-          body: {
-            status: 'confirmed'
-          },
-        })
-
-        console.log('✅ Billing status updated:', billingRes.data)
-      } else {
-        console.log('⚠️ No billing ID found, skipping billing update')
-      }
-    } catch (billingError) {
-      console.error('❌ Error updating billing status:', billingError)
-      // Don't show error alert for billing update failure, just log it
-    }
 
     // Show success message with Indonesian date format
     await showSuccessAlert(
