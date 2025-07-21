@@ -19,8 +19,8 @@ meta:
     >
       <template #actions>
         <div class="d-flex gap-2">
-          <VBtn
-            color="primary"
+        <VBtn
+          color="primary"
             prepend-icon="tabler-stethoscope"
             :to="{ name: 'transaction-billings-consultation-create' }"
             variant="tonal"
@@ -42,7 +42,7 @@ meta:
             variant="tonal"
           >
             Produk
-          </VBtn>
+        </VBtn>
         </div>
       </template>
     </DynamicFilter>

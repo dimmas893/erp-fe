@@ -241,23 +241,28 @@ const loadDoctors = async branchId => {
   try {
     loadingDoctors.value = true
 
-    const response = await $api('/hris/doctors/paginated', {
-      method: 'POST',
-      body: {
-        page: 1,
-        per_page: 100,
-        sort_by: 'created_at',
-        sort_order: 'desc',
-        filters: [
-          {
-            search_by: 'branch_id',
-            filter_type: 'equal',
-            search_query: branchId,
-          },
-        ],
-      },
-    })
+    // const response = await $api('/hris/doctors/paginated', {
+    //   method: 'POST',
+    //   body: {
+    //     page: 1,
+    //     per_page: 100,
+    //     sort_by: 'created_at',
+    //     sort_order: 'desc',
+    //     filters: [
+    //       {
+    //         search_by: 'branch_id',
+    //         filter_type: 'equal',
+    //         search_query: branchId,
+    //       },
+    //     ],
+    //   },
+    // })
 
+
+
+    const response = await $api(`/hris/doctors/branch/${branchId}`, {
+        method: 'GET',
+      })
     doctors.value = response.data.map(doctor => ({
       title: doctor.name,
       value: doctor.id,
@@ -282,23 +287,26 @@ const loadTherapists = async branchId => {
     loadingTherapists.value = true
 
     // Try therapists endpoint first, fallback to doctors if not available
-    const response = await $api('/hris/therapists/paginated', {
-      method: 'POST',
-      body: {
-        page: 1,
-        per_page: 100,
-        sort_by: 'created_at',
-        sort_order: 'desc',
-        filters: [
-          {
-            search_by: 'branch_id',
-            filter_type: 'equal',
-            search_query: branchId,
-          },
-        ],
-      },
-    })
+    // const response = await $api('/hris/therapists/paginated', {
+    //   method: 'POST',
+    //   body: {
+    //     page: 1,
+    //     per_page: 100,
+    //     sort_by: 'created_at',
+    //     sort_order: 'desc',
+    //     filters: [
+    //       {
+    //         search_by: 'branch_id',
+    //         filter_type: 'equal',
+    //         search_query: branchId,
+    //       },
+    //     ],
+    //   },
+    // })
 
+    const response = await $api(`/hris/therapists/branch/${branchId}`, {
+      method: 'GET',
+    })
     therapists.value = response.data.map(therapist => ({
       title: therapist.name,
       value: therapist.id,
@@ -306,23 +314,26 @@ const loadTherapists = async branchId => {
   } catch (error) {
     // Fallback: use doctors as therapists if therapists endpoint doesn't exist
     try {
-      const doctorResponse = await $api('/hris/doctors/paginated', {
-        method: 'POST',
-        body: {
-          page: 1,
-          per_page: 100,
-          sort_by: 'created_at',
-          sort_order: 'desc',
-          filters: [
-            {
-              search_by: 'branch_id',
-              filter_type: 'equal',
-              search_query: branchId,
-            },
-          ],
-        },
-      })
+      // const doctorResponse = await $api('/hris/doctors/paginated', {
+      //   method: 'POST',
+      //   body: {
+      //     page: 1,
+      //     per_page: 100,
+      //     sort_by: 'created_at',
+      //     sort_order: 'desc',
+      //     filters: [
+      //       {
+      //         search_by: 'branch_id',
+      //         filter_type: 'equal',
+      //         search_query: branchId,
+      //       },
+      //     ],
+      //   },
+      // })
 
+      const doctorResponse = await $api(`/hris/doctors/branch/${branchId}`, {
+        method: 'GET',
+      })
       therapists.value = doctorResponse.data.map(doctor => ({
         title: doctor.name,
         value: doctor.id,
