@@ -164,6 +164,7 @@ declare module 'vue-router/auto-routes' {
     'transaction-billings': RouteRecordInfo<'transaction-billings', '/transaction/billings', Record<never, never>, Record<never, never>>,
     'transaction-billings-id': RouteRecordInfo<'transaction-billings-id', '/transaction/billings/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'transaction-billings-edit-id': RouteRecordInfo<'transaction-billings-edit-id', '/transaction/billings/edit/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'transaction-billings-flow': RouteRecordInfo<'transaction-billings-flow', '/transaction/billings/flow', Record<never, never>, Record<never, never>>,
     'transaction-billings-consultation-create': RouteRecordInfo<'transaction-billings-consultation-create', '/transaction/billings_consultation/create', Record<never, never>, Record<never, never>>,
     'transaction-billings-product-create': RouteRecordInfo<'transaction-billings-product-create', '/transaction/billings_product/create', Record<never, never>, Record<never, never>>,
     'transaction-billings-treatment-create': RouteRecordInfo<'transaction-billings-treatment-create', '/transaction/billings_treatment/create', Record<never, never>, Record<never, never>>,

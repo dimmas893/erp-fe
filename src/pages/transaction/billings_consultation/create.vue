@@ -16,15 +16,16 @@ const router = useRouter()
 
 // Form data structure for consultation
 const formData = ref({
-  patient_id: '',
   visit_id: '',
-  promo_id: '',
-  payment_method_id: '',
+  service_id: '',
   total_amount: '',
   discount_amount: '',
   tax_amount: '',
   grand_total: '',
-  status: '',
+  status: 'open',
+  doctor_id: '',
+  consultation_fee: '',
+  consultation_start_time: '',
 })
 
 // Form validation
@@ -33,198 +34,332 @@ const isLoading = ref(false)
 
 // Options
 const statusOptions = [
-  { title: 'Draft', value: 'draft' },
-  { title: 'Unpaid', value: 'unpaid' },
+  { title: 'Open', value: 'open' },
+  { title: 'Confirmed', value: 'confirmed' },
   { title: 'Paid', value: 'paid' },
+  { title: 'Closed', value: 'closed' },
 ]
 
 // Data for dropdowns
 const visits = ref([])
-const promos = ref([])
-const paymentMethods = ref([])
-
+const doctors = ref([])
+const services = ref([])
+const schedules = ref([])
 const loadingVisits = ref(false)
-const loadingPromos = ref(false)
-const loadingPaymentMethods = ref(false)
-
-// Selected promo data
-const selectedPromo = ref(null)
+const loadingDoctors = ref(false)
+const loadingServices = ref(false)
+const loadingSchedules = ref(false)
 
 // Selected visit data
 const selectedVisit = ref(null)
-
-// Add new refs and state for branch, doctor, service type, treatments, products
-const branches = ref([])
-const loadingBranches = ref(false)
-const doctors = ref([])
-const loadingDoctors = ref(false)
-
-// Tambah state untuk jenis konsultasi
-const consultationServices = ref([])
-const loadingConsultationServices = ref(false)
-const selectedConsultationService = ref('')
-const consultationFee = ref('') // Tambah state untuk fee konsultasi
-
-// Set default value of serviceType to consultation
-const serviceType = ref('consultation') // Fixed to consultation
-// Change selectedBranch to be a string (branch id)
-const selectedBranch = ref('') // string, not object
-const selectedDoctor = ref('')
+const selectedDoctor = ref(null)
+const selectedService = ref(null)
+const selectedDate = ref('')
 
 // onMounted: load initial data
 onMounted(async () => {
   await Promise.all([
-    loadBranches(),
-    loadPromos(),
-    loadPaymentMethods(),
+    loadVisits(),
+    loadServices()
   ])
-  await loadConsultationServices()
+  
+  // Set today's date and time as default for consultation start time
+  const today = new Date()
+  const todayString = today.toISOString().split('T')[0]
+  const timeString = today.toTimeString().split(' ')[0].substring(0, 5)
+  formData.value.consultation_start_time = `${todayString}T${timeString}`
+  selectedDate.value = todayString
 })
 
-// Auto-fill form when visit is selected
-const onVisitSelected = visitId => {
-  const visit = visits.value.find(v => v.value === visitId)?.data
-  if (visit) {
-    selectedVisit.value = visit
 
-    // Auto-fill form data from visit
-    formData.value.patient_id = visit.patient_id
-    // Jangan set formData.value.visit_id di sini, biarkan dari combobox
-    selectedBranch.value = visit.branch_id
-    selectedDoctor.value = visit.doctor_id
-    
-    // Auto-calculate amounts
-    const consultationFee = parseFloat(visit.total_consultation_fee) || 0
-    const treatmentFee = parseFloat(visit.total_treatment_fee) || 0
-    const productFee = parseFloat(visit.total_product_fee) || 0
-    
-    formData.value.total_amount = (consultationFee + treatmentFee + productFee).toFixed(2)
-    calculateGrandTotal()
-  }
-}
 
 // Watch visit selection
-watch(() => formData.value.visit_id, newVal => {
+watch(() => selectedVisit.value, async newVal => {
+  console.log('Visit selection changed to:', newVal)
+  console.log('Visit selection type:', typeof newVal)
+  console.log('Visit selection value:', newVal)
+  
   if (newVal) {
-    onVisitSelected(newVal)
+    await onVisitSelected(newVal)
+  } else {
+    // Clear doctor selection when visit is cleared
+    formData.value.doctor_id = ''
+    formData.value.visit_id = ''
+    doctors.value = []
   }
 })
 
-const loadPromos = async () => {
-  try {
-    loadingPromos.value = true
-
-    const response = await $api('/crm/promo-engine/promos')
-
-    promos.value = response.data.map(promo => ({
-      title: `${promo.name} - ${promo.description} (${promo.code})`,
-      value: promo.id,
-      data: promo, // Store full promo data for calculations
-    }))
-  } catch (error) {
-    console.error('Error loading promos:', error)
-    await showErrorAlert(error, { 
-      title: 'Gagal Memuat Data Promo',
-      text: 'Tidak dapat memuat daftar promo. Silakan refresh halaman.',
-    })
-  } finally {
-    loadingPromos.value = false
+// Watch service selection
+watch(() => selectedService.value, newVal => {
+  console.log('Service selection changed to:', newVal)
+  if (newVal) {
+    const serviceData = typeof newVal === 'object' ? newVal.data : services.value.find(s => s.value === newVal)?.data
+    console.log('Found service data:', serviceData)
+    
+    if (serviceData) {
+      formData.value.service_id = typeof newVal === 'object' ? newVal.value : newVal
+      console.log('Set service_id:', formData.value.service_id)
+    }
+  } else {
+    formData.value.service_id = ''
   }
-}
+})
 
-const loadPaymentMethods = async () => {
-  
-}
-
-// Fetch branches on mount
-const loadBranches = async () => {
-  try {
-    loadingBranches.value = true
-
-    const response = await $api('/wms/branches')
-
-    branches.value = response.data.map(branch => ({
-      title: `${branch.name} (${branch.code})`,
-      value: branch.id,
-    }))
-  } catch (error) {
-    await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Cabang',
-      text: 'Tidak dapat memuat daftar cabang. Silakan refresh halaman.',
-    })
-  } finally {
-    loadingBranches.value = false
+// Watch consultation start time to reload schedules when date changes
+watch(() => formData.value.consultation_start_time, async newVal => {
+  console.log('Consultation start time changed to:', newVal)
+  if (newVal && formData.value.doctor_id) {
+    const consultationDate = newVal.split('T')[0]
+    await loadDoctorSchedules(formData.value.doctor_id, consultationDate)
   }
-}
+})
+
+
+
+// Watch doctor selection to auto-fill consultation fee and load schedules
+watch(() => selectedDoctor.value, async newVal => {
+  console.log('Doctor selection changed to:', newVal)
+  if (newVal) {
+    // Handle both object and value
+    const doctorData = typeof newVal === 'object' ? newVal.data : doctors.value.find(d => d.value === newVal)?.data
+    console.log('Found doctor data:', doctorData)
+    
+    if (doctorData && doctorData.consultation_fee) {
+      formData.value.consultation_fee = doctorData.consultation_fee
+      formData.value.total_amount = parseFloat(doctorData.consultation_fee).toFixed(2)
+      formData.value.doctor_id = typeof newVal === 'object' ? newVal.value : newVal
+      calculateGrandTotal()
+      console.log('Auto-filled consultation fee:', doctorData.consultation_fee)
+    }
+    
+    // Load schedules for selected doctor using date from consultation start time
+    if (formData.value.consultation_start_time) {
+      const consultationDate = formData.value.consultation_start_time.split('T')[0]
+      await loadDoctorSchedules(formData.value.doctor_id, consultationDate)
+    }
+  } else {
+    formData.value.doctor_id = ''
+    formData.value.consultation_fee = ''
+    schedules.value = []
+  }
+})
+
+
 
 // Fetch doctors for selected branch
 const loadDoctors = async branchId => {
-  console.log('loadDoctors called with:', branchId)
+  console.log('loadDoctors called with branchId:', branchId)
+  console.log('branchId type:', typeof branchId)
+  console.log('branchId value:', branchId)
+  
   if (!branchId) {
+    console.log('No branchId provided, clearing doctors')
     doctors.value = []
-    
     return
   }
+  
   try {
     loadingDoctors.value = true
+    const apiUrl = `/hris/doctors/branch/${branchId}`
+    console.log('Making API call to:', apiUrl)
 
-    // const response = await $api('/hris/doctors/paginated', {
-    //   method: 'POST',
-    //   body: {
-    //     page: 1,
-    //     per_page: 100,
-    //     sort_by: 'created_at',
-    //     sort_order: 'desc',
-    //     filters: [
-    //       {
-    //         search_by: 'branch_id',
-    //         filter_type: 'equal',
-    //         search_query: branchId,
-    //       },
-    //     ],
-    //   },
-    // })
-
-    const response = await $api(`/hris/doctors/branch/${branchId}`, {
+    const response = await $api(apiUrl, {
       method: 'GET',
     })
 
+    console.log('Doctors API response:', response)
+
+    if (response.data && Array.isArray(response.data)) {
+      if (response.data.length === 0) {
+        console.warn('No doctors found for branch_id:', branchId)
+        // Try to load all doctors as fallback
+        console.log('Trying to load all doctors as fallback...')
+        await loadAllDoctors()
+      } else {
     doctors.value = response.data.map(doctor => ({
-      title: doctor.name,
+          title: `${doctor.name} - ${doctor.specialization}`,
       value: doctor.id,
-    }))
-    console.log('Doctors loaded:', doctors.value)
+          data: doctor, // Store full doctor data
+        }))
+        
+        // Set selectedDoctor if there's a doctor_id from visit
+        if (formData.value.doctor_id) {
+          const doctorToSelect = doctors.value.find(d => d.value === formData.value.doctor_id)
+          if (doctorToSelect) {
+            selectedDoctor.value = doctorToSelect
+            console.log('Auto-selected doctor:', doctorToSelect.title)
+          }
+        }
+        
+        console.log('Processed doctors:', doctors.value)
+      }
+    } else {
+      console.error('Invalid response format:', response)
+      doctors.value = []
+    }
   } catch (error) {
+    console.error('Error loading doctors:', error)
+    console.error('Error details:', {
+      status: error.response?.status,
+      message: error.message,
+      url: error.config?.url
+    })
+    
+    // Check if it's a 404 or no data found
+    if (error.response?.status === 404 || error.message?.includes('not found')) {
+      console.log('No doctors found for branch, trying to load all doctors...')
+      await loadAllDoctors()
+    } else {
+      doctors.value = []
     await showErrorAlert(error, {
       title: 'Gagal Memuat Data Dokter',
       text: 'Tidak dapat memuat daftar dokter. Silakan refresh halaman.',
     })
+    }
   } finally {
     loadingDoctors.value = false
   }
 }
 
-// Fetch visits for selected branch
-const loadVisits = async branchId => {
-  console.log('loadVisits called with:', branchId)
-  if (!branchId) {
-    visits.value = []
-    return
-  }
+// Fallback function to load all doctors
+const loadAllDoctors = async () => {
   try {
-    loadingVisits.value = true
-
-    const response = await $api(`/rme/patient-visits/branch/${branchId}`, {
+    console.log('Loading all doctors as fallback...')
+    const response = await $api('/hris/doctors', {
       method: 'GET',
     })
 
-    visits.value = (response.data || []).map(visit => ({
-      title: `${visit.patient?.name } - ${visit.visit_number}`,
-      value: visit.id,
-      data: visit, // Store full visit data for auto-fill
-    }))
-    console.log('Visits loaded:', visits.value)
+    console.log('All doctors API response:', response)
+
+    if (response.data && Array.isArray(response.data)) {
+      doctors.value = response.data.map(doctor => ({
+        title: `${doctor.name} - ${doctor.specialization}`,
+        value: doctor.id,
+        data: doctor, // Store full doctor data
+      }))
+      
+      // Set selectedDoctor if there's a doctor_id from visit
+      if (formData.value.doctor_id) {
+        const doctorToSelect = doctors.value.find(d => d.value === formData.value.doctor_id)
+        if (doctorToSelect) {
+          selectedDoctor.value = doctorToSelect
+          console.log('Auto-selected doctor from all doctors:', doctorToSelect.title)
+        }
+      }
+      
+      console.log('Processed all doctors:', doctors.value)
+    }
   } catch (error) {
+    console.error('Error loading all doctors:', error)
+    doctors.value = []
+  }
+}
+
+// Load services
+const loadServices = async () => {
+  try {
+    loadingServices.value = true
+    console.log('Loading services...')
+
+    const response = await $api('/crm/services', {
+      method: 'GET',
+    })
+
+    console.log('Services API response:', response)
+
+    if (response.data && Array.isArray(response.data)) {
+      services.value = response.data
+        .filter(service => service.service_type === 'CONSULTATION' && service.is_active)
+        .map(service => ({
+          title: `${service.name} - ${service.description}`,
+          value: service.id,
+          data: service, // Store full service data
+        }))
+      
+      console.log('Processed services:', services.value)
+    }
+  } catch (error) {
+    console.error('Error loading services:', error)
+    await showErrorAlert(error, {
+      title: 'Gagal Memuat Data Layanan',
+      text: 'Tidak dapat memuat daftar layanan. Silakan refresh halaman.',
+    })
+  } finally {
+    loadingServices.value = false
+  }
+}
+
+// Load doctor schedules
+const loadDoctorSchedules = async (doctorId, date) => {
+  try {
+    loadingSchedules.value = true
+    console.log('Loading schedules for doctor:', doctorId, 'date:', date)
+
+    const response = await $api('/crm/doctor-schedules/check-available', {
+      method: 'POST',
+      body: {
+        doctor_id: doctorId,
+        date: date
+      }
+    })
+
+    console.log('Schedules API response:', response)
+
+    if (response.data && Array.isArray(response.data)) {
+      schedules.value = response.data
+      console.log('Processed schedules:', schedules.value)
+    } else {
+      schedules.value = []
+    }
+  } catch (error) {
+    console.error('Error loading schedules:', error)
+    schedules.value = []
+    await showErrorAlert(error, {
+      title: 'Gagal Memuat Jadwal Dokter',
+      text: 'Tidak dapat memuat jadwal dokter. Silakan coba lagi.',
+    })
+  } finally {
+    loadingSchedules.value = false
+  }
+}
+
+
+
+// Fetch all visits
+const loadVisits = async () => {
+  try {
+    loadingVisits.value = true
+
+    const response = await $api('/rme/patient-visits', {
+      method: 'GET',
+    })
+
+    console.log('Visits API response:', response)
+
+    // Collect unique branch_ids for debugging
+    const uniqueBranchIds = new Set()
+    
+    visits.value = (response.data || []).map(visit => {
+      console.log('Processing visit:', {
+        id: visit.id,
+        id_type: typeof visit.id,
+        visit_number: visit.visit_number,
+        branch_id: visit.branch_id,
+        patient: visit.patient?.name
+      })
+      uniqueBranchIds.add(visit.branch_id)
+      return {
+        title: `${visit.patient?.name} - ${visit.visit_number}`,
+        value: visit.id,
+        data: visit, // Store full visit data for auto-fill
+      }
+    })
+    
+    console.log('Unique branch_ids in visits:', Array.from(uniqueBranchIds))
+    console.log('Processed visits count:', visits.value.length)
+    console.log('Sample processed visit:', visits.value[0])
+  } catch (error) {
+    console.error('Error loading visits:', error)
     await showErrorAlert(error, { 
       title: 'Gagal Memuat Data Kunjungan',
       text: 'Tidak dapat memuat daftar kunjungan. Silakan refresh halaman.',
@@ -234,25 +369,53 @@ const loadVisits = async branchId => {
   }
 }
 
-// Watcher for selectedBranch
-watch(selectedBranch, async (val) => {
-  const branchId = typeof val === 'object' && val !== null ? val.value : val
-  selectedDoctor.value = ''
-  formData.value.visit_id = ''
-  selectedVisit.value = null
-  selectedConsultationService.value = ''
-  consultationFee.value = ''
-
-  if (branchId) {
-    await Promise.all([
-      loadDoctors(branchId),
-      loadVisits(branchId),
-    ])
-  } else {
-    doctors.value = []
-    visits.value = []
+// Auto-fill form when visit is selected
+const onVisitSelected = async visitObject => {
+  console.log('onVisitSelected called with visitObject:', visitObject)
+  
+  // Since we're using return-object, visitObject should be the full object
+  if (!visitObject || typeof visitObject !== 'object') {
+    console.error('Invalid visit object:', visitObject)
+    return
   }
-})
+  
+  const visit = visitObject.data
+  console.log('Found visit data:', visit)
+  
+  if (visit) {
+    // Auto-fill form data from visit
+    formData.value.visit_id = visit.id
+    formData.value.doctor_id = visit.doctor_id
+    console.log('Set visit_id from visit:', visit.id)
+    console.log('Set doctor_id from visit:', visit.doctor_id)
+    
+    // Set selectedDoctor to null initially, will be set after doctors are loaded
+    selectedDoctor.value = null
+    
+    // Set consultation start time to current time
+    formData.value.consultation_start_time = new Date().toISOString()
+    
+    // Load doctors for this visit's branch_id
+    console.log('Loading doctors for branch_id:', visit.branch_id)
+    console.log('Visit details:', {
+      id: visit.id,
+      visit_number: visit.visit_number,
+      branch_id: visit.branch_id,
+      doctor_id: visit.doctor_id,
+      patient_name: visit.patient?.name
+    })
+    
+    await loadDoctors(visit.branch_id)
+    
+    // Auto-calculate amounts based on consultation fee
+    if (formData.value.consultation_fee) {
+      formData.value.total_amount = parseFloat(formData.value.consultation_fee).toFixed(2)
+      calculateGrandTotal()
+    }
+  } else {
+    console.error('Visit data not found in object:', visitObject)
+  }
+}
 
 // Validation rules
 const amountValidator = value => {
@@ -274,95 +437,22 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
-// Calculate discount based on selected promo
-const calculateDiscount = computed(() => {
-  console.log('🔍 calculateDiscount called with selectedPromo:', selectedPromo.value)
-  console.log('🔍 Available promos:', promos.value)
-  
-  if (!selectedPromo.value) {
-    console.log('❌ No selectedPromo.value')
-    return 0
-  }
-  
-  // Handle case where selectedPromo might be an object
-  const promoId = typeof selectedPromo.value === 'object' && selectedPromo.value !== null 
-    ? selectedPromo.value.value 
-    : selectedPromo.value
-    
-  console.log('🔍 Extracted promoId:', promoId)
-  
-  const promo = promos.value.find(p => p.value === promoId)?.data
-  console.log('🔍 Found promo:', promo)
-  
-  if (!promo) {
-    console.log('❌ No promo found for promoId:', promoId)
-    return 0
-  }
-  
-  // Get the current total based on consultation fee
-  const subtotal = parseFloat(consultationFee.value) || 0
-  
-  console.log('🔍 Discount calculation debug:', {
-    selectedPromo: selectedPromo.value,
-    promo: promo,
-    subtotal: subtotal,
-    discountType: promo.discount_type,
-    discountValue: promo.discount_value,
-    minPurchase: promo.min_purchase,
-    consultationFee: consultationFee.value
-  })
-  
-  // Check minimum purchase requirement
-  if (promo.min_purchase && subtotal < parseFloat(promo.min_purchase)) {
-    console.log('❌ Minimum purchase not met:', subtotal, '<', promo.min_purchase)
-    return 0
-  }
-  
-  let discount = 0
-  if (promo.discount_type === 'percentage') {
-    // Percentage: total * discount_value / 100
-    discount = (subtotal * parseFloat(promo.discount_value) / 100)
-    console.log('✅ Percentage discount calculated:', subtotal, '*', promo.discount_value, '/ 100 =', discount)
-  } else if (promo.discount_type === 'nominal' || promo.discount_type === 'fixed') {
-    // Nominal/Fixed: direct discount value
-    discount = parseFloat(promo.discount_value)
-    console.log('✅ Nominal discount applied:', discount)
-  }
-  
-  console.log('💰 Final discount amount:', discount)
-  return discount
-})
+
 
 const calculateGrandTotal = () => {
-  let total = 0
+  const totalAmount = parseFloat(formData.value.total_amount) || 0
+  const discountAmount = parseFloat(formData.value.discount_amount) || 0
+  const taxAmount = parseFloat(formData.value.tax_amount) || 0
   
-  // For consultation, use consultation fee as the base total
-  total = parseFloat(consultationFee.value) || 0
-  formData.value.total_amount = total.toString()
-  
-  // Calculate discount from selected promo
-  const promoDiscount = calculateDiscount.value
-  formData.value.discount_amount = promoDiscount.toString()
-  
-  const discount = parseFloat(formData.value.discount_amount) || 0
-  const tax = parseFloat(formData.value.tax_amount) || 0
-  
-  // Apply discount to grand total: total - discount + tax
-  formData.value.grand_total = (total - discount + tax).toFixed(2)
+  // Calculate grand total: total - discount + tax
+  const grandTotal = totalAmount - discountAmount + taxAmount
+  formData.value.grand_total = grandTotal.toFixed(2)
   
   console.log('💰 Calculated grand total:', {
-    total,
-    discount,
-    tax,
-    grandTotal: formData.value.grand_total,
-    consultationFee: consultationFee.value,
-    promoDiscount,
-    discountType: selectedPromo.value ? (() => {
-      const promoId = typeof selectedPromo.value === 'object' && selectedPromo.value !== null 
-        ? selectedPromo.value.value 
-        : selectedPromo.value
-      return promos.value.find(p => p.value === promoId)?.data?.discount_type || 'none'
-    })() : 'none'
+    totalAmount,
+    discountAmount,
+    taxAmount,
+    grandTotal: formData.value.grand_total
   })
 }
 
@@ -371,9 +461,6 @@ watch([
   () => formData.value.total_amount,
   () => formData.value.discount_amount,
   () => formData.value.tax_amount,
-  () => consultationFee.value,
-  () => selectedPromo.value,
-  () => calculateDiscount.value, // Add discount calculation to watchers
 ], () => {
   calculateGrandTotal()
 })
@@ -407,96 +494,44 @@ const submitForm = async () => {
   try {
     isLoading.value = true
 
-    // Ambil visit_id dan patient_id dari pilihan kunjungan
-    let visitId = formData.value.visit_id
-    let patientId = formData.value.patient_id
-    if (typeof visitId === 'object' && visitId !== null) {
-      // Jika visit_id masih object, ambil value dan patient_id dari data
-      patientId = visitId.data?.patient_id || ''
-      visitId = visitId.value || ''
-    }
-
-    // Extract promo_id correctly and ensure it's a number
-    let promoId = null
-    if (selectedPromo.value) {
-      promoId = typeof selectedPromo.value === 'object' && selectedPromo.value !== null 
-        ? parseInt(selectedPromo.value.value) 
-        : parseInt(selectedPromo.value)
-    }
-    
-    // Set status selalu forwarded_to_doctor
+    // Prepare data for the new API endpoint
     const submitData = {
-      patient_id: patientId,
-      visit_id: visitId,
-      promo_id: promoId,
+      visit_id: formData.value.visit_id,
+      service_id: formData.value.service_id,
+      total_amount: parseFloat(formData.value.total_amount) || 0,
       discount_amount: parseFloat(formData.value.discount_amount) || 0,
-      status: 'forwarded_to_doctor',
-      consultation_service_id: selectedConsultationService.value,
+      tax_amount: parseFloat(formData.value.tax_amount) || 0,
+      grand_total: parseFloat(formData.value.grand_total) || 0,
+      status: formData.value.status,
+      doctor_id: formData.value.doctor_id,
+      consultation_fee: parseFloat(formData.value.consultation_fee) || 0,
+      consultation_start_time: formData.value.consultation_start_time,
     }
     
-    // Add amounts based on consultation service
-    if (consultationFee.value) {
-      const fee = parseFloat(consultationFee.value)
-      submitData.total_amount = fee
-      submitData.grand_total = parseFloat(formData.value.grand_total) || fee
-      console.log('📤 Billing data with consultation fee:', {
-        total_amount: submitData.total_amount,
-        grand_total: submitData.grand_total,
-        consultation_fee: consultationFee.value
-      })
-    } else {
-      // For when no fee, set default values
-      submitData.total_amount = parseFloat(formData.value.total_amount) || 0
-      submitData.grand_total = parseFloat(formData.value.grand_total) || 0
-      console.log('📤 Billing data without consultation fee:', {
-        total_amount: submitData.total_amount,
-        grand_total: submitData.grand_total
-      })
-    }
+    console.log('🔍 Debug submit data:')
+    console.log('visit_id:', formData.value.visit_id)
+    console.log('visit_id type:', typeof formData.value.visit_id)
+    console.log('Selected visit object:', selectedVisit.value)
+    console.log('All form data:', formData.value)
     
     console.log('📤 Final billing submit data:', submitData)
-    console.log('📤 API call to /transaction/billings with body:', JSON.stringify(submitData, null, 2))
+    console.log('📤 API call to /transaction/billings/with-consultation with body:', JSON.stringify(submitData, null, 2))
     
-    const response = await $api('/transaction/billings', {
+    const response = await $api('/transaction/billings/with-consultation', {
       method: 'POST',
       body: submitData,
     })
 
-    // Tambah insert visit consultation
-    if (consultationFee.value) {
-      const consultationPayload = {
-        billing_id: response.data.id,
-        visit_id: visitId,
-        doctor_id: typeof selectedDoctor.value === 'object' && selectedDoctor.value !== null
-          ? selectedDoctor.value.value
-          : selectedDoctor.value,
-        service_id: typeof selectedConsultationService.value === 'object' && selectedConsultationService.value !== null
-          ? selectedConsultationService.value.value
-          : selectedConsultationService.value,
-        consultation_type: 'INITIAL', // hardcoded, ganti jika ada field
-        fee: consultationFee.value || '0'
-      }
-      try {
-        await $api('/rme/visit-consultations', {
-          method: 'POST',
-          body: consultationPayload,
-        })
-      } catch (consultationError) {
-        // Jika gagal, tetap lanjut, tapi tampilkan error
-        await showErrorAlert(consultationError, {
-          title: 'Gagal Membuat Visit Consultation',
-          text: 'Tagihan berhasil, tapi pembuatan konsultasi gagal. Silakan cek data kunjungan.'
-        })
-      }
-    }
-
     await showSuccessAlert(
-      `Tagihan konsultasi berhasil dibuat dengan ID: ${response.data.id}`,
+      `Tagihan konsultasi berhasil dibuat dengan ID: ${response.data.billing.id}`,
       'Berhasil!',
     )
 
-    // Redirect to previous page
-    await router.back()
+    // Redirect to billing detail page
+    await router.push({ 
+      name: 'transaction-billings-id', 
+      params: { id: response.data.billing.id } 
+    })
     
   } catch (error) {
     console.error('Error creating billing:', error)
@@ -557,27 +592,7 @@ const goBack = () => {
         validate-on="submit"
       >
         <VRow>
-          <!-- Data Cabang -->
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Cabang *
-            </label>
-            <AppCombobox
-              v-model="selectedBranch"
-              placeholder="Pilih cabang..."
-              :items="branches"
-              :loading="loadingBranches"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
-
-          <!-- Visit Autocomplete (only show after branch is selected) -->
+          <!-- Visit Selection -->
           <VCol
             cols="12"
             md="6"
@@ -586,7 +601,7 @@ const goBack = () => {
               Kunjungan *
             </label>
             <AppCombobox
-              v-model="formData.visit_id"
+              v-model="selectedVisit"
               placeholder="Pilih kunjungan..."
               :items="visits"
               :loading="loadingVisits"
@@ -594,30 +609,11 @@ const goBack = () => {
               required
               clearable
               hide-details="auto"
+              return-object
             />
           </VCol>
 
-          <!-- Jenis Konsultasi -->
-          <VCol  
-            cols="12"
-            md="6"
-          >
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Jenis Konsultasi *
-            </label>
-            <AppCombobox
-              v-model="selectedConsultationService"
-              placeholder="Pilih jenis konsultasi..."
-              :items="consultationServices"
-              :loading="loadingConsultationServices"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-            />
-          </VCol>
-
-          <!-- Doctor selection -->
+          <!-- Doctor Selection -->
           <VCol  
             cols="12"
             md="6"
@@ -627,15 +623,39 @@ const goBack = () => {
             </label>
             <AppCombobox
               v-model="selectedDoctor"
-              placeholder="Cari dokter..."
+              placeholder="Pilih dokter..."
               :items="doctors"
               :loading="loadingDoctors"
               :rules="[requiredValidator]"
               required
               clearable
               hide-details="auto"
+              return-object
             />
           </VCol>
+
+          <!-- Service Selection -->
+          <VCol  
+            cols="12"
+            md="6"
+          >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Layanan *
+            </label>
+            <AppCombobox
+              v-model="selectedService"
+              placeholder="Pilih layanan..."
+              :items="services"
+              :loading="loadingServices"
+              :rules="[requiredValidator]"
+              required
+              clearable
+              hide-details="auto"
+              return-object
+            />
+          </VCol>
+
+
 
           <!-- Consultation Fee -->
           <VCol 
@@ -646,7 +666,7 @@ const goBack = () => {
               Biaya Konsultasi *
             </label>
             <VTextField
-              v-model="consultationFee"
+              v-model="formData.consultation_fee"
               placeholder="Masukkan biaya konsultasi..."
               type="number"
               variant="outlined"
@@ -655,33 +675,133 @@ const goBack = () => {
               hide-details="auto"
               prepend-inner-icon="tabler-currency-dollar"
             />
-            <div class="text-caption text-medium-emphasis mt-1">
-              <VIcon size="14" class="me-1">tabler-info-circle</VIcon>
-              Biaya akan dihitung otomatis di ringkasan
-            </div>
           </VCol>
           
-          <!-- Promo Selection -->
+
+        </VRow>
+
+        <!-- Doctor Schedule Section -->
+        <VRow v-if="schedules.length > 0">
+          <VCol cols="12">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="text-h6 mb-4">
+                <VIcon start color="primary">
+                  tabler-calendar-time
+                </VIcon>
+                Jadwal Tersedia Dokter
+              </VCardTitle>
+              
+              <VRow>
+                <VCol 
+                  v-for="schedule in schedules" 
+                  :key="schedule.id" 
+                  cols="12" 
+                  md="6"
+                >
+                  <VCard variant="outlined" class="pa-4">
+                    <div class="d-flex align-center gap-3 mb-3">
+                      <VIcon size="24" color="primary">
+                        tabler-user-md
+                      </VIcon>
+                      <div>
+                        <h6 class="text-subtitle-1 font-weight-bold mb-1">
+                          {{ schedule.doctor_name }}
+                        </h6>
+                        <p class="text-caption text-medium-emphasis mb-0">
+                          {{ schedule.day }} • {{ schedule.start_time }} - {{ schedule.end_time }}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <VDivider class="my-3" />
+                    
+                    <div class="d-flex justify-space-between align-center mb-2">
+                      <span class="text-body-2">Slot Tersedia:</span>
+                      <VChip 
+                        :color="schedule.available_slots > 0 ? 'success' : 'error'"
+                        size="small"
+                      >
+                        {{ schedule.available_slots }} / {{ schedule.max_appointments }}
+                      </VChip>
+                    </div>
+                    
+                    <div class="d-flex justify-space-between align-center mb-2">
+                      <span class="text-body-2">Durasi:</span>
+                      <span class="text-body-1 font-weight-medium">
+                        {{ schedule.duration_hours }} jam
+                      </span>
+                    </div>
+                    
+                    <div v-if="schedule.break_start_time && schedule.break_end_time" class="d-flex justify-space-between align-center mb-2">
+                      <span class="text-body-2">Istirahat:</span>
+                      <span class="text-body-1 font-weight-medium">
+                        {{ schedule.break_start_time }} - {{ schedule.break_end_time }}
+                      </span>
+                    </div>
+                    
+                    <VDivider class="my-3" />
+                    
+                    <div class="mb-3">
+                      <h6 class="text-subtitle-2 font-weight-medium mb-2">Slot Waktu Tersedia:</h6>
+                      <div class="d-flex flex-wrap gap-2">
+                        <VChip
+                          v-for="timeSlot in schedule.available_time_slots"
+                          :key="`${timeSlot.start_time}-${timeSlot.end_time}`"
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                        >
+                          {{ timeSlot.start_time }} - {{ timeSlot.end_time }}
+                        </VChip>
+                      </div>
+                    </div>
+                    
+                    <div v-if="schedule.notes" class="mt-3 pa-3 bg-info-lighten-5 rounded">
+                      <div class="d-flex align-center gap-2">
+                        <VIcon size="16" color="info">
+                          tabler-info-circle
+                        </VIcon>
+                        <span class="text-caption text-info">
+                          {{ schedule.notes }}
+                        </span>
+                      </div>
+                    </div>
+                  </VCard>
+                </VCol>
+              </VRow>
+            </VCard>
+          </VCol>
+        </VRow>
+
+        <!-- Consultation Start Time -->
+        <VRow>
           <VCol
-            v-if="selectedBranch && formData.visit_id"
             cols="12"
             md="6"
           >
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Promo (Opsional)
+              Waktu Mulai Konsultasi *
             </label>
-            <AppCombobox
-              v-model="selectedPromo"
-              placeholder="Pilih promo..."
-              :items="promos"
-              :loading="loadingPromos"
-              clearable
+            <VTextField
+              v-model="formData.consultation_start_time"
+              placeholder="Pilih waktu..."
+              type="datetime-local"
+              variant="outlined"
+              :rules="[requiredValidator]"
+              required
               hide-details="auto"
+              prepend-inner-icon="tabler-clock"
             />
+            <div class="text-caption text-medium-emphasis mt-1">
+              <VIcon size="14" class="mr-1">
+                tabler-info-circle
+              </VIcon>
+              Default: hari ini, silakan pilih jam yang sesuai
+            </div>
           </VCol>
         </VRow>
 
-        <!-- Cost Summary Section -->
+        <!-- Financial Information -->
         <VRow>
           <VCol cols="12">
             <VCard variant="outlined" class="pa-4">
@@ -689,48 +809,65 @@ const goBack = () => {
                 <VIcon start color="primary">
                   tabler-calculator
                 </VIcon>
-                Ringkasan Biaya Konsultasi
+                Informasi Keuangan
               </VCardTitle>
               <VRow>
-                <VCol cols="12" md="4">
+                <VCol cols="12" md="3">
                   <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Biaya Konsultasi
+                    Total Amount *
                   </label>
                   <VTextField
-                    :model-value="consultationFee || 0"
+                    v-model="formData.total_amount"
+                    placeholder="Masukkan total amount..."
                     type="number"
-                    prefix="Rp"
-                    readonly
-                    density="comfortable"
                     variant="outlined"
+                    :rules="[requiredValidator, amountValidator]"
+                    required
+                    hide-details="auto"
+                    prepend-inner-icon="tabler-currency-dollar"
                   />
                 </VCol>
-                <VCol cols="12" md="4">
+                <VCol cols="12" md="3">
                   <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Diskon Promo
+                    Discount Amount
                   </label>
                   <VTextField
-                    :model-value="calculateDiscount"
+                    v-model="formData.discount_amount"
+                    placeholder="Masukkan discount amount..."
                     type="number"
-                    prefix="Rp"
-                    readonly
-                    density="comfortable"
                     variant="outlined"
-                    color="success"
+                    :rules="[amountValidator]"
+                    hide-details="auto"
+                    prepend-inner-icon="tabler-percentage"
                   />
                 </VCol>
-                <VCol cols="12" md="4">
+                <VCol cols="12" md="3">
                   <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Total Biaya
+                    Tax Amount
                   </label>
                   <VTextField
-                    :model-value="formData.grand_total || 0"
+                    v-model="formData.tax_amount"
+                    placeholder="Masukkan tax amount..."
                     type="number"
-                    prefix="Rp"
-                    readonly
-                    density="comfortable"
                     variant="outlined"
-                    color="primary"
+                    :rules="[amountValidator]"
+                    hide-details="auto"
+                    prepend-inner-icon="tabler-receipt-tax"
+                  />
+                </VCol>
+                <VCol cols="12" md="3">
+                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+                    Grand Total *
+                  </label>
+                  <VTextField
+                    v-model="formData.grand_total"
+                    placeholder="Masukkan grand total..."
+                    type="number"
+                    variant="outlined"
+                    :rules="[requiredValidator, amountValidator]"
+                    required
+                    hide-details="auto"
+                    prepend-inner-icon="tabler-calculator"
                   />
                 </VCol>
               </VRow>
@@ -738,107 +875,20 @@ const goBack = () => {
           </VCol>
         </VRow>
         
-        <!-- Combined Summary Card -->
+        <!-- Status Field -->
         <VRow>
-          <VCol cols="12">
-            <VCard variant="outlined" color="info">
-              <VCardText class="pa-4">
-                <div class="d-flex align-center gap-2 mb-3">
-                  <VIcon size="20" color="info">
-                    tabler-calculator
-                  </VIcon>
-                  <h6 class="text-subtitle-1 font-weight-medium mb-0">
-                    Detail Perhitungan
-                  </h6>
-                </div>
-                
-                <!-- Subtotal Section -->
-                <div class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2">Biaya Konsultasi:</span>
-                  <span class="text-body-1 font-weight-medium">
-                    {{ formatCurrency(consultationFee) }}
-                  </span>
-                </div>
-                
-                <!-- Promo Discount Section -->
-                <div v-if="selectedPromo" class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2">Diskon Promo:</span>
-                  <span class="text-body-1 font-weight-medium text-success">
-                    -{{ formatCurrency(calculateDiscount) }}
-                  </span>
-                </div>
-                
-                <!-- Minimum Purchase Warning -->
-                <div v-if="selectedPromo && (() => {
-                  const promoId = typeof selectedPromo === 'object' && selectedPromo !== null 
-                    ? selectedPromo.value 
-                    : selectedPromo
-                  const promo = promos.find(p => p.value === promoId)?.data
-                  const subtotal = parseFloat(consultationFee) || 0
-                  return promo?.min_purchase && subtotal < parseFloat(promo.min_purchase)
-                })()" class="d-flex align-center gap-2 mb-2 pa-2 bg-warning-lighten-5 rounded">
-                  <VIcon size="16" color="warning">
-                    tabler-alert-triangle
-                  </VIcon>
-                  <span class="text-caption text-warning">
-                    Minimum pembelian: {{ formatCurrency((() => {
-                      const promoId = typeof selectedPromo === 'object' && selectedPromo !== null 
-                        ? selectedPromo.value 
-                        : selectedPromo
-                      return promos.find(p => p.value === promoId)?.data?.min_purchase || 0
-                    })()) }}
-                  </span>
-                </div>
-                
-                <!-- Minimum Purchase Success -->
-                <div v-if="selectedPromo && (() => {
-                  const promoId = typeof selectedPromo === 'object' && selectedPromo !== null 
-                    ? selectedPromo.value 
-                    : selectedPromo
-                  const promo = promos.find(p => p.value === promoId)?.data
-                  const subtotal = parseFloat(consultationFee) || 0
-                  return promo?.min_purchase && subtotal >= parseFloat(promo.min_purchase)
-                })()" class="d-flex align-center gap-2 mb-2 pa-2 bg-success-lighten-5 rounded">
-                  <VIcon size="16" color="success">
-                    tabler-check
-                  </VIcon>
-                  <span class="text-caption text-success">
-                    Minimum pembelian terpenuhi ✓
-                  </span>
-                </div>
-                
-                <!-- Tax Section (if any) -->
-                <div v-if="formData.tax_amount && parseFloat(formData.tax_amount) > 0" class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2">Pajak:</span>
-                  <span class="text-body-1 font-weight-medium">
-                    {{ formatCurrency(formData.tax_amount) }}
-                  </span>
-                </div>
-                
-                <VDivider class="my-3" />
-                
-                <!-- Grand Total -->
-                <div class="d-flex justify-space-between align-center">
-                  <span class="text-subtitle-2 font-weight-medium">Total Akhir:</span>
-                  <span class="text-h6 font-weight-bold text-primary">{{ formatCurrency(formData.grand_total) }}</span>
-                </div>
-                
-                <!-- Promo Info (if selected) -->
-                <div v-if="selectedPromo" class="mt-3 pa-3 bg-success-lighten-5 rounded">
-                  <div class="d-flex align-center gap-2 mb-2">
-                    <VIcon size="16" color="success">
-                      tabler-discount
-                    </VIcon>
-                    <span class="text-caption font-weight-medium text-success">
-                      Promo Aktif: {{ promos.find(p => p.value === selectedPromo)?.data?.name }}
-                    </span>
-                  </div>
-                  <div class="text-caption text-success">
-                    {{ promos.find(p => p.value === selectedPromo)?.data?.description }}
-                  </div>
-                </div>
-              </VCardText>
-            </VCard>
+          <VCol cols="12" md="6">
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Status *
+            </label>
+            <AppCombobox
+              v-model="formData.status"
+              placeholder="Pilih status..."
+              :items="statusOptions"
+              :rules="[requiredValidator]"
+              required
+              hide-details="auto"
+            />
           </VCol>
         </VRow>
         
@@ -846,7 +896,7 @@ const goBack = () => {
           <VBtn
             type="submit"
             :loading="isLoading"
-            :disabled="isLoading || !consultationFee"
+            :disabled="isLoading"
             color="primary"
           >
             <VIcon start icon="tabler-device-floppy" />

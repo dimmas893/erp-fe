@@ -19,9 +19,17 @@ meta:
     >
       <template #actions>
         <div class="d-flex gap-2">
-        <VBtn
-          color="primary"
-            prepend-icon="tabler-stethoscope"
+          <VBtn
+            color="info"
+            prepend-icon="tabler-route"
+            :to="{ name: 'transaction-billings-flow' }"
+            variant="tonal"
+          >
+            Alur
+          </VBtn>
+          <VBtn
+            color="primary"
+            prepend-icon="tabler-message-circle"
             :to="{ name: 'transaction-billings-consultation-create' }"
             variant="tonal"
           >
@@ -29,20 +37,20 @@ meta:
           </VBtn>
           <VBtn
             color="warning"
-            prepend-icon="tabler-activity"
+            prepend-icon="tabler-stethoscope"
             :to="{ name: 'transaction-billings-treatment-create' }"
             variant="tonal"
           >
             Treatment
           </VBtn>
-          <VBtn
+          <!-- <VBtn
             color="success"
             prepend-icon="tabler-package"
             :to="{ name: 'transaction-billings-product-create' }"
             variant="tonal"
           >
             Produk
-        </VBtn>
+          </VBtn> -->
         </div>
       </template>
     </DynamicFilter>

@@ -8,6 +8,10 @@ export default [
         to: 'transaction-billings',
       },
       {
+        title: 'Alur Billing',
+        to: 'transaction-billings-flow',
+      },
+      {
         title: 'Konsultasi',
         to: 'transaction-consultations',
       },
