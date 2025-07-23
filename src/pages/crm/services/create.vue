@@ -212,8 +212,8 @@ const serviceTypeOptions = [
 ]
 
 const billableOptions = [
-  { title: 'Billable', value: true },
-  { title: 'Non-Billable', value: false },
+  { title: 'Berbayar', value: true },
+  { title: 'Tidak Berbayar', value: false },
 ]
 
 // Methods

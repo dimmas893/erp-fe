@@ -457,8 +457,8 @@ const maritalStatusOptions = [
 const contractTypeOptions = [
   { title: 'Permanen', value: 'PERMANENT' },
   { title: 'Kontrak', value: 'CONTRACT' },
-  { title: 'Probation', value: 'PROBATION' },
-  { title: 'Internship', value: 'INTERNSHIP' },
+  { title: 'Percobaan', value: 'PROBATION' },
+  { title: 'Magang', value: 'INTERNSHIP' },
 ]
 
 const employmentStatusOptions = [

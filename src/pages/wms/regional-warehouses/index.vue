@@ -8,7 +8,7 @@ meta:
   <VCard>
     <!-- Dynamic Filter Component -->
     <DynamicFilter
-      title="Data Regional Warehouse"
+      title="Data Gudang Regional"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
       quick-search-placeholder="Cari nama, kode, atau alamat..."
@@ -23,7 +23,7 @@ meta:
           prepend-icon="tabler-plus"
           :to="{ name: 'wms-regional-warehouses-create' }"
         >
-          Tambah Regional Warehouse
+          Tambah Gudang Regional
         </VBtn>
       </template>
     </DynamicFilter>
@@ -205,12 +205,12 @@ const allowedFields = [
 const fieldConfigs = computed(() => {
   return {
     'name': {
-      title: 'Nama Regional Warehouse',
+      title: 'Nama Gudang Regional',
       type: 'text',
       operator: 'like',
     },
     'code': {
-      title: 'Kode Regional Warehouse',
+      title: 'Kode Gudang Regional',
       type: 'text',
       operator: 'like',
     },
@@ -236,7 +236,7 @@ const fieldConfigs = computed(() => {
       operator: 'like',
     },
     'central_warehouse_id': {
-      title: 'Central Warehouse',
+      title: 'Gudang Pusat',
       type: 'select',
       operator: 'equal',
       options: [], // Will be populated from API
@@ -279,11 +279,11 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Nama Regional Warehouse', key: 'name' },
+  { title: 'Nama Gudang Regional', key: 'name' },
   { title: 'Kode', key: 'code' },
   { title: 'Region', key: 'region' },
   { title: 'Alamat', key: 'address' },
-  { title: 'Central Warehouse', key: 'central_warehouse_id' },
+  { title: 'Gudang Pusat', key: 'central_warehouse_id' },
   { title: 'Tanggal Dibuat', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]

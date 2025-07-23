@@ -48,24 +48,6 @@ meta:
 
           <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              ID Terapis
-            </label>
-            <VTextField
-              v-model="formData.therapist_id"
-              placeholder="Contoh: THP001"
-              variant="outlined"
-              maxlength="20"
-              :rules="[
-                v => !!v || 'ID terapis harus diisi',
-                v => v.length <= 20 || 'ID maksimal 20 karakter'
-              ]"
-              required
-              hide-details
-            />
-          </VCol>
-
-          <VCol cols="12" md="6">
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
               Nama Terapis
             </label>
             <VTextField
@@ -492,7 +474,6 @@ const loadingEmployees = ref(false)
 
 // Form Data
 const formData = reactive({
-  therapist_id: '',
   license_number: '',
   name: '',
   email: '',
@@ -520,25 +501,25 @@ const formData = reactive({
 
 // Options
 const specializationOptions = [
-  { title: 'AESTHETIC', value: 'AESTHETIC' },
-  { title: 'GENERAL', value: 'GENERAL' },
-  { title: 'DERMATOLOGY', value: 'DERMATOLOGY' },
-  { title: 'SURGICAL', value: 'SURGICAL' },
-  { title: 'EMERGENCY', value: 'EMERGENCY' },
-  { title: 'PEDIATRIC', value: 'PEDIATRIC' }
+  { title: 'Estetika', value: 'AESTHETIC' },
+  { title: 'Umum', value: 'GENERAL' },
+  { title: 'Dermatologi', value: 'DERMATOLOGY' },
+  { title: 'Bedah', value: 'SURGICAL' },
+  { title: 'Darurat', value: 'EMERGENCY' },
+  { title: 'Pediatri', value: 'PEDIATRIC' }
 ]
 
 const certificationLevelOptions = [
-  { title: 'DIPLOMA', value: 'DIPLOMA' },
-  { title: 'BACHELOR', value: 'BACHELOR' },
-  { title: 'MASTER', value: 'MASTER' }
+  { title: 'Diploma', value: 'DIPLOMA' },
+  { title: 'Sarjana', value: 'BACHELOR' },
+  { title: 'Magister', value: 'MASTER' }
 ]
 
 const shiftPreferenceOptions = [
-  { title: 'MORNING', value: 'MORNING' },
-  { title: 'AFTERNOON', value: 'AFTERNOON' },
-  { title: 'NIGHT', value: 'NIGHT' },
-  { title: 'FLEXIBLE', value: 'FLEXIBLE' }
+  { title: 'Pagi', value: 'MORNING' },
+  { title: 'Siang', value: 'AFTERNOON' },
+  { title: 'Malam', value: 'NIGHT' },
+  { title: 'Fleksibel', value: 'FLEXIBLE' }
 ]
 
 const activeOptions = [

@@ -4,27 +4,27 @@ export default [
     icon: { icon: 'tabler-package' },
     children: [
       {
-        title: 'Branches',
+        title: 'Cabang',
         to: 'wms-branches',
       },
       {
-        title: 'Regional Warehouses',
+        title: 'Gudang Regional',
         to: 'wms-regional-warehouses',
       },
       {
-        title: 'Product Categories',
+        title: 'Kategori Produk',
         to: 'wms-product-categories',
       },
       {
-        title: 'Products',
+        title: 'Produk',
         to: 'wms-products',
       },
       {
-        title: 'Regional Inventory',
+        title: 'Inventori Regional',
         to: 'wms-regional-inventory',
       },
       {
-        title: 'Central Inventory',
+        title: 'Inventori Pusat',
         to: 'wms-central-inventory',
       },
       // You can add more WMS-related menus here

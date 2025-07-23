@@ -48,24 +48,6 @@ meta:
 
           <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Kode Dokter
-            </label>
-            <VTextField
-              v-model="formData.doctor_code"
-              placeholder="Contoh: DOC001"
-              variant="outlined"
-              maxlength="20"
-              :rules="[
-                v => !!v || 'Kode dokter harus diisi',
-                v => v.length <= 20 || 'Kode maksimal 20 karakter'
-              ]"
-              required
-              hide-details
-            />
-          </VCol>
-
-          <VCol cols="12" md="6">
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
               Nama Dokter
             </label>
             <VTextField
@@ -400,7 +382,6 @@ const loadingEmployees = ref(false)
 
 // Form Data
 const formData = reactive({
-  doctor_code: '',
   name: '',
   specialization: '',
   license_number: '',

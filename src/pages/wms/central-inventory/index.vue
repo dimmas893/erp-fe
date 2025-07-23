@@ -224,22 +224,22 @@ const fieldConfigs = computed(() => {
       operator: 'like',
     },
     'central_warehouse.name': {
-      title: 'Nama Central Warehouse',
+      title: 'Nama Gudang Pusat',
       type: 'text',
       operator: 'like',
     },
     'central_warehouse.code': {
-      title: 'Kode Central Warehouse',
+      title: 'Kode Gudang Pusat',
       type: 'text',
       operator: 'like',
     },
     'central_warehouse.address': {
-      title: 'Alamat Warehouse',
+      title: 'Alamat Gudang',
       type: 'text',
       operator: 'like',
     },
     'central_warehouse_id': {
-      title: 'Central Warehouse ID',
+      title: 'ID Gudang Pusat',
       type: 'text',
       operator: 'like',
     },

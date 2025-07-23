@@ -170,14 +170,14 @@ meta:
 
           <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Regional Warehouse
+              Gudang Regional
             </label>
             <VSelect
               v-model="formData.regional_warehouse_id"
               :items="warehouses"
               :loading="loadingWarehouses"
               variant="outlined"
-              placeholder="Pilih regional warehouse"
+              placeholder="Pilih gudang regional"
               clearable
               hide-details
             />

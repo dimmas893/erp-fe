@@ -73,7 +73,7 @@ meta:
               <VIcon size="32" color="warning" class="mb-2">
                 tabler-stethoscope
               </VIcon>
-              <h6 class="text-subtitle-1 font-weight-medium mb-1">Treatment</h6>
+              <h6 class="text-subtitle-1 font-weight-medium mb-1">Tindakan</h6>
               <p class="text-caption text-medium-emphasis mb-0">
                 {{ currentStep === 'treatment' ? 'Sedang Berlangsung' : 'Menunggu' }}
               </p>

@@ -518,8 +518,8 @@ function getContractTypeLabel(type) {
   switch (type) {
   case 'PERMANENT': return 'Permanen'
   case 'CONTRACT': return 'Kontrak'
-  case 'PROBATION': return 'Probation'
-  case 'INTERNSHIP': return 'Internship'
+  case 'PROBATION': return 'Percobaan'
+  case 'INTERNSHIP': return 'Magang'
   default: return type
   }
 }

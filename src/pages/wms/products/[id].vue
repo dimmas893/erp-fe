@@ -564,8 +564,8 @@ function getProductTypeColor(productType) {
 
 function getProductTypeLabel(productType) {
   switch (productType) {
-  case 'CONSUMABLE': return 'Consumable'
-  case 'NON_CONSUMABLE': return 'Non-Consumable'
+  case 'CONSUMABLE': return 'Habis Pakai'
+  case 'NON_CONSUMABLE': return 'Tidak Habis Pakai'
   default: return productType
   }
 }
@@ -581,9 +581,9 @@ function getStorageColor(storageRequirement) {
 
 function getStorageLabel(storageRequirement) {
   switch (storageRequirement) {
-  case 'ROOM_TEMP': return 'Room Temp'
-  case 'REFRIGERATED': return 'Refrigerated'
-  case 'FROZEN': return 'Frozen'
+  case 'ROOM_TEMP': return 'Suhu Ruangan'
+  case 'REFRIGERATED': return 'Didinginkan'
+  case 'FROZEN': return 'Beku'
   default: return storageRequirement
   }
 }

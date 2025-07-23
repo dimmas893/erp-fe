@@ -62,28 +62,7 @@ meta:
           <div class="flex-grow-1">
             <h2 class="text-h4 font-weight-bold mb-1">
               {{ therapist.name }}
-            </h2>
-            <div class="d-flex align-center gap-2">
-              <VChip
-                color="primary"
-                size="small"
-                variant="outlined"
-              >
-                {{ therapist.therapist_id }}
-              </VChip>
-              <VChip
-                :color="therapist.is_active ? 'success' : 'error'"
-                size="small"
-              >
-                {{ therapist.is_active ? 'Aktif' : 'Nonaktif' }}
-              </VChip>
-              <VChip
-                :color="therapist.is_available ? 'success' : 'warning'"
-                size="small"
-              >
-                {{ therapist.is_available ? 'Tersedia' : 'Tidak Tersedia' }}
-              </VChip>
-            </div>
+            </h2> 
           </div>
         </div>
         
@@ -121,16 +100,7 @@ meta:
             <div class="text-h6 font-weight-medium">
               {{ therapist.name }}
             </div>
-          </div>
-          
-          <div class="mb-4">
-            <div class="text-medium-emphasis mb-1">
-              ID Terapis
-            </div>
-            <div class="text-h6 font-weight-medium">
-              {{ therapist.therapist_id }}
-            </div>
-          </div>
+          </div> 
           
           <div class="mb-4">
             <div class="text-medium-emphasis mb-1">
@@ -547,6 +517,134 @@ meta:
           </div>
         </VCol>
       </VRow>
+
+      <!-- Therapist Treatments -->
+      <VDivider class="my-6" />
+      <div class="d-flex align-center justify-space-between mb-4">
+        <h3 class="text-h6 font-weight-medium">
+          <VIcon class="me-2">
+            tabler-stethoscope
+          </VIcon>
+          Treatment Terapis
+        </h3>
+        <VBtn
+          color="primary"
+          prepend-icon="tabler-plus"
+          @click="openAddTreatmentDialog"
+        >
+          Tambah Treatment
+        </VBtn>
+      </div>
+      
+      <VRow class="mb-6">
+        <VCol cols="12">
+          <div v-if="loadingTreatments" class="text-center py-8">
+            <VProgressCircular
+              indeterminate
+              color="primary"
+            />
+            <div class="mt-2 text-medium-emphasis">
+              Memuat data treatment...
+            </div>
+          </div>
+          
+          <div v-else-if="therapistTreatments.length === 0" class="text-center py-8">
+            <VIcon
+              size="48"
+              color="medium-emphasis"
+              class="mb-2"
+            >
+              tabler-stethoscope-off
+            </VIcon>
+            <div class="text-medium-emphasis">
+              Belum ada treatment yang ditambahkan
+            </div>
+          </div>
+          
+          <div v-else>
+            <VRow>
+              <VCol
+                v-for="treatment in therapistTreatments"
+                :key="treatment.id"
+                cols="12"
+                md="6"
+                lg="4"
+              >
+                <VCard variant="outlined">
+                  <VCardText>
+                    <div class="d-flex align-center justify-space-between mb-2">
+                      <div class="d-flex align-center gap-2">
+                        <VChip
+                          color="primary"
+                          size="small"
+                          variant="tonal"
+                        >
+                          {{ treatment.treatment.code }}
+                        </VChip>
+                        <VChip
+                          :color="treatment.is_active ? 'success' : 'error'"
+                          size="small"
+                          variant="tonal"
+                        >
+                          {{ treatment.is_active ? 'Aktif' : 'Nonaktif' }}
+                        </VChip>
+                      </div>
+                      <VTooltip location="top">
+                        <template #activator="{ props }">
+                          <VBtn
+                            v-bind="props"
+                            icon
+                            size="small"
+                            color="error"
+                            variant="text"
+                            @click="confirmDeleteTreatment(treatment)"
+                            :loading="deletingTreatmentId === treatment.id"
+                            :disabled="deletingTreatmentId !== null && deletingTreatmentId !== treatment.id"
+                          >
+                            <VIcon>tabler-trash</VIcon>
+                          </VBtn>
+                        </template>
+                        <span>Hapus Treatment</span>
+                      </VTooltip>
+                    </div>
+                    
+                    <h4 class="text-h6 font-weight-medium mb-2">
+                      {{ treatment.treatment.name }}
+                    </h4>
+                    
+                    <p class="text-body-2 text-medium-emphasis mb-3">
+                      {{ treatment.treatment.description }}
+                    </p>
+                    
+                    <div v-if="treatment.notes" class="mb-3">
+                      <div class="text-caption text-medium-emphasis mb-1">
+                        Catatan:
+                      </div>
+                      <div class="text-body-2">
+                        {{ treatment.notes }}
+                      </div>
+                    </div>
+                    
+                    <div class="text-caption text-medium-emphasis">
+                      Ditambahkan: {{ formatDate(treatment.created_at) }}
+                    </div>
+                  </VCardText>
+                </VCard>
+              </VCol>
+            </VRow>
+            
+            <!-- Pagination -->
+            <div v-if="treatmentMeta.last_page > 1" class="d-flex justify-center mt-6">
+              <VPagination
+                v-model="treatmentPage"
+                :length="treatmentMeta.last_page"
+                :total-visible="7"
+                @update:model-value="fetchTherapistTreatments"
+              />
+            </div>
+          </div>
+        </VCol>
+      </VRow>
     </VCardText>
 
     <VCardText v-else>
@@ -575,12 +673,208 @@ meta:
       </div>
     </VCardText>
   </VCard>
+
+  <!-- Add Treatment Dialog -->
+  <VDialog
+    v-model="showAddTreatmentDialog"
+    max-width="600"
+    :persistent="submittingTreatment"
+  >
+    <VCard>
+      <VCardTitle class="d-flex align-center justify-space-between">
+        <span>Tambah Treatment untuk {{ therapist?.name }}</span>
+        <VBtn
+          icon
+          variant="text"
+          size="small"
+          :disabled="submittingTreatment"
+          @click="closeAddTreatmentDialog"
+        >
+          <VIcon>tabler-x</VIcon>
+        </VBtn>
+      </VCardTitle>
+      
+      <VCardText>
+        <VForm ref="addTreatmentForm" @submit.prevent="submitAddTreatment">
+          <VRow>
+            <VCol cols="12">
+              <div class="text-body-2 font-weight-medium mb-2">
+                Pilih Treatment
+              </div>
+              <VAutocomplete
+                v-model="newTreatment.treatment_id"
+                :items="availableTreatments"
+                item-title="name"
+                item-value="id"
+                placeholder="Ketik untuk mencari treatment..."
+                :rules="[v => v !== null && v !== '' || 'Treatment harus dipilih']"
+                required
+                :loading="loadingTreatmentsList"
+                :disabled="loadingTreatmentsList"
+                clearable
+                :custom-filter="customFilter"
+                :menu-props="{ maxHeight: '300px' }"
+                variant="outlined"
+                hide-details="auto"
+              >
+                <template #item="{ props, item }">
+                  <VListItem v-bind="props">
+                    <template #title>
+                      <div class="d-flex align-center">
+                        <span class="font-weight-medium">{{ item.raw.name }}</span>
+                        <VChip
+                          size="x-small"
+                          color="primary"
+                          variant="tonal"
+                          class="ms-2"
+                        >
+                          {{ item.raw.code }}
+                        </VChip>
+                      </div>
+                    </template>
+                    <template #subtitle>
+                      <div class="d-flex align-center mt-1">
+                        <VIcon size="16" class="me-1">tabler-category</VIcon>
+                        <span>{{ item.raw.category?.name || 'Tanpa Kategori' }}</span>
+                        <span class="mx-2">•</span>
+                        <VIcon size="16" class="me-1">tabler-clock</VIcon>
+                        <span>{{ item.raw.duration_minutes }} menit</span>
+                      </div>
+                    </template>
+                  </VListItem>
+                </template>
+                <template #selection="{ item }">
+                  <div class="d-flex align-center">
+                    <span class="font-weight-medium">{{ item.raw.name }}</span>
+                    <VChip
+                      size="x-small"
+                      color="primary"
+                      variant="tonal"
+                      class="ms-2"
+                    >
+                      {{ item.raw.code }}
+                    </VChip>
+                  </div>
+                </template>
+                <template #no-data>
+                  <div v-if="loadingTreatmentsList" class="text-center py-4">
+                    <VProgressCircular
+                      indeterminate
+                      size="20"
+                      color="primary"
+                    />
+                    <div class="mt-2 text-caption">
+                      Memuat data treatment...
+                    </div>
+                  </div>
+                  <div v-else class="text-center py-4 text-medium-emphasis">
+                    Tidak ada treatment tersedia
+                  </div>
+                </template>
+              </VAutocomplete>
+            </VCol>
+            
+            <VCol cols="12">
+              <div class="text-body-2 font-weight-medium mb-2">
+                Catatan
+              </div>
+              <VTextarea
+                v-model="newTreatment.notes"
+                placeholder="Tambahkan catatan khusus tentang pengalaman terapis dalam treatment ini"
+                rows="3"
+                auto-grow
+                variant="outlined"
+                hide-details="auto"
+              />
+            </VCol>
+            
+            <!-- Treatment Details Preview -->
+            <VCol cols="12" v-if="selectedTreatmentDetails">
+              <VCard variant="outlined" class="pa-4">
+                <h4 class="text-h6 font-weight-medium mb-3">
+                  Detail Treatment
+                </h4>
+                <VRow>
+                  <VCol cols="12" md="6">
+                    <div class="mb-2">
+                      <span class="text-caption text-medium-emphasis">Kode:</span>
+                      <div class="font-weight-medium">{{ selectedTreatmentDetails.code }}</div>
+                    </div>
+                    <div class="mb-2">
+                      <span class="text-caption text-medium-emphasis">Kategori:</span>
+                      <div class="font-weight-medium">{{ selectedTreatmentDetails.category?.name || 'Tanpa Kategori' }}</div>
+                    </div>
+                    <div class="mb-2">
+                      <span class="text-caption text-medium-emphasis">Durasi:</span>
+                      <div class="font-weight-medium">{{ selectedTreatmentDetails.duration_minutes }} menit</div>
+                    </div>
+                  </VCol>
+                  <VCol cols="12" md="6">
+                    <div class="mb-2">
+                      <span class="text-caption text-medium-emphasis">Persiapan:</span>
+                      <div class="font-weight-medium">{{ selectedTreatmentDetails.preparation_time_minutes }} menit</div>
+                    </div>
+                    <div class="mb-2">
+                      <span class="text-caption text-medium-emphasis">Konsultasi:</span>
+                      <VChip
+                        :color="selectedTreatmentDetails.requires_consultation ? 'warning' : 'success'"
+                        size="small"
+                        variant="tonal"
+                      >
+                        {{ selectedTreatmentDetails.requires_consultation ? 'Diperlukan' : 'Tidak Diperlukan' }}
+                      </VChip>
+                    </div>
+                    <div class="mb-2">
+                      <span class="text-caption text-medium-emphasis">Dokter:</span>
+                      <VChip
+                        :color="selectedTreatmentDetails.requires_doctor ? 'error' : 'success'"
+                        size="small"
+                        variant="tonal"
+                      >
+                        {{ selectedTreatmentDetails.requires_doctor ? 'Diperlukan' : 'Tidak Diperlukan' }}
+                      </VChip>
+                    </div>
+                  </VCol>
+                  <VCol cols="12">
+                    <div class="mb-2">
+                      <span class="text-caption text-medium-emphasis">Deskripsi:</span>
+                      <div class="text-body-2">{{ selectedTreatmentDetails.description }}</div>
+                    </div>
+                  </VCol>
+                </VRow>
+              </VCard>
+            </VCol>
+          </VRow>
+        </VForm>
+      </VCardText>
+      
+      <VCardActions>
+        <VSpacer />
+        <VBtn
+          variant="outlined"
+          :disabled="submittingTreatment"
+          @click="closeAddTreatmentDialog"
+        >
+          Batal
+        </VBtn>
+        <VBtn
+          color="primary"
+          :loading="submittingTreatment"
+          :disabled="submittingTreatment"
+          @click="submitAddTreatment"
+        >
+          {{ submittingTreatment ? 'Menambahkan Treatment...' : 'Tambah Treatment' }}
+        </VBtn>
+      </VCardActions>
+    </VCard>
+  </VDialog>
 </template>
 
 <script setup>
 import { $api } from '@/utils/api'
 import { showErrorAlert } from '@/utils/errorHandler'
-import { onMounted, ref } from 'vue'
+import Swal from 'sweetalert2'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 // Route
@@ -591,6 +885,44 @@ const therapist = ref(null)
 const loading = ref(false)
 const branchName = ref('')
 const employeeName = ref('')
+
+// Treatment related data
+const therapistTreatments = ref([])
+const loadingTreatments = ref(false)
+const treatmentPage = ref(1)
+const treatmentMeta = ref({})
+const availableTreatments = ref([])
+const loadingTreatmentsList = ref(false)
+
+// Dialog data
+const showAddTreatmentDialog = ref(false)
+const submittingTreatment = ref(false)
+const addTreatmentForm = ref(null)
+const newTreatment = ref({
+  treatment_id: '',
+  notes: ''
+})
+
+// Delete treatment data
+const deletingTreatmentId = ref(null)
+
+// Computed properties
+const selectedTreatmentDetails = computed(() => {
+  if (!newTreatment.value.treatment_id || !availableTreatments.value.length) return null
+  return availableTreatments.value.find(treatment => treatment.id === newTreatment.value.treatment_id)
+})
+
+// Custom filter function for autocomplete
+const customFilter = (itemTitle, queryText, item) => {
+  const textOne = item.raw.name.toLowerCase()
+  const textTwo = item.raw.code.toLowerCase()
+  const textThree = item.raw.category?.name?.toLowerCase() || ''
+  const searchText = queryText.toLowerCase()
+  
+  return textOne.includes(searchText) || 
+         textTwo.includes(searchText) || 
+         textThree.includes(searchText)
+}
 
 // Methods
 const fetchTherapist = async () => {
@@ -616,6 +948,9 @@ const fetchTherapist = async () => {
       if (therapist.value.employee_id) {
         await fetchEmployeeName(therapist.value.employee_id)
       }
+      
+      // Fetch therapist treatments
+      await fetchTherapistTreatments()
     } else {
       therapist.value = null
     }
@@ -629,6 +964,388 @@ const fetchTherapist = async () => {
   } finally {
     loading.value = false
     console.log('🏁 fetchTherapist completed')
+  }
+}
+
+const fetchTherapistTreatments = async () => {
+  if (!therapist.value) return
+  
+  loadingTreatments.value = true
+  console.log('🔄 Starting fetchTherapistTreatments...')
+  
+  try {
+    const res = await $api('/hris/therapist-treatments/paginated', {
+      method: 'POST',
+      body: {
+        page: treatmentPage.value,
+        per_page: 12,
+        sort_by: 'created_at',
+        sort_order: 'desc',
+        filters: []
+      }
+    })
+    
+    console.log('📥 Therapist Treatments Response:', res)
+    
+    if (res && res.response_code === 200) {
+      // Filter data berdasarkan therapist_id di client side
+      const filteredData = res.data.filter(item => item.therapist_id === therapist.value.id)
+      therapistTreatments.value = filteredData
+      treatmentMeta.value = res.meta
+    } else {
+      therapistTreatments.value = []
+    }
+  } catch (error) {
+    console.error('❌ Error fetching therapist treatments:', error)
+    
+    // Show error alert
+    await showErrorAlert(error, {
+      title: 'Gagal Memuat Data Treatment',
+      text: 'Tidak dapat memuat data treatment terapis. Silakan coba lagi.',
+    })
+    therapistTreatments.value = []
+  } finally {
+    loadingTreatments.value = false
+    console.log('🏁 fetchTherapistTreatments completed')
+  }
+}
+
+const fetchAvailableTreatments = async () => {
+  loadingTreatmentsList.value = true
+  console.log('🔄 Starting fetchAvailableTreatments...')
+  
+  try {
+    const res = await $api('/crm/treatments', {
+      method: 'GET',
+    })
+    
+    console.log('📥 Available Treatments Response:', res)
+    
+    if (res && res.response_code === 200) {
+      availableTreatments.value = res.data
+    } else {
+      availableTreatments.value = []
+    }
+  } catch (error) {
+    console.error('❌ Error fetching available treatments:', error)
+    
+    // Close dialog first
+    closeAddTreatmentDialog()
+    
+    // Show error alert
+    await showErrorAlert(error, {
+      title: 'Gagal Memuat Data Treatment',
+      text: 'Tidak dapat memuat daftar treatment yang tersedia. Silakan coba lagi.',
+    })
+    availableTreatments.value = []
+  } finally {
+    loadingTreatmentsList.value = false
+    console.log('🏁 fetchAvailableTreatments completed')
+  }
+}
+
+const openAddTreatmentDialog = async () => {
+  showAddTreatmentDialog.value = true
+  newTreatment.value = {
+    treatment_id: null,
+    notes: ''
+  }
+  
+  // Fetch available treatments if not already loaded
+  if (availableTreatments.value.length === 0) {
+    await fetchAvailableTreatments()
+  }
+}
+
+const closeAddTreatmentDialog = () => {
+  showAddTreatmentDialog.value = false
+  newTreatment.value = {
+    treatment_id: null,
+    notes: ''
+  }
+  
+  // Reset form validation
+  if (addTreatmentForm.value) {
+    addTreatmentForm.value.reset()
+  }
+  console.log('✅ Modal closed successfully')
+}
+
+const submitAddTreatment = async () => {
+  if (!addTreatmentForm.value) return
+  
+  const { valid } = await addTreatmentForm.value.validate()
+  if (!valid) return
+  
+  // Additional validation
+  if (!newTreatment.value.treatment_id) {
+    await Swal.fire({
+      title: 'Data Tidak Lengkap',
+      text: 'Silakan pilih treatment terlebih dahulu.',
+      icon: 'warning',
+      confirmButtonText: 'OK',
+      allowOutsideClick: false,
+      customClass: {
+        popup: 'swal-high-z-index'
+      },
+      didOpen: () => {
+        const popup = Swal.getPopup()
+        if (popup) {
+          popup.style.zIndex = '9999'
+        }
+      }
+    })
+    return
+  }
+  
+  if (!therapist.value?.id) {
+    await Swal.fire({
+      title: 'Data Terapis Tidak Ditemukan',
+      text: 'Data terapis tidak valid. Silakan refresh halaman.',
+      icon: 'error',
+      confirmButtonText: 'OK',
+      allowOutsideClick: false,
+      customClass: {
+        popup: 'swal-high-z-index'
+      },
+      didOpen: () => {
+        const popup = Swal.getPopup()
+        if (popup) {
+          popup.style.zIndex = '9999'
+        }
+      }
+    })
+    return
+  }
+  
+  // Check if treatment already exists for this therapist
+  const existingTreatment = therapistTreatments.value.find(t => 
+    t.treatment_id === newTreatment.value.treatment_id
+  )
+  
+  if (existingTreatment) {
+    await Swal.fire({
+      title: 'Treatment Sudah Ada',
+      text: `Treatment "${existingTreatment.treatment.name}" sudah ada untuk terapis ini.`,
+      icon: 'warning',
+      confirmButtonText: 'OK',
+      allowOutsideClick: false,
+      customClass: {
+        popup: 'swal-high-z-index'
+      },
+      didOpen: () => {
+        const popup = Swal.getPopup()
+        if (popup) {
+          popup.style.zIndex = '9999'
+        }
+      }
+    })
+    return
+  }
+  
+  submittingTreatment.value = true
+  console.log('🔄 Starting submitAddTreatment...')
+  
+  // Log request data
+  const requestData = {
+    therapist_id: therapist.value.id,
+    treatment_id: newTreatment.value.treatment_id,
+    notes: newTreatment.value.notes || ''
+  }
+  
+  console.log('📤 Request data:', requestData)
+  
+  try {
+    // Retry mechanism for network issues
+    let res = null
+    let retryCount = 0
+    const maxRetries = 2
+    
+    while (retryCount <= maxRetries) {
+      try {
+        res = await $api('/hris/therapist-treatments', {
+          method: 'POST',
+          body: requestData
+        })
+        
+        console.log(`📥 Add Treatment Response (attempt ${retryCount + 1}):`, res)
+        break // Success, exit retry loop
+        
+      } catch (retryError) {
+        retryCount++
+        console.warn(`⚠️ Attempt ${retryCount} failed:`, retryError)
+        
+        if (retryCount > maxRetries) {
+          throw retryError // Re-throw if max retries reached
+        }
+        
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+      }
+    }
+    
+    if (res && res.response_code === 201) {
+      // Show success message
+      console.log('✅ Treatment added successfully')
+      
+      // Store treatment name before closing dialog
+      const treatmentName = res.data?.treatment?.name || 
+                           selectedTreatmentDetails.value?.name || 
+                           availableTreatments.value.find(t => t.id === newTreatment.value.treatment_id)?.name || 
+                           'Treatment'
+      
+      console.log('📝 Treatment details for success message:', {
+        responseData: res.data,
+        selectedTreatmentDetails: selectedTreatmentDetails.value,
+        treatmentId: newTreatment.value.treatment_id,
+        availableTreatments: availableTreatments.value,
+        foundTreatment: availableTreatments.value.find(t => t.id === newTreatment.value.treatment_id),
+        finalTreatmentName: treatmentName
+      })
+      
+      // Close dialog first
+      closeAddTreatmentDialog()
+      
+      // Ensure modal is closed
+      if (showAddTreatmentDialog.value) {
+        showAddTreatmentDialog.value = false
+        console.log('🔄 Force closing modal...')
+      }
+      
+      // Refresh treatments
+      await fetchTherapistTreatments()
+      
+      // Show success alert using Swal directly
+      await Swal.fire({
+        title: 'Berhasil Menambahkan Treatment',
+        text: `Treatment "${treatmentName}" berhasil ditambahkan ke terapis ${therapist.value?.name}.`,
+        icon: 'success',
+        confirmButtonText: 'OK',
+        allowOutsideClick: false,
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false,
+        customClass: {
+          popup: 'swal-high-z-index'
+        },
+        didOpen: () => {
+          // Ensure alert is on top
+          const popup = Swal.getPopup()
+          if (popup) {
+            popup.style.zIndex = '9999'
+          }
+        }
+      })
+    } else {
+      // Handle non-201 response
+      console.warn('⚠️ Unexpected response code:', res?.response_code)
+      console.warn('⚠️ Response data:', res)
+      
+      if (res?.response_code === 400) {
+        throw new Error(`Bad Request: ${res?.response_message || 'Data tidak valid'}`)
+      } else if (res?.response_code === 409) {
+        throw new Error(`Conflict: Treatment sudah ada untuk terapis ini`)
+      } else if (res?.response_code === 422) {
+        throw new Error(`Validation Error: ${res?.response_message || 'Data tidak sesuai format'}`)
+      } else {
+        throw new Error(`Unexpected response (${res?.response_code}): ${res?.response_message || 'Unknown error'}`)
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error adding treatment:', error)
+    
+    // Close dialog first
+    closeAddTreatmentDialog()
+    
+    // Show error alert
+    await Swal.fire({
+      title: 'Gagal Menambah Treatment',
+      text: 'Tidak dapat menambahkan treatment. Silakan coba lagi.',
+      icon: 'error',
+      confirmButtonText: 'OK',
+      allowOutsideClick: false,
+      customClass: {
+        popup: 'swal-high-z-index'
+      },
+      didOpen: () => {
+        // Ensure alert is on top
+        const popup = Swal.getPopup()
+        if (popup) {
+          popup.style.zIndex = '9999'
+        }
+      }
+    })
+  } finally {
+    submittingTreatment.value = false
+    console.log('🏁 submitAddTreatment completed')
+  }
+}
+
+const confirmDeleteTreatment = async (treatment) => {
+  console.log('🔄 Starting confirmDeleteTreatment...')
+  
+  try {
+    // Show confirmation dialog using Swal directly
+    const result = await Swal.fire({
+      title: 'Konfirmasi Hapus Treatment',
+      text: `Apakah Anda yakin ingin menghapus treatment "${treatment.treatment.name}" (${treatment.treatment.code}) dari terapis ${therapist.value?.name}?\n\nTindakan ini tidak dapat dibatalkan.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal',
+      reverseButtons: true,
+      allowOutsideClick: false,
+    })
+    
+    if (result.isConfirmed) {
+      await deleteTreatment(treatment.id)
+    }
+  } catch (error) {
+    console.error('❌ Error in confirmDeleteTreatment:', error)
+  }
+}
+
+const deleteTreatment = async (treatmentId) => {
+  deletingTreatmentId.value = treatmentId
+  console.log('🔄 Starting deleteTreatment...')
+  
+  // Find treatment data before deletion for success message
+  const treatmentToDelete = therapistTreatments.value.find(t => t.id === treatmentId)
+  
+  try {
+    const res = await $api(`/hris/therapist-treatments/${treatmentId}`, {
+      method: 'DELETE',
+    })
+    
+    console.log('📥 Delete Treatment Response:', res)
+    
+    if (res && res.response_code === 200) {
+      // Show success message
+      console.log('✅ Treatment deleted successfully')
+      
+      // Refresh treatments
+      await fetchTherapistTreatments()
+      
+      // Show success alert using Swal directly
+      await Swal.fire({
+        title: 'Berhasil Menghapus Treatment',
+        text: `Treatment "${treatmentToDelete?.treatment?.name}" berhasil dihapus dari terapis ${therapist.value?.name}.`,
+        icon: 'success',
+        confirmButtonText: 'OK',
+        allowOutsideClick: false,
+      })
+    }
+  } catch (error) {
+    console.error('❌ Error deleting treatment:', error)
+    
+    // Show error alert
+    await showErrorAlert(error, {
+      title: 'Gagal Menghapus Treatment',
+      text: 'Tidak dapat menghapus treatment. Silakan coba lagi.',
+    })
+  } finally {
+    deletingTreatmentId.value = null
+    console.log('🏁 deleteTreatment completed')
   }
 }
 
@@ -712,5 +1429,20 @@ function formatCurrency(amount) {
 onMounted(() => {
   console.log('🚀 Component onMounted triggered')
   fetchTherapist()
+  
+  // Add CSS for high z-index alert
+  const style = document.createElement('style')
+  style.textContent = `
+    .swal-high-z-index {
+      z-index: 9999 !important;
+    }
+    .swal2-container {
+      z-index: 9999 !important;
+    }
+    .swal2-popup {
+      z-index: 9999 !important;
+    }
+  `
+  document.head.appendChild(style)
 })
 </script> 

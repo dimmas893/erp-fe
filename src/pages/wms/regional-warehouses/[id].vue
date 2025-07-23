@@ -310,10 +310,10 @@ meta:
           tabler-alert-circle
         </VIcon>
         <h3 class="text-h6 mb-2">
-          Regional Warehouse Tidak Ditemukan
+          Gudang Regional Tidak Ditemukan
         </h3>
         <p class="text-body-2 text-medium-emphasis mb-4">
-          Regional warehouse yang Anda cari tidak ditemukan atau telah dihapus.
+          Gudang regional yang Anda cari tidak ditemukan atau telah dihapus.
         </p>
         <VBtn
           color="primary"
@@ -362,8 +362,8 @@ async function fetchRegionalWarehouse() {
   } catch (error) {
     console.error('❌ Error fetching regional warehouse:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Regional Warehouse',
-      text: 'Tidak dapat memuat data regional warehouse. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Gudang Regional',
+      text: 'Tidak dapat memuat data gudang regional. Silakan coba lagi.',
     })
   } finally {
     loading.value = false

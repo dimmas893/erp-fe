@@ -287,7 +287,7 @@ const formData = ref({
 // Options
 const promoTypeOptions = [
   { title: 'Voucher', value: 'voucher' },
-  { title: 'Discount', value: 'discount' },
+  { title: 'Diskon', value: 'discount' },
   { title: 'Cashback', value: 'cashback' },
 ]
 

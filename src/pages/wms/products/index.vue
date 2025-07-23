@@ -300,8 +300,8 @@ const fieldConfigs = computed(() => {
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Consumable', value: 'CONSUMABLE' },
-        { title: 'Non-Consumable', value: 'NON_CONSUMABLE' },
+        { title: 'Habis Pakai', value: 'CONSUMABLE' },
+        { title: 'Tidak Habis Pakai', value: 'NON_CONSUMABLE' },
       ],
     },
     'unit_of_measure': {
@@ -323,36 +323,36 @@ const fieldConfigs = computed(() => {
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Room Temperature', value: 'ROOM_TEMP' },
-        { title: 'Refrigerated', value: 'REFRIGERATED' },
-        { title: 'Frozen', value: 'FROZEN' },
+        { title: 'Suhu Ruangan', value: 'ROOM_TEMP' },
+        { title: 'Didinginkan', value: 'REFRIGERATED' },
+        { title: 'Beku', value: 'FROZEN' },
       ],
     },
     'is_serialized': {
-      title: 'Serialized',
+      title: 'Berseri',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Serialized', value: true },
-        { title: 'Non-Serialized', value: false },
+        { title: 'Berseri', value: true },
+        { title: 'Tidak Berseri', value: false },
       ],
     },
     'is_batch_tracked': {
-      title: 'Batch Tracked',
+      title: 'Pelacakan Batch',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Batch Tracked', value: true },
-        { title: 'Non-Batch', value: false },
+        { title: 'Dilacak Batch', value: true },
+        { title: 'Tidak Dilacak', value: false },
       ],
     },
     'is_prescription_required': {
-      title: 'Prescription Required',
+      title: 'Resep Diperlukan',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Prescription Required', value: true },
-        { title: 'OTC', value: false },
+        { title: 'Resep Diperlukan', value: true },
+        { title: 'Bebas', value: false },
       ],
     },
     'is_active': {
@@ -558,8 +558,8 @@ function getProductTypeColor(productType) {
 
 function getProductTypeLabel(productType) {
   switch (productType) {
-  case 'CONSUMABLE': return 'Consumable'
-  case 'NON_CONSUMABLE': return 'Non-Consumable'
+  case 'CONSUMABLE': return 'Habis Pakai'
+  case 'NON_CONSUMABLE': return 'Tidak Habis Pakai'
   default: return productType
   }
 }
@@ -575,9 +575,9 @@ function getStorageColor(storageRequirement) {
 
 function getStorageLabel(storageRequirement) {
   switch (storageRequirement) {
-  case 'ROOM_TEMP': return 'Room Temp'
-  case 'REFRIGERATED': return 'Refrigerated'
-  case 'FROZEN': return 'Frozen'
+  case 'ROOM_TEMP': return 'Suhu Ruangan'
+  case 'REFRIGERATED': return 'Didinginkan'
+  case 'FROZEN': return 'Beku'
   default: return storageRequirement
   }
 }
