@@ -185,6 +185,16 @@ export const routes = [
     name: 'wms-branches-create',
     component: () => import('@/pages/wms/branches/create.vue'),
   },
+  {
+    path: '/wms/branches/:id',
+    name: 'wms-branches-id',
+    component: () => import('@/pages/wms/branches/[id].vue'),
+  },
+  {
+    path: '/wms/branches/edit/:id',
+    name: 'wms-branches-edit-id',
+    component: () => import('@/pages/wms/branches/edit/[id].vue'),
+  },
 
   // WMS Regional Warehouses Routes
   {

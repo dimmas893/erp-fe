@@ -82,6 +82,34 @@ meta:
       <template #item.created_at="{ item }">
         {{ item && item.created_at ? formatDateTime(item.created_at) : '-' }}
       </template>
+      <template #item.actions="{ item }">
+        <div class="d-flex gap-1">
+          <VBtn
+            icon
+            size="small"
+            color="primary"
+            variant="text"
+            :to="{ name: 'wms-branches-id', params: { id: item.id } }"
+          >
+            <VIcon>tabler-eye</VIcon>
+            <VTooltip location="top">
+              <span>Lihat Detail</span>
+            </VTooltip>
+          </VBtn>
+          <VBtn
+            icon
+            size="small"
+            color="warning"
+            variant="text"
+            :to="{ name: 'wms-branches-edit-id', params: { id: item.id } }"
+          >
+            <VIcon>tabler-edit</VIcon>
+            <VTooltip location="top">
+              <span>Edit</span>
+            </VTooltip>
+          </VBtn>
+        </div>
+      </template>
 
       <template #loading>
         <VSkeletonLoader
@@ -286,6 +314,7 @@ const headers = [
   { title: 'Auto Reorder', key: 'auto_reorder_enabled', sortable: false },
   { title: 'Status', key: 'is_active', sortable: false },
   { title: 'Tanggal Dibuat', key: 'created_at' },
+  { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
