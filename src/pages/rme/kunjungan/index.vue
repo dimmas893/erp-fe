@@ -11,7 +11,7 @@ meta:
       title="Data Kunjungan"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      :quick-search-placeholder="'Cari nomor kunjungan, nama pasien, atau keluhan...'"
+      quick-search-placeholder="Cari nomor kunjungan, nama pasien, atau keluhan..."
       :quick-search-fields="['visit_number', 'patient.name', 'chief_complaint']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
@@ -44,26 +44,41 @@ meta:
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
       <template #item.visit_number="{ item }">
-        <RouterLink :to="{ name: 'rme-kunjungan-id', params: { id: item.id } }" class="text-primary text-decoration-underline font-weight-medium">
+        <RouterLink
+          :to="{ name: 'rme-kunjungan-id', params: { id: item.id } }"
+          class="text-primary text-decoration-underline font-weight-medium"
+        >
           {{ item.visit_number }}
         </RouterLink>
       </template>
       <template #item.patient="{ item }">
         <div>
-          <div class="font-weight-medium">{{ item.patient?.name || '-' }}</div>
-          <div class="text-caption text-medium-emphasis">{{ item.patient?.patient_number || '-' }}</div>
+          <div class="font-weight-medium">
+            {{ item.patient?.name || '-' }}
+          </div>
+          <div class="text-caption text-medium-emphasis">
+            {{ item.patient?.patient_number || '-' }}
+          </div>
         </div>
       </template>
       <template #item.visit_date="{ item }">
         {{ formatDateTime(item.visit_date) }}
       </template>
       <template #item.status="{ item }">
-        <VChip :color="getStatusColor(item.status)" size="small" label>
+        <VChip
+          :color="getStatusColor(item.status)"
+          size="small"
+          label
+        >
           {{ getStatusLabel(item.status) }}
         </VChip>
       </template>
       <template #item.payment_status="{ item }">
-        <VChip :color="getPaymentStatusColor(item.payment_status)" size="small" label>
+        <VChip
+          :color="getPaymentStatusColor(item.payment_status)"
+          size="small"
+          label
+        >
           {{ getPaymentStatusLabel(item.payment_status) }}
         </VChip>
       </template>
@@ -103,13 +118,28 @@ meta:
         />
       </template>
       <template #no-data>
-        <div v-if="shouldShowNoData" class="text-center py-12">
-          <VIcon size="64" color="primary" class="mb-4">tabler-calendar-event</VIcon>
-          <h3 class="text-h6 mb-2">Tidak ada data ditemukan</h3>
+        <div
+          v-if="shouldShowNoData"
+          class="text-center py-12"
+        >
+          <VIcon
+            size="64"
+            color="primary"
+            class="mb-4"
+          >
+            tabler-calendar-event
+          </VIcon>
+          <h3 class="text-h6 mb-2">
+            Tidak ada data ditemukan
+          </h3>
           <p class="text-body-2 text-medium-emphasis mb-4">
             Coba ubah filter atau kriteria pencarian Anda
           </p>
-          <VBtn color="primary" variant="tonal" @click="handleClearFilters">
+          <VBtn
+            color="primary"
+            variant="tonal"
+            @click="handleClearFilters"
+          >
             Reset Filter
           </VBtn>
         </div>
@@ -148,14 +178,14 @@ meta:
 </template>
 
 <script setup>
-console.log('Kunjungan index.vue loaded');
-import TablePagination from '@/@core/components/TablePagination.vue';
-import DynamicFilter from '@/components/DynamicFilter.vue';
-import { $api } from '@/utils/api';
-import { showErrorAlert } from '@/utils/errorHandler';
-import { paginationMeta } from '@/utils/paginationMeta';
-import { computed, onActivated, onMounted, ref, watch } from 'vue';
-import { RouterLink } from 'vue-router';
+console.log('Kunjungan index.vue loaded')
+import TablePagination from '@/@core/components/TablePagination.vue'
+import DynamicFilter from '@/components/DynamicFilter.vue'
+import { $api } from '@/utils/api'
+import { showErrorAlert } from '@/utils/errorHandler'
+import { paginationMeta } from '@/utils/paginationMeta'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
+import { RouterLink } from 'vue-router'
 
 // State
 const itemsPerPage = ref(10)
@@ -182,58 +212,66 @@ const allowedFields = [
   'status',
   'payment_status',
   'visit_date',
-  'created_at'
+  'created_at',
 ]
 
 const fieldConfigs = computed(() => {
   return {
     'visit_number': {
       title: 'Nomor Kunjungan',
-      type: 'text'
+      type: 'text',
+      operator: 'like',
     },
     'patient_id': {
       title: 'Pasien',
       type: 'select',
-      options: [] // Will be populated from patients API
+      operator: 'equal',
+      options: [], // Will be populated from patients API
     },
     'doctor_id': {
       title: 'Dokter',
       type: 'select',
-      options: doctorOptions.value.slice()
+      operator: 'equal',
+      options: doctorOptions.value.slice(),
     },
     'branch_id': {
       title: 'Cabang',
       type: 'select',
-      options: branchOptions.value.slice()
+      operator: 'equal',
+      options: branchOptions.value.slice(),
     },
     'status': {
       title: 'Status',
       type: 'select',
+      operator: 'equal',
       options: [
         { title: 'Scheduled', value: 'SCHEDULED' },
         { title: 'In Progress', value: 'IN_PROGRESS' },
         { title: 'Completed', value: 'COMPLETED' },
-        { title: 'Cancelled', value: 'CANCELLED' }
-      ]
+        { title: 'Cancelled', value: 'CANCELLED' },
+      ],
     },
     'payment_status': {
       title: 'Status Pembayaran',
       type: 'select',
+      operator: 'equal',
       options: [
         { title: 'Pending', value: 'PENDING' },
         { title: 'Paid', value: 'PAID' },
         { title: 'Partial', value: 'PARTIAL' },
-        { title: 'Refunded', value: 'REFUNDED' }
-      ]
+        { title: 'Refunded', value: 'REFUNDED' },
+      ],
     },
     'visit_date': {
       title: 'Tanggal Kunjungan',
-      type: 'date'
+      type: 'date',
+      operator: 'date',
     },
     'created_at': {
       title: 'Tanggal Dibuat',
-      type: 'date'
-    }
+      type: 'date',
+      operator: 'date',
+    },
   }
 })
 
@@ -242,14 +280,14 @@ const filterFields = computed(() => {
     title: fieldConfigs.value[field]?.title || field,
     value: field,
     type: fieldConfigs.value[field]?.type || 'text',
-    ...fieldConfigs.value[field]
+    ...fieldConfigs.value[field],
   }))
 })
 
 // Dynamic filter configuration
 const filterConfig = computed(() => ({
   fields: filterFields.value,
-  fieldConfigs: fieldConfigs.value
+  fieldConfigs: fieldConfigs.value,
 }))
 
 // Computed property to control no-data display
@@ -306,7 +344,7 @@ async function fetchVisits() {
       requestBody.filters.push({
         search_by: 'visit_number',
         filter_type: 'like',
-        search_query: currentQuickSearch.value.trim()
+        search_query: currentQuickSearch.value.trim(),
       })
     }
 
@@ -327,7 +365,7 @@ async function fetchVisits() {
     console.error('❌ Error fetching visits:', error)
     await showErrorAlert(error, {
       title: 'Gagal Memuat Data Kunjungan',
-      text: 'Tidak dapat memuat data kunjungan. Silakan coba lagi.'
+      text: 'Tidak dapat memuat data kunjungan. Silakan coba lagi.',
     })
     visits.value = []
     totalVisits.value = 0
@@ -343,6 +381,7 @@ async function fetchDoctors() {
     const res = await $api('/hris/doctors', {
       method: 'GET',
     })
+
     doctorOptions.value = (res.data || []).map(doctor => ({
       title: doctor.name,
       value: doctor.id,
@@ -351,7 +390,7 @@ async function fetchDoctors() {
     console.error('Error fetching doctors:', e)
     await showErrorAlert(e, {
       title: 'Gagal Memuat Data Dokter',
-      text: 'Tidak dapat memuat daftar dokter untuk filter.'
+      text: 'Tidak dapat memuat daftar dokter untuk filter.',
     })
     doctorOptions.value = []
   }
@@ -362,6 +401,7 @@ async function fetchBranches() {
     const res = await $api('/wms/branches', {
       method: 'GET',
     })
+
     branchOptions.value = (res.data || []).map(branch => ({
       title: `${branch.name} (${branch.code})`,
       value: branch.id,
@@ -370,7 +410,7 @@ async function fetchBranches() {
     console.error('Error fetching branches:', e)
     await showErrorAlert(e, {
       title: 'Gagal Memuat Data Cabang',
-      text: 'Tidak dapat memuat daftar cabang untuk filter.'
+      text: 'Tidak dapat memuat daftar cabang untuk filter.',
     })
     branchOptions.value = []
   }
@@ -403,69 +443,74 @@ function onUpdateOptions(options) {
   // Handle sorting - just update the values, let the watcher handle fetching
   if (options.sortBy && options.sortBy.length > 0) {
     const sortItem = options.sortBy[0]
+
     sortBy.value = sortItem.key
     orderBy.value = sortItem.order
+
     // Remove direct fetch call - let the watcher handle it
   }
 }
 
 function getStatusColor(status) {
   switch (status) {
-    case 'SCHEDULED': return 'info'
-    case 'IN_PROGRESS': return 'warning'
-    case 'COMPLETED': return 'success'
-    case 'CANCELLED': return 'error'
-    default: return 'secondary'
+  case 'SCHEDULED': return 'info'
+  case 'IN_PROGRESS': return 'warning'
+  case 'COMPLETED': return 'success'
+  case 'CANCELLED': return 'error'
+  default: return 'secondary'
   }
 }
 
 function getStatusLabel(status) {
   switch (status) {
-    case 'SCHEDULED': return 'Terjadwal'
-    case 'IN_PROGRESS': return 'Sedang Berlangsung'
-    case 'COMPLETED': return 'Selesai'
-    case 'CANCELLED': return 'Dibatalkan'
-    default: return status
+  case 'SCHEDULED': return 'Terjadwal'
+  case 'IN_PROGRESS': return 'Sedang Berlangsung'
+  case 'COMPLETED': return 'Selesai'
+  case 'CANCELLED': return 'Dibatalkan'
+  default: return status
   }
 }
 
 function getPaymentStatusColor(status) {
   switch (status) {
-    case 'PENDING': return 'warning'
-    case 'PAID': return 'success'
-    case 'PARTIAL': return 'info'
-    case 'REFUNDED': return 'error'
-    default: return 'secondary'
+  case 'PENDING': return 'warning'
+  case 'PAID': return 'success'
+  case 'PARTIAL': return 'info'
+  case 'REFUNDED': return 'error'
+  default: return 'secondary'
   }
 }
 
 function getPaymentStatusLabel(status) {
   switch (status) {
-    case 'PENDING': return 'Menunggu'
-    case 'PAID': return 'Lunas'
-    case 'PARTIAL': return 'Sebagian'
-    case 'REFUNDED': return 'Dikembalikan'
-    default: return status
+  case 'PENDING': return 'Menunggu'
+  case 'PAID': return 'Lunas'
+  case 'PARTIAL': return 'Sebagian'
+  case 'REFUNDED': return 'Dikembalikan'
+  default: return status
   }
 }
 
 function getDoctorName(doctorId) {
   const doctor = doctorOptions.value.find(d => d.value === doctorId)
+  
   return doctor ? doctor.title : '-'
 }
 
 function formatDateTime(dateStr) {
   if (!dateStr) return '-'
+  
   return new Date(dateStr).toLocaleString('id-ID')
 }
 
 function formatCurrency(amount) {
   if (!amount) return 'Rp 0'
+  
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
     minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(amount)
 }
 
@@ -480,6 +525,7 @@ watch([page, itemsPerPage, sortBy, orderBy], () => {
 // Always refresh data when component becomes active
 onActivated(() => {
   console.log('🎯 Component onActivated triggered')
+
   // Only fetch if we don't have data and initial load is completed
   if (visits.value.length === 0 && initialLoadCompleted.value) {
     fetchVisits()
@@ -488,7 +534,8 @@ onActivated(() => {
 
 // Initialize filter config
 onMounted(async () => {
-  console.log('onMounted kunjungan');
+  console.log('onMounted kunjungan')
+
   // Ensure loading is true for initial load
   loading.value = true
   
@@ -498,6 +545,7 @@ onMounted(async () => {
   try {
     await fetchBranches()
   } catch (e) {}
+
   // Only fetch visits once on mount
   fetchVisits()
 })

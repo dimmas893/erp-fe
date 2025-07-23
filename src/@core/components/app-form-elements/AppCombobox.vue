@@ -25,12 +25,10 @@ const label = computed(() => useAttrs().label)
       class="mb-1 text-body-2"
       :text="label"
     />
-
     <VCombobox
       v-bind="{
-        ...$attrs,
+        ...Object.fromEntries(Object.entries($attrs).filter(([k]) => k !== 'label')),
         class: null,
-        label: undefined,
         variant: 'outlined',
         id: elementId,
         menuProps: {
@@ -42,6 +40,8 @@ const label = computed(() => useAttrs().label)
           ],
         },
       }"
+      :placeholder="$attrs.placeholder"
+      :clearable="$attrs.multiple ? Array.isArray($attrs.modelValue) && $attrs.modelValue.length > 0 : !!$attrs.modelValue"
     >
       <template
         v-for="(_, name) in $slots"

@@ -24,6 +24,7 @@ export const setupGuards = router => {
     if (hasToken && to.name === 'login') {
       return { name: 'dashboards-analytics' }
     }
+
     // Selain itu, lanjutkan
     return
   })

@@ -27,6 +27,7 @@ export default [
     badgeContent: '5',
     badgeClass: 'bg-error',
   },
+
   /*
   {
     title: 'Front Pages',

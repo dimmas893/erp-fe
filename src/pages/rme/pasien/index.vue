@@ -11,7 +11,7 @@ meta:
       title="Data Pasien"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      :quick-search-placeholder="'Cari nama, NIK, telepon, atau email...'"
+      quick-search-placeholder="Cari nama, NIK, telepon, atau email..."
       :quick-search-fields="['name', 'nik', 'phone', 'email']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
@@ -44,7 +44,10 @@ meta:
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
       <template #item.name="{ item }">
-        <RouterLink :to="{ name: 'rme-pasien-id', params: { id: item.id } }" class="text-primary text-decoration-underline font-weight-medium">
+        <RouterLink
+          :to="{ name: 'rme-pasien-id', params: { id: item.id } }"
+          class="text-primary text-decoration-underline font-weight-medium"
+        >
           {{ item.name }}
         </RouterLink>
       </template>
@@ -55,22 +58,41 @@ meta:
         {{ formatDateTime(item.created_at) }}
       </template>
       <template #item.is_active="{ item }">
-        <VChip :color="item.is_active ? 'success' : 'error'" size="small" label>
+        <VChip
+          :color="item.is_active ? 'success' : 'error'"
+          size="small"
+          label
+        >
           {{ item.is_active ? 'Aktif' : 'Nonaktif' }}
         </VChip>
       </template>
       <template #item.consent_status="{ item }">
-        <VChip :color="getConsentColor(item.consent_status)" size="small" label>
+        <VChip
+          :color="getConsentColor(item.consent_status)"
+          size="small"
+          label
+        >
           {{ item.consent_status }}
         </VChip>
       </template>
       <template #item.emergency_contact="{ item }">
         <div v-if="item.emergency_contact">
-          <div class="font-weight-medium">{{ item.emergency_contact.name }}</div>
-          <div class="text-body-2">{{ item.emergency_contact.phone }}</div>
-          <div class="text-caption text-medium-emphasis">{{ item.emergency_contact.relationship }}</div>
+          <div class="font-weight-medium">
+            {{ item.emergency_contact.name }}
+          </div>
+          <div class="text-body-2">
+            {{ item.emergency_contact.phone }}
+          </div>
+          <div class="text-caption text-medium-emphasis">
+            {{ item.emergency_contact.relationship }}
+          </div>
         </div>
-        <div v-else class="text-medium-emphasis">-</div>
+        <div
+          v-else
+          class="text-medium-emphasis"
+        >
+          -
+        </div>
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex gap-2">
@@ -99,13 +121,28 @@ meta:
         />
       </template>
       <template #no-data>
-        <div v-if="shouldShowNoData" class="text-center py-12">
-          <VIcon size="64" color="primary" class="mb-4">tabler-users</VIcon>
-          <h3 class="text-h6 mb-2">Tidak ada data ditemukan</h3>
+        <div
+          v-if="shouldShowNoData"
+          class="text-center py-12"
+        >
+          <VIcon
+            size="64"
+            color="primary"
+            class="mb-4"
+          >
+            tabler-users
+          </VIcon>
+          <h3 class="text-h6 mb-2">
+            Tidak ada data ditemukan
+          </h3>
           <p class="text-body-2 text-medium-emphasis mb-4">
             Coba ubah filter atau kriteria pencarian Anda
           </p>
-          <VBtn color="primary" variant="tonal" @click="handleClearFilters">
+          <VBtn
+            color="primary"
+            variant="tonal"
+            @click="handleClearFilters"
+          >
             Reset Filter
           </VBtn>
         </div>
@@ -176,48 +213,56 @@ const allowedFields = [
   'phone',
   'email',
   'branch_id',
-  'created_at'
+  'created_at',
 ]
 
 const fieldConfigs = computed(() => {
   return {
     'patient_number': {
       title: 'No. Pasien',
-      type: 'text'
+      type: 'text',
+      operator: 'like',
     },
     'nik': {
       title: 'NIK',
-      type: 'text'
+      type: 'text',
+      operator: 'like',
     },
     'name': {
       title: 'Nama',
-      type: 'text'
+      type: 'text',
+      operator: 'like',
     },
     'gender': {
       title: 'Jenis Kelamin',
       type: 'select',
+      operator: 'equal',
       options: [
         { title: 'Laki-laki', value: 'MALE' },
-        { title: 'Perempuan', value: 'FEMALE' }
-      ]
+        { title: 'Perempuan', value: 'FEMALE' },
+      ],
     },
     'phone': {
       title: 'Telepon',
-      type: 'tel'
+      type: 'tel',
+      operator: 'like',
     },
     'email': {
       title: 'Email',
-      type: 'email'
+      type: 'email',
+      operator: 'like',
     },
     'branch_id': {
       title: 'Cabang',
       type: 'select',
-      options: branchOptions.value.slice()
+      operator: 'equal',
+      options: branchOptions.value.slice(),
     },
     'created_at': {
       title: 'Tanggal Dibuat',
-      type: 'date'
-    }
+      type: 'date',
+      operator: 'date',
+    },
   }
 })
 
@@ -226,14 +271,14 @@ const filterFields = computed(() => {
     title: fieldConfigs.value[field]?.title || field,
     value: field,
     type: fieldConfigs.value[field]?.type || 'text',
-    ...fieldConfigs.value[field]
+    ...fieldConfigs.value[field],
   }))
 })
 
 // Dynamic filter configuration
 const filterConfig = computed(() => ({
   fields: filterFields.value,
-  fieldConfigs: fieldConfigs.value
+  fieldConfigs: fieldConfigs.value,
 }))
 
 // Computed property to control no-data display
@@ -289,7 +334,7 @@ async function fetchPatients() {
       requestBody.filters.push({
         search_by: 'name',
         filter_type: 'like',
-        search_query: currentQuickSearch.value.trim()
+        search_query: currentQuickSearch.value.trim(),
       })
     }
 
@@ -310,7 +355,7 @@ async function fetchPatients() {
     console.error('❌ Error fetching patients:', error)
     await showErrorAlert(error, {
       title: 'Gagal Memuat Data Pasien',
-      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.'
+      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.',
     })
     patients.value = []
     totalPatients.value = 0
@@ -329,6 +374,7 @@ async function fetchBranches() {
         // Authorization header will be set automatically if needed
       },
     })
+
     branchOptions.value = (res.data || []).map(branch => ({
       title: `${branch.name} (${branch.code})`,
       value: branch.id,
@@ -337,7 +383,7 @@ async function fetchBranches() {
     console.error('Error fetching branches:', e)
     await showErrorAlert(e, {
       title: 'Gagal Memuat Data Cabang',
-      text: 'Tidak dapat memuat daftar cabang untuk filter.'
+      text: 'Tidak dapat memuat daftar cabang untuk filter.',
     })
     branchOptions.value = []
   }
@@ -372,28 +418,32 @@ function onUpdateOptions(options) {
   // Handle sorting - just update the values, let the watcher handle fetching
   if (options.sortBy && options.sortBy.length > 0) {
     const sortItem = options.sortBy[0]
+
     sortBy.value = sortItem.key
     orderBy.value = sortItem.order
+
     // Remove direct fetch call - let the watcher handle it
   }
 }
 
 function getConsentColor(status) {
   switch (status) {
-    case 'GIVEN': return 'success'
-    case 'PENDING': return 'warning'
-    case 'DENIED': return 'error'
-    default: return 'secondary'
+  case 'GIVEN': return 'success'
+  case 'PENDING': return 'warning'
+  case 'DENIED': return 'error'
+  default: return 'secondary'
   }
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return '-'
+  
   return new Date(dateStr).toLocaleDateString('id-ID')
 }
 
 function formatDateTime(dateStr) {
   if (!dateStr) return '-'
+  
   return new Date(dateStr).toLocaleString('id-ID')
 }
 
@@ -408,6 +458,7 @@ watch([page, itemsPerPage, sortBy, orderBy], () => {
 // Always refresh data when component becomes active
 onActivated(() => {
   console.log('🎯 Component onActivated triggered')
+
   // Only fetch if we don't have data and initial load is completed
   if (patients.value.length === 0 && initialLoadCompleted.value) {
     fetchPatients()
@@ -417,10 +468,12 @@ onActivated(() => {
 // Initialize filter config
 onMounted(async () => {
   console.log('🚀 Component onMounted triggered')
+
   // Ensure loading is true for initial load
   loading.value = true
   
   await fetchBranches()
+
   // Only fetch patients once on mount
   fetchPatients()
 })

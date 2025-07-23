@@ -11,6 +11,7 @@ export default [
         title: 'Kunjungan',
         to: 'rme-kunjungan',
       },
+
       // {
       //   title: 'Tambah Pasien',
       //   to: 'rme-pasien-create',

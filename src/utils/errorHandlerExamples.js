@@ -6,13 +6,13 @@
  */
 
 import {
-    extractErrorMessages,
-    handleError,
-    logError,
-    showConfirmDialog,
-    showErrorAlert,
-    showSuccessAlert,
-    showValidationErrorAlert
+  extractErrorMessages,
+  handleError,
+  logError,
+  showConfirmDialog,
+  showErrorAlert,
+  showSuccessAlert,
+  showValidationErrorAlert,
 } from './errorHandler'
 
 // ========================================
@@ -22,8 +22,10 @@ async function basicErrorExample() {
   try {
     const response = await $api('/rme/patients', {
       method: 'POST',
-      body: { /* data */ }
+      body: { /* data */ },
     })
+
+
     // Success handling
     await showSuccessAlert('Data berhasil disimpan!')
   } catch (error) {
@@ -69,30 +71,31 @@ async function advancedErrorExample() {
     const errorData = error.data || error.response?.data || error
     
     switch (errorData.response_code) {
-      case 400:
-        await showValidationErrorAlert(error, 'Data Tidak Valid')
-        break
-      case 401:
-        await showErrorAlert(error, {
-          title: 'Session Expired',
-          text: 'Silakan login kembali'
-        })
-        // Redirect to login
-        break
-      case 403:
-        await showErrorAlert(error, {
-          title: 'Akses Ditolak',
-          text: 'Anda tidak memiliki permission untuk aksi ini'
-        })
-        break
-      case 404:
-        await showErrorAlert(error, {
-          title: 'Data Tidak Ditemukan',
-          text: 'Data yang Anda cari tidak tersedia'
-        })
-        break
-      default:
-        await showErrorAlert(error)
+    case 400:
+      await showValidationErrorAlert(error, 'Data Tidak Valid')
+      break
+    case 401:
+      await showErrorAlert(error, {
+        title: 'Session Expired',
+        text: 'Silakan login kembali',
+      })
+
+      // Redirect to login
+      break
+    case 403:
+      await showErrorAlert(error, {
+        title: 'Akses Ditolak',
+        text: 'Anda tidak memiliki permission untuk aksi ini',
+      })
+      break
+    case 404:
+      await showErrorAlert(error, {
+        title: 'Data Tidak Ditemukan',
+        text: 'Data yang Anda cari tidak tersedia',
+      })
+      break
+    default:
+      await showErrorAlert(error)
     }
   }
 }
@@ -106,7 +109,7 @@ async function allInOneErrorExample() {
   } catch (error) {
     // This will log the error AND show alert to user
     await handleError(error, 'Patient Management', {
-      title: 'Custom Error Title'
+      title: 'Custom Error Title',
     })
   }
 }
@@ -120,6 +123,7 @@ async function extractMessagesExample() {
   } catch (error) {
     // Just get the error messages without showing alert
     const messages = extractErrorMessages(error)
+
     console.log('Error messages:', messages)
     
     // Use messages in your own way
@@ -134,7 +138,7 @@ async function extractMessagesExample() {
 async function confirmDialogExample() {
   const result = await showConfirmDialog(
     'Apakah Anda yakin ingin menghapus data pasien ini?',
-    'Konfirmasi Hapus'
+    'Konfirmasi Hapus',
   )
   
   if (result.isConfirmed) {
@@ -159,8 +163,8 @@ async function customSuccessExample() {
       'Pendaftaran Berhasil!',
       {
         timer: 3000,
-        timerProgressBar: true
-      }
+        timerProgressBar: true,
+      },
     )
   } catch (error) {
     await showErrorAlert(error)
@@ -210,8 +214,8 @@ SEMUA FORMAT INI AKAN DITANGANI SECARA OTOMATIS!
 */
 
 export {
-    advancedErrorExample,
-    allInOneErrorExample, basicErrorExample, confirmDialogExample,
-    customSuccessExample, extractMessagesExample, validationErrorExample
+  advancedErrorExample,
+  allInOneErrorExample, basicErrorExample, confirmDialogExample,
+  customSuccessExample, extractMessagesExample, validationErrorExample,
 }
 
