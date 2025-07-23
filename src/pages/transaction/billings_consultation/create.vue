@@ -22,7 +22,7 @@ const formData = ref({
   discount_amount: '',
   tax_amount: '',
   grand_total: '',
-  status: 'open',
+  status: 'open_consultation', // Static status for consultation
   doctor_id: '',
   consultation_fee: '',
   consultation_start_time: '',
@@ -32,13 +32,7 @@ const formData = ref({
 const refForm = ref()
 const isLoading = ref(false)
 
-// Options
-const statusOptions = [
-  { title: 'Open', value: 'open' },
-  { title: 'Confirmed', value: 'confirmed' },
-  { title: 'Paid', value: 'paid' },
-  { title: 'Closed', value: 'closed' },
-]
+// Status is now static for consultation creation
 
 // Data for dropdowns
 const visits = ref([])
@@ -55,6 +49,9 @@ const selectedVisit = ref(null)
 const selectedDoctor = ref(null)
 const selectedService = ref(null)
 const selectedDate = ref('')
+const availableTimeSlots = ref([])
+const selectedTimeSlot = ref(null)
+// Status is static, no need for selectedStatus
 
 // onMounted: load initial data
 onMounted(async () => {
@@ -63,12 +60,15 @@ onMounted(async () => {
     loadServices()
   ])
   
-  // Set today's date and time as default for consultation start time
+  // Set today's date as default
   const today = new Date()
   const todayString = today.toISOString().split('T')[0]
-  const timeString = today.toTimeString().split(' ')[0].substring(0, 5)
-  formData.value.consultation_start_time = `${todayString}T${timeString}`
   selectedDate.value = todayString
+  
+  // Status is static 'open_consultation'
+  
+  // Clear consultation start time initially - will be set when time slot is selected
+  formData.value.consultation_start_time = ''
 })
 
 
@@ -113,6 +113,16 @@ watch(() => formData.value.consultation_start_time, async newVal => {
     await loadDoctorSchedules(formData.value.doctor_id, consultationDate)
   }
 })
+
+// Watch selected date to check availability
+watch(() => selectedDate.value, async newVal => {
+  console.log('Selected date changed to:', newVal)
+  if (newVal && formData.value.doctor_id) {
+    await loadDoctorSchedules(formData.value.doctor_id, newVal)
+  }
+})
+
+// Status is static, no need for status watcher
 
 
 
@@ -307,13 +317,32 @@ const loadDoctorSchedules = async (doctorId, date) => {
 
     if (response.data && Array.isArray(response.data)) {
       schedules.value = response.data
+      
+      // Extract available time slots from all schedules
+      availableTimeSlots.value = []
+      schedules.value.forEach(schedule => {
+        if (schedule.available_time_slots && schedule.available_slots > 0) {
+          schedule.available_time_slots.forEach(slot => {
+            availableTimeSlots.value.push({
+              ...slot,
+              schedule_id: schedule.id,
+              doctor_name: schedule.doctor_name,
+              day: schedule.day
+            })
+          })
+        }
+      })
+      
+      console.log('Available time slots:', availableTimeSlots.value)
       console.log('Processed schedules:', schedules.value)
     } else {
       schedules.value = []
+      availableTimeSlots.value = []
     }
   } catch (error) {
     console.error('Error loading schedules:', error)
     schedules.value = []
+    availableTimeSlots.value = []
     await showErrorAlert(error, {
       title: 'Gagal Memuat Jadwal Dokter',
       text: 'Tidak dapat memuat jadwal dokter. Silakan coba lagi.',
@@ -421,6 +450,29 @@ const onVisitSelected = async visitObject => {
 const amountValidator = value => {
   if (!value) return 'Jumlah wajib diisi'
   if (isNaN(value) || parseFloat(value) < 0) return 'Jumlah harus berupa angka positif'
+  
+  return true
+}
+
+// Time slot validator
+const timeSlotValidator = value => {
+  if (!value) return 'Waktu mulai konsultasi wajib diisi'
+  
+  if (!selectedTimeSlot.value) return 'Pilih slot waktu terlebih dahulu'
+  
+  const selectedDateTime = new Date(value)
+  
+  // Get the time from the datetime input
+  const selectedTime = selectedDateTime.toTimeString().split(' ')[0].substring(0, 5)
+  
+  // Parse the time slot boundaries
+  const startTime = selectedTimeSlot.value.start_time
+  const endTime = selectedTimeSlot.value.end_time
+  
+  // Check if selected time is within the slot range
+  if (selectedTime < startTime || selectedTime >= endTime) {
+    return `Waktu harus berada dalam rentang ${startTime} - ${endTime}`
+  }
   
   return true
 }
@@ -562,6 +614,32 @@ const resetForm = () => {
   selectedPromo.value = null
 }
 
+// Select time slot
+const selectTimeSlot = (timeSlot) => {
+  console.log('Selected time slot:', timeSlot)
+  selectedTimeSlot.value = timeSlot
+  
+  // Set default consultation start time to the beginning of the selected slot
+  const selectedDateTime = `${selectedDate.value}T${timeSlot.start_time}`
+  formData.value.consultation_start_time = selectedDateTime
+  
+  console.log('Set default consultation start time:', formData.value.consultation_start_time)
+}
+
+// Get minimum datetime for the input field
+const getMinDateTime = () => {
+  if (!selectedTimeSlot.value || !selectedDate.value) return ''
+  
+  return `${selectedDate.value}T${selectedTimeSlot.value.start_time}`
+}
+
+// Get maximum datetime for the input field
+const getMaxDateTime = () => {
+  if (!selectedTimeSlot.value || !selectedDate.value) return ''
+  
+  return `${selectedDate.value}T${selectedTimeSlot.value.end_time}`
+}
+
 // Cancel and go back
 const goBack = () => {
   router.push({ name: 'transaction-billings' })
@@ -680,6 +758,35 @@ const goBack = () => {
 
         </VRow>
 
+        <!-- Date Selection -->
+        <VRow>
+          <VCol
+            cols="12"
+            md="6"
+          >
+            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
+              Tanggal Konsultasi *
+            </label>
+            <VTextField
+              v-model="selectedDate"
+              placeholder="Pilih tanggal..."
+              type="date"
+              variant="outlined"
+              :rules="[requiredValidator]"
+              required
+              hide-details="auto"
+              prepend-inner-icon="tabler-calendar"
+              :min="new Date().toISOString().split('T')[0]"
+            />
+            <div class="text-caption text-medium-emphasis mt-1">
+              <VIcon size="14" class="mr-1">
+                tabler-info-circle
+              </VIcon>
+              Pilih tanggal untuk melihat jadwal tersedia
+            </div>
+          </VCol>
+        </VRow>
+
         <!-- Doctor Schedule Section -->
         <VRow v-if="schedules.length > 0">
           <VCol cols="12">
@@ -773,8 +880,59 @@ const goBack = () => {
           </VCol>
         </VRow>
 
-        <!-- Consultation Start Time -->
+        <!-- Available Time Slots -->
+        <VRow v-if="availableTimeSlots.length > 0">
+          <VCol cols="12">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="text-h6 mb-4">
+                <VIcon start color="success">
+                  tabler-clock-check
+                </VIcon>
+                Slot Waktu Tersedia
+              </VCardTitle>
+              
         <VRow>
+                <VCol 
+                  v-for="timeSlot in availableTimeSlots" 
+                  :key="`${timeSlot.schedule_id}-${timeSlot.start_time}-${timeSlot.end_time}`" 
+                  cols="12" 
+                  md="4"
+                >
+                  <VCard 
+                    variant="outlined" 
+                    class="pa-3 time-slot-card"
+                    :class="{ 'selected-time-slot': selectedTimeSlot === timeSlot }"
+                    @click="selectTimeSlot(timeSlot)"
+                  >
+                    <div class="d-flex align-center gap-3">
+                      <VIcon size="24" color="primary">
+                        tabler-clock
+                      </VIcon>
+                      <div class="flex-grow-1">
+                        <h6 class="text-subtitle-1 font-weight-bold mb-1">
+                          {{ timeSlot.start_time }} - {{ timeSlot.end_time }}
+                        </h6>
+                        <p class="text-caption text-medium-emphasis mb-0">
+                          {{ timeSlot.day }} • {{ timeSlot.doctor_name }}
+                        </p>
+                      </div>
+                      <VBtn
+                        icon="tabler-check"
+                        color="primary"
+                        variant="text"
+                        size="small"
+                        v-if="selectedTimeSlot === timeSlot"
+                      />
+                    </div>
+                  </VCard>
+                </VCol>
+              </VRow>
+            </VCard>
+          </VCol>
+        </VRow>
+
+        <!-- Consultation Start Time (Manual input within selected time slot) -->
+        <VRow v-if="selectedTimeSlot">
           <VCol
             cols="12"
             md="6"
@@ -784,19 +942,21 @@ const goBack = () => {
             </label>
             <VTextField
               v-model="formData.consultation_start_time"
-              placeholder="Pilih waktu..."
+              :placeholder="`Pilih waktu antara ${selectedTimeSlot.start_time} - ${selectedTimeSlot.end_time}`"
               type="datetime-local"
               variant="outlined"
-              :rules="[requiredValidator]"
+              :rules="[requiredValidator, timeSlotValidator]"
               required
               hide-details="auto"
               prepend-inner-icon="tabler-clock"
+              :min="getMinDateTime()"
+              :max="getMaxDateTime()"
             />
-            <div class="text-caption text-medium-emphasis mt-1">
+            <div class="text-caption text-info mt-1">
               <VIcon size="14" class="mr-1">
                 tabler-info-circle
               </VIcon>
-              Default: hari ini, silakan pilih jam yang sesuai
+              Pilih waktu dalam rentang: {{ selectedTimeSlot.start_time }} - {{ selectedTimeSlot.end_time }}
             </div>
           </VCol>
         </VRow>
@@ -875,22 +1035,7 @@ const goBack = () => {
           </VCol>
         </VRow>
         
-        <!-- Status Field -->
-        <VRow>
-          <VCol cols="12" md="6">
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Status *
-            </label>
-            <AppCombobox
-              v-model="formData.status"
-              placeholder="Pilih status..."
-              :items="statusOptions"
-              :rules="[requiredValidator]"
-              required
-              hide-details="auto"
-            />
-          </VCol>
-        </VRow>
+        <!-- Status is static 'open_consultation' -->
         
         <div class="d-flex justify-end mt-4">
           <VBtn
@@ -907,3 +1052,23 @@ const goBack = () => {
     </VCardText>
   </VCard>
 </template> 
+
+<style lang="scss" scoped>
+.time-slot-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: rgba(25, 118, 210, 0.3);
+  }
+  
+  &.selected-time-slot {
+    border-color: #1976d2;
+    background: linear-gradient(135deg, rgba(25, 118, 210, 0.1), rgba(25, 118, 210, 0.05));
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+  }
+}
+</style> 

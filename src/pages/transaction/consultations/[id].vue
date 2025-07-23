@@ -34,6 +34,15 @@ meta:
       </VBtn>
       <VBtn
         v-if="consultation && !consultation.end_time"
+        color="warning"
+        prepend-icon="tabler-player-play"
+        :loading="completingConsultation"
+        @click="progressConsultation"
+      >
+        Progress
+      </VBtn>
+      <VBtn
+        v-if="consultation && !consultation.end_time"
         color="success"
         prepend-icon="tabler-check"
         :loading="completingConsultation"
@@ -1588,6 +1597,56 @@ async function submitConsultation() {
   }
 }
 
+async function progressConsultation() {
+  if (!consultation.value) return
+
+  completingConsultation.value = true
+
+  try {
+    // Get current date and time in Indonesian format
+    const now = new Date()
+    const indonesianDateTime = now.toLocaleString('id-ID', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    
+    // Convert to ISO string for API
+    const requestData = {
+      billing_status: 'progress_consultation'
+    }
+
+    console.log('📤 Submitting consultation progress data:', requestData)
+    console.log('📅 Indonesian format:', indonesianDateTime)
+
+    const res = await $api(`/rme/visit-consultations/${consultationId}/status`, {
+      method: 'PATCH',
+      body: requestData,
+    })
+
+    // Show success message with Indonesian date format
+    await showSuccessAlert(
+      `Konsultasi berhasil diproses pada ${indonesianDateTime}`,
+      'Berhasil!'
+    )
+
+    // Redirect back to consultations list
+    router.push({ name: 'transaction-consultations' })
+  } catch (error) {
+    console.error('❌ Error progressing consultation:', error)
+    await showErrorAlert(error, {
+      title: 'Gagal Memproses Konsultasi',
+      text: 'Tidak dapat memproses konsultasi. Silakan coba lagi.',
+    })
+  } finally {
+    completingConsultation.value = false
+  }
+}
+
 async function completeConsultation() {
   if (!consultation.value) return
 
@@ -1608,7 +1667,8 @@ async function completeConsultation() {
     
     // Convert to ISO string for API
     const requestData = {
-      end_time: now.toISOString()
+      end_time: now.toISOString(),
+      billing_status: 'complete_consultation'
     }
 
     console.log('📤 Submitting consultation completion data:', requestData)

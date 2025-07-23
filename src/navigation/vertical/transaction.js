@@ -19,10 +19,10 @@ export default [
         title: 'Tindakan',
         to: 'transaction-tindakan',
       },
-      {
-        title: 'Produk',
-        to: 'transaction-produk',
-      },
+      // {
+      //   title: 'Produk',
+      //   to: 'transaction-produk',
+      // },
 
       // {
       //   title: 'Tambah Billing',

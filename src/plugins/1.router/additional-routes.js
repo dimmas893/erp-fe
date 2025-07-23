@@ -407,4 +407,26 @@ export const routes = [
     component: () => import('@/pages/crm/services/[id].vue'),
   },
 
+  // Finance Tax Types Routes
+  {
+    path: '/finance/tax-types',
+    name: 'finance-tax-types',
+    component: () => import('@/pages/finance/tax-types/index.vue'),
+  },
+  {
+    path: '/finance/tax-types/create',
+    name: 'finance-tax-types-create',
+    component: () => import('@/pages/finance/tax-types/create.vue'),
+  },
+  {
+    path: '/finance/tax-types/:id',
+    name: 'finance-tax-types-id',
+    component: () => import('@/pages/finance/tax-types/[id].vue'),
+  },
+  {
+    path: '/finance/tax-types/edit/:id',
+    name: 'finance-tax-types-edit-id',
+    component: () => import('@/pages/finance/tax-types/edit/[id].vue'),
+  },
+
 ]
