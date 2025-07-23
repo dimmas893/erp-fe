@@ -12,13 +12,13 @@
         class="mx-1"
       />
       By <a
-        href="https://pixinvent.com"
+        href="http://buatwebmurah.my.id"
         target="_blank"
         rel="noopener noreferrer"
         class="text-primary ms-1"
-      >Pixinvent</a>
+      >BWM</a>
     </span>
-    <!-- 👉 Footer: right content -->
+    <!-- 👉 Footer: right content
     <span class="d-md-flex gap-x-4 text-primary d-none">
       <a
         href="https://themeforest.net/licenses/standard"
@@ -36,6 +36,6 @@
         href="https://pixinvent.ticksy.com/"
         target="noopener noreferrer"
       >Support</a>
-    </span>
+    </span> -->
   </div>
 </template>

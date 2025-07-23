@@ -5,6 +5,7 @@ import forms from './forms'
 import others from './others'
 import rme from './rme'
 import satusehat from './satusehat'
+import setting from './setting'
 import uiElements from './ui-elements'
 
-export default [...dashboard, ...rme, ...satusehat, ...appsAndPages, ...uiElements, ...forms, ...charts, ...others]
+export default [...dashboard, ...rme,  ...satusehat, ...setting,  ...appsAndPages, ...uiElements, ...forms, ...charts, ...others]
