@@ -17,10 +17,10 @@ meta:
         </VIcon>
         <div>
           <h2 class="text-h5 mb-1">
-            Tambah Regional Warehouse Baru
+            Tambah Gudang Regional Baru
           </h2>
           <p class="text-body-2 text-medium-emphasis mb-0">
-            Tambahkan regional warehouse baru
+            Tambahkan gudang regional baru
           </p>
         </div>
       </div>
@@ -48,16 +48,16 @@ meta:
 
           <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Nama Regional Warehouse
+              Nama Gudang Regional
             </label>
             <VTextField
               v-model="formData.name"
-              placeholder="Masukkan nama regional warehouse"
+              placeholder="Masukkan nama gudang regional"
               variant="outlined"
               maxlength="100"
               :rules="[
-                v => !!v || 'Nama regional warehouse harus diisi',
-                v => v.length <= 100 || 'Nama regional warehouse maksimal 100 karakter'
+                v => !!v || 'Nama gudang regional harus diisi',
+                v => v.length <= 100 || 'Nama gudang regional maksimal 100 karakter'
               ]"
               required
               hide-details
@@ -81,15 +81,15 @@ meta:
 
           <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Central Warehouse
+              Gudang Pusat
             </label>
             <VSelect
               v-model="formData.central_warehouse_id"
               :items="centralWarehouses"
               :loading="loadingCentralWarehouses"
               variant="outlined"
-              placeholder="Pilih central warehouse"
-              :rules="[v => !!v || 'Central warehouse harus dipilih']"
+              placeholder="Pilih gudang pusat"
+              :rules="[v => !!v || 'Gudang pusat harus dipilih']"
               required
               hide-details
             />

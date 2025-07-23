@@ -48,16 +48,16 @@ meta:
 
           <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Regional Warehouse
+              Gudang Regional
             </label>
             <VSelect
               v-model="formData.regional_warehouse_id"
               :items="regionalWarehouses"
               item-title="name"
               item-value="id"
-              placeholder="Pilih regional warehouse"
+              placeholder="Pilih gudang regional"
               variant="outlined"
-              :rules="[v => !!v || 'Regional warehouse harus dipilih']"
+              :rules="[v => !!v || 'Gudang regional harus dipilih']"
               :loading="loadingWarehouses"
               :error-messages="errors.regional_warehouse_id"
               required

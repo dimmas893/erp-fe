@@ -4,23 +4,23 @@ export default [
     icon: { icon: 'tabler-users-group' },
     children: [
       {
-        title: 'Departments',
+        title: 'Departemen',
         to: 'hris-departments',
       },
       {
-        title: 'Employees',
+        title: 'Karyawan',
         to: 'hris-employees',
       },
       {
-        title: 'Leave Types',
+        title: 'Jenis Cuti',
         to: 'hris-leave-types',
       },
       {
-        title: 'Doctors',
+        title: 'Dokter',
         to: 'hris-doctors',
       },
       {
-        title: 'Therapists',
+        title: 'Terapis',
         to: 'hris-therapists',
       },
       // You can add more HRIS-related menus here

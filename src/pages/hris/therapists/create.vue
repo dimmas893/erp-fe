@@ -520,25 +520,25 @@ const formData = reactive({
 
 // Options
 const specializationOptions = [
-  { title: 'AESTHETIC', value: 'AESTHETIC' },
-  { title: 'GENERAL', value: 'GENERAL' },
-  { title: 'DERMATOLOGY', value: 'DERMATOLOGY' },
-  { title: 'SURGICAL', value: 'SURGICAL' },
-  { title: 'EMERGENCY', value: 'EMERGENCY' },
-  { title: 'PEDIATRIC', value: 'PEDIATRIC' }
+  { title: 'Estetika', value: 'AESTHETIC' },
+  { title: 'Umum', value: 'GENERAL' },
+  { title: 'Dermatologi', value: 'DERMATOLOGY' },
+  { title: 'Bedah', value: 'SURGICAL' },
+  { title: 'Darurat', value: 'EMERGENCY' },
+  { title: 'Pediatri', value: 'PEDIATRIC' }
 ]
 
 const certificationLevelOptions = [
-  { title: 'DIPLOMA', value: 'DIPLOMA' },
-  { title: 'BACHELOR', value: 'BACHELOR' },
-  { title: 'MASTER', value: 'MASTER' }
+  { title: 'Diploma', value: 'DIPLOMA' },
+  { title: 'Sarjana', value: 'BACHELOR' },
+  { title: 'Magister', value: 'MASTER' }
 ]
 
 const shiftPreferenceOptions = [
-  { title: 'MORNING', value: 'MORNING' },
-  { title: 'AFTERNOON', value: 'AFTERNOON' },
-  { title: 'NIGHT', value: 'NIGHT' },
-  { title: 'FLEXIBLE', value: 'FLEXIBLE' }
+  { title: 'Pagi', value: 'MORNING' },
+  { title: 'Siang', value: 'AFTERNOON' },
+  { title: 'Malam', value: 'NIGHT' },
+  { title: 'Fleksibel', value: 'FLEXIBLE' }
 ]
 
 const activeOptions = [

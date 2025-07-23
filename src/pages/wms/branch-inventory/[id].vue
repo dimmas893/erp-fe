@@ -78,18 +78,18 @@ meta:
           <VCard variant="outlined" class="mb-4">
             <VCardTitle class="text-h6">
               <VIcon icon="tabler-building" class="me-2" />
-              Informasi Branch
+              Informasi Cabang
             </VCardTitle>
             <VCardText>
               <div class="d-flex flex-column gap-2">
                 <div>
-                  <span class="text-medium-emphasis">Nama Branch:</span>
+                  <span class="text-medium-emphasis">Nama Cabang:</span>
                   <span class="font-weight-medium ms-2">
                     {{ inventoryItem.branch?.name || inventoryItem.branch_id || '-' }}
                   </span>
                 </div>
                 <div>
-                  <span class="text-medium-emphasis">Kode Branch:</span>
+                  <span class="text-medium-emphasis">Kode Cabang:</span>
                   <span class="font-weight-medium ms-2">
                     {{ inventoryItem.branch?.code || '-' }}
                   </span>

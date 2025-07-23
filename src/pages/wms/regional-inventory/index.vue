@@ -223,22 +223,22 @@ const fieldConfigs = computed(() => {
       operator: 'like',
     },
     'regional_warehouse.name': {
-      title: 'Nama Regional Warehouse',
+      title: 'Nama Gudang Regional',
       type: 'text',
       operator: 'like',
     },
     'regional_warehouse.code': {
-      title: 'Kode Regional Warehouse',
+      title: 'Kode Gudang Regional',
       type: 'text',
       operator: 'like',
     },
     'regional_warehouse.region': {
-      title: 'Region Warehouse',
+      title: 'Region Gudang',
       type: 'text',
       operator: 'like',
     },
     'regional_warehouse_id': {
-      title: 'Regional Warehouse ID',
+      title: 'ID Gudang Regional',
       type: 'text',
       operator: 'like',
     },

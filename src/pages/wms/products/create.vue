@@ -481,24 +481,24 @@ const formData = ref({
 const categories = ref([])
 
 const productTypeOptions = [
-  { title: 'Consumable', value: 'CONSUMABLE' },
-  { title: 'Non-Consumable', value: 'NON_CONSUMABLE' },
+  { title: 'Habis Pakai', value: 'CONSUMABLE' },
+  { title: 'Tidak Habis Pakai', value: 'NON_CONSUMABLE' },
 ]
 
 const unitOfMeasureOptions = [
-  { title: 'Bottle', value: 'bottle' },
-  { title: 'Jar', value: 'jar' },
+  { title: 'Botol', value: 'bottle' },
+  { title: 'Toples', value: 'jar' },
   { title: 'Tube', value: 'tube' },
   { title: 'Unit', value: 'unit' },
   { title: 'Vial', value: 'vial' },
-  { title: 'Syringe', value: 'syringe' },
+  { title: 'Suntikan', value: 'syringe' },
   { title: 'Pieces', value: 'pcs' },
 ]
 
 const storageRequirementOptions = [
-  { title: 'Room Temperature', value: 'ROOM_TEMP' },
-  { title: 'Refrigerated', value: 'REFRIGERATED' },
-  { title: 'Frozen', value: 'FROZEN' },
+  { title: 'Suhu Ruangan', value: 'ROOM_TEMP' },
+  { title: 'Didinginkan', value: 'REFRIGERATED' },
+  { title: 'Beku', value: 'FROZEN' },
 ]
 
 // Functions

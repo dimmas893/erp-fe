@@ -88,7 +88,7 @@ meta:
           size="small"
           label
         >
-          {{ item.is_billable ? 'Billable' : 'Non-Billable' }}
+          {{ item.is_billable ? 'Berbayar' : 'Tidak Berbayar' }}
         </VChip>
         <span v-else class="text-medium-emphasis">-</span>
       </template>

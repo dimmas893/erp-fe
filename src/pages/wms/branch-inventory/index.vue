@@ -224,22 +224,22 @@ const fieldConfigs = computed(() => {
       operator: 'like',
     },
     'branch.name': {
-      title: 'Nama Branch',
+      title: 'Nama Cabang',
       type: 'text',
       operator: 'like',
     },
     'branch.code': {
-      title: 'Kode Branch',
+      title: 'Kode Cabang',
       type: 'text',
       operator: 'like',
     },
     'branch.address': {
-      title: 'Alamat Branch',
+      title: 'Alamat Cabang',
       type: 'text',
       operator: 'like',
     },
     'branch_id': {
-      title: 'Branch ID',
+      title: 'ID Cabang',
       type: 'text',
       operator: 'like',
     },

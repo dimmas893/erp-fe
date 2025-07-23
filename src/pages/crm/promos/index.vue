@@ -476,7 +476,7 @@ function getPromoTypeColor(type) {
 function getPromoTypeLabel(type) {
   switch (type) {
   case 'voucher': return 'Voucher'
-  case 'discount': return 'Discount'
+  case 'discount': return 'Diskon'
   case 'cashback': return 'Cashback'
   default: return type
   }

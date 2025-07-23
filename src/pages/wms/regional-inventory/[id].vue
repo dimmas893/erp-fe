@@ -78,18 +78,18 @@ meta:
           <VCard variant="outlined" class="mb-4">
             <VCardTitle class="text-h6">
               <VIcon icon="tabler-building" class="me-2" />
-              Informasi Regional Warehouse
+              Informasi Gudang Regional
             </VCardTitle>
             <VCardText>
               <div class="d-flex flex-column gap-2">
                 <div>
-                  <span class="text-medium-emphasis">Nama Warehouse:</span>
+                  <span class="text-medium-emphasis">Nama Gudang:</span>
                   <span class="font-weight-medium ms-2">
                     {{ inventoryItem.regional_warehouse?.name || inventoryItem.regional_warehouse_id || '-' }}
                   </span>
                 </div>
                 <div>
-                  <span class="text-medium-emphasis">Kode Warehouse:</span>
+                  <span class="text-medium-emphasis">Kode Gudang:</span>
                   <span class="font-weight-medium ms-2">
                     {{ inventoryItem.regional_warehouse?.code || '-' }}
                   </span>

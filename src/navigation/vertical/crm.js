@@ -4,11 +4,11 @@ export default [
     icon: { icon: 'tabler-users' },
     children: [
       {
-        title: 'Promos',
+        title: 'Promo',
         to: 'crm-promos',
       },
       {
-        title: 'Services',
+        title: 'Layanan',
         to: 'crm-services',
       },
       // You can add more CRM-related menus here

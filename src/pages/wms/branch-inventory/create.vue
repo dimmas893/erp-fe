@@ -48,16 +48,16 @@ meta:
 
           <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Branch
+              Cabang
             </label>
             <VSelect
               v-model="formData.branch_id"
               :items="branches"
               item-title="name"
               item-value="id"
-              placeholder="Pilih branch"
+              placeholder="Pilih cabang"
               variant="outlined"
-              :rules="[v => !!v || 'Branch harus dipilih']"
+              :rules="[v => !!v || 'Cabang harus dipilih']"
               :loading="loadingBranches"
               :error-messages="errors.branch_id"
               required
