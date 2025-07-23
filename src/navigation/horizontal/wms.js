@@ -22,11 +22,7 @@ export default [
       {
         title: 'Inventori Regional',
         to: 'wms-regional-inventory',
-      },
-      {
-        title: 'Inventori Pusat',
-        to: 'wms-central-inventory',
-      },
+      }, 
       // You can add more WMS-related menus here
     ],
   },

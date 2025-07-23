@@ -26,11 +26,7 @@ export default [
       {
         title: 'Inventori Pusat',
         to: 'wms-central-inventory',
-      },
-      {
-        title: 'Inventori Cabang',
-        to: 'wms-branch-inventory',
-      },
+      }, 
       // You can add more WMS-related menus here
     ],
   },
