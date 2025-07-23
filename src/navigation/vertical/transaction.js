@@ -8,6 +8,10 @@ export default [
         to: 'transaction-billings',
       },
       {
+        title: 'Alur Billing',
+        to: 'transaction-billings-flow',
+      },
+      {
         title: 'Konsultasi',
         to: 'transaction-consultations',
       },
@@ -15,10 +19,10 @@ export default [
         title: 'Tindakan',
         to: 'transaction-tindakan',
       },
-      {
-        title: 'Produk',
-        to: 'transaction-produk',
-      },
+      // {
+      //   title: 'Produk',
+      //   to: 'transaction-produk',
+      // },
 
       // {
       //   title: 'Tambah Billing',

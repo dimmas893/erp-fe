@@ -32,15 +32,26 @@ meta:
       >
         Kembali
       </VBtn>
-      <VBtn
-        v-if="treatment && !treatment.completed_at"
-        color="success"
-        prepend-icon="tabler-check"
-        :loading="completingTreatment"
-        @click="completeTreatment"
-      >
-        Selesai
-      </VBtn>
+      <div class="d-flex gap-2">
+        <VBtn
+          v-if="treatment"
+          color="warning"
+          prepend-icon="tabler-player-play"
+          :loading="progressingTreatment"
+          @click="progressTreatment"
+        >
+          Progress
+        </VBtn>
+        <VBtn
+          v-if="treatment"
+          color="success"
+          prepend-icon="tabler-check"
+          :loading="completingTreatment"
+          @click="completeTreatment"
+        >
+          Selesai
+        </VBtn>
+      </div>
     </VCardTitle>
 
     <VDivider />
@@ -242,8 +253,7 @@ meta:
                 </VBtn>
                 <VBtn
                   color="primary"
-                  :loading="saving"
-                  :disabled="!isFormValid"
+                  :loading="saving" 
                   @click="submitTreatment"
                 >
                   Simpan
@@ -590,6 +600,7 @@ const router = useRouter()
 const loading = ref(true)
 const saving = ref(false)
 const completingTreatment = ref(false)
+const progressingTreatment = ref(false)
 const treatment = ref(null)
 const treatmentForm = ref({
   treatment_notes: '',
@@ -738,17 +749,17 @@ async function submitTreatment() {
   }
 }
 
-async function completeTreatment() {
+async function progressTreatment() {
   if (!treatment.value) return
   
-  completingTreatment.value = true
-  console.log('🔄 Starting completeTreatment...')
+  progressingTreatment.value = true
+  console.log('🔄 Starting progressTreatment...')
   
   try {
     const res = await $api(`/rme/visit-treatments/${treatmentId.value}/status`, {
       method: 'PATCH',
       body: {
-        status: 'completed',
+        billing_status: 'progress_treatment'
       },
     })
     
@@ -757,33 +768,59 @@ async function completeTreatment() {
     // Update local data
     treatment.value = { ...treatment.value, ...res.data }
     
-    // Update billing status to confirmed
-    try {
-      // Get billing ID from treatment data or visit data
-      let billingId = res.data.billing_id
-      if (!billingId && treatment.value?.visit?.billing_id) {
-        billingId = treatment.value.visit.billing_id
-      }
-      if (billingId) {
-        console.log('📤 Updating billing status to confirmed:', billingId)
-        const billingRes = await $api(`/transaction/billings/${billingId}`, {
-          method: 'PATCH',
-          body: {
-            status: 'confirmed',
-          },
-        })
-        console.log('✅ Billing status updated:', billingRes.data)
-      } else {
-        console.log('⚠️ No billing ID found, skipping billing update')
-      }
-    } catch (billingError) {
-      console.error('❌ Error updating billing status:', billingError)
-      // Don't show error alert for billing update failure, just log it
+    await showSuccessAlert({
+      title: 'Berhasil',
+      text: 'Tindakan berhasil diproses.',
+    })
+    
+    console.log('✅ Treatment progressed successfully')
+  } catch (error) {
+    console.error('❌ Error progressing treatment:', error)
+    await showErrorAlert(error, {
+      title: 'Gagal Memproses Tindakan',
+      text: 'Tidak dapat memproses tindakan. Silakan coba lagi.',
+    })
+  } finally {
+    progressingTreatment.value = false
+    console.log('🏁 progressTreatment completed')
+  }
+}
+
+async function completeTreatment() {
+  if (!treatment.value) return
+  
+  completingTreatment.value = true
+  console.log('🔄 Starting completeTreatment...')
+  
+  try {
+    // Get current Indonesian time
+    const now = new Date()
+    const indonesianDateTime = now.toLocaleString('id-ID', {
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+    })
+    
+    const requestBody = {
+      completed_at: now.toISOString(),
+      billing_status: 'complete_treatment'
     }
+    
+    console.log('📤 Complete treatment request body:', requestBody)
+    console.log('📅 Indonesian format:', indonesianDateTime)
+    
+    const res = await $api(`/rme/visit-treatments/${treatmentId.value}/status`, {
+      method: 'PATCH',
+      body: requestBody,
+    })
+    
+    console.log('📥 API Response:', res)
+    
+    // Update local data
+    treatment.value = { ...treatment.value, ...res.data }
     
     await showSuccessAlert({
       title: 'Berhasil',
-      text: 'Tindakan berhasil diselesaikan.',
+      text: `Tindakan berhasil diselesaikan pada ${indonesianDateTime}`,
     })
     
     console.log('✅ Treatment completed successfully')

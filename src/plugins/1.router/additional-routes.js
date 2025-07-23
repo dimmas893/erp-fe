@@ -106,16 +106,37 @@ export const routes = [
     component: () => import('@/pages/transaction/billings/index.vue'),
   },
   {
+    path: '/transaction/billings/flow',
+    name: 'transaction-billings-flow',
+    component: () => import('@/pages/transaction/billings/flow.vue'),
+  },
+  {
     path: '/transaction/billings/:id',
     name: 'transaction-billings-id',
     component: () => import('@/pages/transaction/billings/[id].vue'),
   },
-    {
+  {
     path: '/transaction/billings/edit/:id',
     name: 'transaction-billings-edit-id',
     component: () => import('@/pages/transaction/billings/edit/[id].vue'),
   },
-  // Removed consultation route from billings as it doesn't exist
+  
+  // Transaction Billing Creation Routes
+  {
+    path: '/transaction/billings/consultation/create',
+    name: 'transaction-billings-consultation-create',
+    component: () => import('@/pages/transaction/billings_consultation/create.vue'),
+  },
+  {
+    path: '/transaction/billings/treatment/create',
+    name: 'transaction-billings-treatment-create',
+    component: () => import('@/pages/transaction/billings_treatment/create.vue'),
+  },
+  {
+    path: '/transaction/billings/product/create',
+    name: 'transaction-billings-product-create',
+    component: () => import('@/pages/transaction/billings_product/create.vue'),
+  },
   
   // Transaction Consultations Routes
   {
@@ -384,6 +405,28 @@ export const routes = [
     path: '/crm/services/:id',
     name: 'crm-services-id',
     component: () => import('@/pages/crm/services/[id].vue'),
+  },
+
+  // Finance Tax Types Routes
+  {
+    path: '/finance/tax-types',
+    name: 'finance-tax-types',
+    component: () => import('@/pages/finance/tax-types/index.vue'),
+  },
+  {
+    path: '/finance/tax-types/create',
+    name: 'finance-tax-types-create',
+    component: () => import('@/pages/finance/tax-types/create.vue'),
+  },
+  {
+    path: '/finance/tax-types/:id',
+    name: 'finance-tax-types-id',
+    component: () => import('@/pages/finance/tax-types/[id].vue'),
+  },
+  {
+    path: '/finance/tax-types/edit/:id',
+    name: 'finance-tax-types-edit-id',
+    component: () => import('@/pages/finance/tax-types/edit/[id].vue'),
   },
 
 ]
