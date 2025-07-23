@@ -48,24 +48,6 @@ meta:
 
           <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              ID Terapis
-            </label>
-            <VTextField
-              v-model="formData.therapist_id"
-              placeholder="Contoh: THP001"
-              variant="outlined"
-              maxlength="20"
-              :rules="[
-                v => !!v || 'ID terapis harus diisi',
-                v => v.length <= 20 || 'ID maksimal 20 karakter'
-              ]"
-              required
-              hide-details
-            />
-          </VCol>
-
-          <VCol cols="12" md="6">
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
               Nama Terapis
             </label>
             <VTextField
@@ -492,7 +474,6 @@ const loadingEmployees = ref(false)
 
 // Form Data
 const formData = reactive({
-  therapist_id: '',
   license_number: '',
   name: '',
   email: '',

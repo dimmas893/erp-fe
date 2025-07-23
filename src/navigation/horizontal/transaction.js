@@ -1,14 +1,14 @@
 export default [
   {
-    title: 'Transaction',
+    title: 'Transaksi',
     icon: { icon: 'tabler-receipt' },
     children: [
       {
-        title: 'Billings',
+        title: 'Tagihan',
         to: 'transaction-billings',
       },
       {
-        title: 'Consultations',
+        title: 'Konsultasi',
         to: 'transaction-consultations',
       },
       {

@@ -79,7 +79,7 @@ meta:
           prepend-icon="tabler-stethoscope"
           @click="continueTreatmentFromBilling"
         >
-          Lanjutkan Treatment
+          Lanjutkan Tindakan
         </VBtn>
         <VBtn v-if="billing.status !== 'close'" color="success" prepend-icon="tabler-credit-card"
           @click="processPayment">

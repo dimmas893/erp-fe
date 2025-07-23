@@ -41,7 +41,7 @@ meta:
             :to="{ name: 'transaction-billings-treatment-create' }"
             variant="tonal"
           >
-            Treatment
+            Tindakan
           </VBtn>
           <!-- <VBtn
             color="success"
@@ -219,8 +219,8 @@ const fieldConfigs = computed(() => {
       operator: 'equal',
       options: [
         { title: 'Draft', value: 'draft' },
-        { title: 'Unpaid', value: 'unpaid' },
-        { title: 'Paid', value: 'paid' },
+        { title: 'Belum Lunas', value: 'unpaid' },
+        { title: 'Lunas', value: 'paid' },
       ],
     },
   }
@@ -256,11 +256,11 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Billing Number', key: 'billing_number' },
-  { title: 'Total Amount', key: 'total_amount' },
-  { title: 'Discount Amount', key: 'discount_amount' },
-  { title: 'Tax Amount', key: 'tax_amount' },
-  { title: 'Grand Total', key: 'grand_total' },
+  { title: 'Nomor Tagihan', key: 'billing_number' },
+  { title: 'Total', key: 'total_amount' },
+  { title: 'Diskon', key: 'discount_amount' },
+  { title: 'Pajak', key: 'tax_amount' },
+  { title: 'Total Akhir', key: 'grand_total' },
   { title: 'Status', key: 'status' },
   { title: 'Tanggal Bayar', key: 'paid_at' },
   { title: 'Tanggal Dibuat', key: 'created_at' },
