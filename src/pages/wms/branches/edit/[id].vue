@@ -39,7 +39,7 @@ meta:
         <BasicInformationForm 
           v-model="editData"
           :validation-rules="validationRules"
-        />
+            />
 
         <!-- Operational Hours -->
         <VDivider class="my-6" />
@@ -58,11 +58,11 @@ meta:
           <VIcon class="me-2">tabler-settings</VIcon>
           Pengaturan Lanjutan
         </h3>
-        
+              
         <SettingsForm 
           v-model="editData"
           :validation-rules="validationRules"
-        />
+                />
         
         <!-- Submit Buttons -->
         <FormActions 
@@ -146,11 +146,11 @@ const handleSubmit = async () => {
           cleanOperationalHours[day] = {
             open: dayData.open,
             close: dayData.close
-          }
-        } else {
+      }
+    } else {
           // Default to CLOSED if data is invalid
           cleanOperationalHours[day] = 'CLOSED'
-        }
+    }
       })
       
       // Ensure we only have the expected days, no duplicates
@@ -176,10 +176,10 @@ const handleSubmit = async () => {
     }
     
     await updateBranch(cleanData)
-    await showSuccessAlert({
-      title: 'Berhasil',
-      text: 'Cabang berhasil diperbarui',
-    })
+      await showSuccessAlert({
+        title: 'Berhasil',
+        text: 'Cabang berhasil diperbarui',
+      })
     navigateToDetail()
   } catch (error) {
     await showErrorAlert(error, {
