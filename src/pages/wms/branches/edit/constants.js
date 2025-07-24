@@ -49,3 +49,4 @@ export const DEFAULT_OPERATIONAL_HOURS = {
   sabtu: { open: '08:00', close: '17:00' },
   minggu: 'CLOSED'
 } 
+ 

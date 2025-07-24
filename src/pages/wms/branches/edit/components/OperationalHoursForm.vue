@@ -109,3 +109,4 @@ const isDayClosed = (day) => {
   return props.modelValue[day] === 'CLOSED'
 }
 </script> 
+ 

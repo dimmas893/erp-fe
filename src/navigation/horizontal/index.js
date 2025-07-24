@@ -14,8 +14,4 @@ import transaction from './transaction'
 import uiElements from './ui-elements'
 import wms from './wms'
 
-<<<<<<< HEAD
-export default [...dashboard, ...rme, ...satusehat, ...setting, ...apps, ...pages, ...uiElements, ...forms, ...tables, ...charts, ...misc]
-=======
-export default [...dashboard, ...rme, ...satusehat, ...transaction, ...wms, ...hris, ...crm, ...apps, ...pages, ...uiElements, ...forms, ...tables, ...charts, ...misc]
->>>>>>> 3dbdce5c8b48d09b0f5fa0dfa109a9deee4ea02c
+export default [...dashboard, ...rme, ...satusehat, ...setting, ...transaction, ...wms, ...hris, ...crm, ...apps, ...pages, ...uiElements, ...forms, ...tables, ...charts, ...misc]
