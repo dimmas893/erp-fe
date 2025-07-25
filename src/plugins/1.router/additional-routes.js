@@ -152,4 +152,11 @@ export const routes = [
     name: 'transaction-produk-id',
     component: () => import('@/pages/transaction/produk/[id].vue'),
   },
+
+  //ANTRIAN
+  {
+    path: '/billing',
+    name: 'BillingSelesai',
+    component: () => import('@/pages/antrian/billing.vue'),
+  },
 ]

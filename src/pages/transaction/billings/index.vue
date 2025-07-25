@@ -66,6 +66,7 @@ meta:
       <template #item.total_amount="{ item }">
         {{ formatCurrency(item.total_amount) }}
       </template>
+      
       <template #item.discount_amount="{ item }">
         {{ formatCurrency(item.discount_amount) }}
       </template>
