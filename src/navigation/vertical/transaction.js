@@ -1,11 +1,15 @@
 export default [
   {
-    title: 'Transaction',
+    title: 'Transaksi',
     icon: { icon: 'tabler-receipt' },
     children: [
       {
-        title: 'Billings',
+        title: 'Tagihan',
         to: 'transaction-billings',
+      },
+      {
+        title: 'Alur Billing',
+        to: 'transaction-billings-flow',
       },
       {
         title: 'Konsultasi',
@@ -15,10 +19,10 @@ export default [
         title: 'Tindakan',
         to: 'transaction-tindakan',
       },
-      {
-        title: 'Produk',
-        to: 'transaction-produk',
-      },
+      // {
+      //   title: 'Produk',
+      //   to: 'transaction-produk',
+      // },
 
       // {
       //   title: 'Tambah Billing',

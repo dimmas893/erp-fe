@@ -8,11 +8,24 @@ meta:
 import { requiredValidator } from '@/@core/utils/validators'
 import { $api } from '@/utils/api'
 import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { VForm } from 'vuetify/components/VForm'
 
 // Initialize router
 const router = useRouter()
+const route = useRoute()
+
+// Get billing_id from route query
+const billingId = computed(() => route.query.billing_id)
+const visitId = computed(() => route.query.visit_id)
+const consultationId = computed(() => route.query.consultation_id)
+
+// Get branch_id from billing data
+const branchId = computed(() => {
+  // Try to get branch_id from billing data if available
+  // For now, we'll need to load it from the billing API
+  return null // Will be set when billing data is loaded
+})
 
 // Form data structure for treatment
 const formData = ref({
@@ -47,15 +60,13 @@ const loadingVisits = ref(false)
 const loadingPromos = ref(false)
 const loadingPaymentMethods = ref(false)
 
-// Selected promo data
-const selectedPromo = ref(null)
-
 // Selected visit data
 const selectedVisit = ref(null)
 
+// Selected promo data
+const selectedPromo = ref(null)
+
 // Add new refs and state for branch, doctor, therapist, treatments
-const branches = ref([])
-const loadingBranches = ref(false)
 const doctors = ref([])
 const loadingDoctors = ref(false)
 const treatments = ref([])
@@ -67,10 +78,17 @@ const loadingTherapists = ref(false)
 const selectedTreatments = ref([]) // Array of treatment IDs for multi-select
 const selectedTreatmentObjects = ref([]) // Array of treatment objects with doctor and therapist
 
+// Schedule-related variables (for doctor availability checking)
+const schedules = ref([])
+const loadingSchedules = ref(false)
+const availableTimeSlots = ref([])
+const selectedDate = ref('')
+const selectedTimeSlot = ref(null)
+
 // Set default value of serviceType to treatment
 const serviceType = ref('tindakan') // Fixed to treatment
-// Change selectedBranch to be a string (branch id)
-const selectedBranch = ref('') // string, not object
+// Branch ID will be set automatically from billing data
+const currentBranchId = ref('')
 
 // Helper function to create treatment object
 const createTreatmentObject = (treatmentId, treatmentData) => {
@@ -102,6 +120,11 @@ const handleTreatmentSelection = (selectedIds) => {
   })
   
   console.log('📋 Updated selectedTreatmentObjects:', selectedTreatmentObjects.value)
+  
+  // Load schedules for all doctors if date is selected
+  if (selectedDate.value) {
+    loadSchedulesForAllDoctors()
+  }
 }
 
 // Remove treatment from selected treatments
@@ -119,7 +142,7 @@ const removeTreatment = (treatmentId) => {
 }
 
 // Update doctor for specific treatment
-const updateTreatmentDoctor = (treatmentId, doctorId) => {
+const updateTreatmentDoctor = async (treatmentId, doctorId) => {
   const treatment = selectedTreatmentObjects.value.find(t => t.id === treatmentId)
   if (treatment) {
     // Handle Proxy object - extract the actual value
@@ -131,6 +154,12 @@ const updateTreatmentDoctor = (treatmentId, doctorId) => {
     treatment.doctor_id = actualDoctorId
     const doctor = doctors.value.find(d => d.value === actualDoctorId)
     treatment.doctor_name = doctor ? doctor.title : ''
+    
+    // Load schedules for all doctors if date is selected
+    if (selectedDate.value) {
+      console.log('Loading schedules for all doctors, date:', selectedDate.value)
+      await loadSchedulesForAllDoctors()
+    }
   }
 }
 
@@ -152,22 +181,99 @@ const updateTreatmentTherapist = (treatmentId, therapistId) => {
 
 // onMounted: load initial data
 onMounted(async () => {
+  if (billingId.value) {
+    await loadBillingData()
+  } else {
+    // Load all visits when no billing data is available
+    await loadAllVisits()
+  }
   await Promise.all([
-    loadBranches(),
     loadPromos(),
     loadPaymentMethods(),
   ])
 })
 
+// Load billing data to get branch_id
+const loadBillingData = async () => {
+  try {
+    const response = await $api(`/transaction/billings/${billingId.value}`, {
+      method: 'GET',
+    })
+    
+    const billingData = response.data
+    
+    // Set branch_id from billing data
+    if (billingData.visit_id) {
+      // Load visit data to get branch_id
+      const visitResponse = await $api(`/rme/patient-visits/${billingData.visit_id}`, {
+        method: 'GET',
+      })
+      
+      const visitData = visitResponse.data
+      if (visitData.branch_id) {
+        // Set the branch and load related data
+        await loadBranchData(visitData.branch_id)
+      }
+    }
+  } catch (error) {
+    await showErrorAlert(error, {
+      title: 'Gagal Memuat Data Billing',
+      text: 'Tidak dapat memuat data billing. Silakan coba lagi.',
+    })
+  }
+}
+
+// Load branch data and related items
+const loadBranchData = async (branchId) => {
+  try {
+    currentBranchId.value = branchId
+    await Promise.all([
+      loadDoctors(branchId),
+      loadTherapists(branchId),
+      loadTreatments(branchId)
+    ])
+  } catch (error) {
+    console.error('Error loading branch data:', error)
+  }
+}
+
 // Auto-fill form when visit is selected
-const onVisitSelected = visitId => {
-  const visit = visits.value.find(v => v.value === visitId)?.data
+const onVisitSelected = async visitObject => {
+  console.log('onVisitSelected called with:', visitObject)
+  
+  if (!visitObject) {
+    // Clear form when visit is deselected
+    selectedVisit.value = null
+    formData.value.patient_id = ''
+    formData.value.visit_id = ''
+    currentBranchId.value = ''
+    treatments.value = []
+    return
+  }
+  
+  // Handle both object and value
+  const visit = typeof visitObject === 'object' && visitObject !== null 
+    ? visitObject.data 
+    : visits.value.find(v => v.value === visitObject)?.data
+    
   if (visit) {
-    selectedVisit.value = visit
+    selectedVisit.value = visitObject // Keep the full object for display
 
     // Auto-fill form data from visit
     formData.value.patient_id = visit.patient_id
-    selectedBranch.value = visit.branch_id
+    formData.value.visit_id = visit.id
+    currentBranchId.value = visit.branch_id
+    
+    console.log('🔍 Visit selected with branch_id:', visit.branch_id)
+    
+    // Load branch data for this visit (includes treatments)
+    if (visit.branch_id) {
+      console.log('📋 Loading treatments for branch_id:', visit.branch_id)
+      await loadBranchData(visit.branch_id)
+      console.log('✅ Treatments loaded:', treatments.value.length, 'treatments available')
+    } else {
+      console.warn('⚠️ No branch_id found in visit data')
+    }
     
     // Auto-calculate amounts
     const consultationFee = parseFloat(visit.total_consultation_fee) || 0
@@ -176,13 +282,57 @@ const onVisitSelected = visitId => {
     
     formData.value.total_amount = (consultationFee + treatmentFee + productFee).toFixed(2)
     calculateGrandTotal()
+    
+    console.log('Visit selected:', {
+      visit_id: visit.id,
+      patient_id: visit.patient_id,
+      branch_id: visit.branch_id,
+      selectedVisit: selectedVisit.value,
+      treatments_loaded: treatments.value.length
+    })
   }
 }
 
 // Watch visit selection
-watch(() => formData.value.visit_id, newVal => {
+watch(() => selectedVisit.value, async newVal => {
+  console.log('Visit selection changed to:', newVal)
+  console.log('Visit selection type:', typeof newVal)
+  console.log('Visit selection value:', newVal)
+  
   if (newVal) {
-    onVisitSelected(newVal)
+    await onVisitSelected(newVal)
+  } else {
+    // Clear form when visit is cleared
+    formData.value.patient_id = ''
+    formData.value.visit_id = ''
+    currentBranchId.value = ''
+    doctors.value = []
+    therapists.value = []
+    treatments.value = []
+    schedules.value = []
+    availableTimeSlots.value = []
+    selectedDate.value = ''
+  }
+})
+
+// Watch selected date to check availability
+watch(() => selectedDate.value, async newVal => {
+  console.log('Selected date changed to:', newVal)
+  if (newVal && selectedTreatmentObjects.value.length > 0) {
+    // Clear existing schedules when date changes
+    schedules.value = []
+    availableTimeSlots.value = []
+    
+    // Check schedules for all selected treatments' doctors
+    for (const treatment of selectedTreatmentObjects.value) {
+      if (treatment.doctor_id) {
+        await loadDoctorSchedules(treatment.doctor_id, newVal)
+      }
+    }
+  } else if (!newVal) {
+    // Clear schedules when date is cleared
+    schedules.value = []
+    availableTimeSlots.value = []
   }
 })
 
@@ -211,27 +361,6 @@ const loadPaymentMethods = async () => {
   
 }
 
-// Fetch branches on mount
-const loadBranches = async () => {
-  try {
-    loadingBranches.value = true
-
-    const response = await $api('/wms/branches')
-
-    branches.value = response.data.map(branch => ({
-      title: `${branch.name} (${branch.code})`,
-      value: branch.id,
-    }))
-  } catch (error) {
-    await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Cabang',
-      text: 'Tidak dapat memuat daftar cabang. Silakan refresh halaman.',
-    })
-  } finally {
-    loadingBranches.value = false
-  }
-}
-
 // Fetch doctors for selected branch
 const loadDoctors = async branchId => {
   if (!branchId) {
@@ -241,23 +370,9 @@ const loadDoctors = async branchId => {
   try {
     loadingDoctors.value = true
 
-    const response = await $api('/hris/doctors/paginated', {
-      method: 'POST',
-      body: {
-        page: 1,
-        per_page: 100,
-        sort_by: 'created_at',
-        sort_order: 'desc',
-        filters: [
-          {
-            search_by: 'branch_id',
-            filter_type: 'equal',
-            search_query: branchId,
-          },
-        ],
-      },
-    })
-
+    const response = await $api(`/hris/doctors/branch/${branchId}`, {
+        method: 'GET',
+      })
     doctors.value = response.data.map(doctor => ({
       title: doctor.name,
       value: doctor.id,
@@ -282,23 +397,26 @@ const loadTherapists = async branchId => {
     loadingTherapists.value = true
 
     // Try therapists endpoint first, fallback to doctors if not available
-    const response = await $api('/hris/therapists/paginated', {
-      method: 'POST',
-      body: {
-        page: 1,
-        per_page: 100,
-        sort_by: 'created_at',
-        sort_order: 'desc',
-        filters: [
-          {
-            search_by: 'branch_id',
-            filter_type: 'equal',
-            search_query: branchId,
-          },
-        ],
-      },
-    })
+    // const response = await $api('/hris/therapists/paginated', {
+    //   method: 'POST',
+    //   body: {
+    //     page: 1,
+    //     per_page: 100,
+    //     sort_by: 'created_at',
+    //     sort_order: 'desc',
+    //     filters: [
+    //       {
+    //         search_by: 'branch_id',
+    //         filter_type: 'equal',
+    //         search_query: branchId,
+    //       },
+    //     ],
+    //   },
+    // })
 
+    const response = await $api(`/hris/therapists/branch/${branchId}`, {
+      method: 'GET',
+    })
     therapists.value = response.data.map(therapist => ({
       title: therapist.name,
       value: therapist.id,
@@ -306,23 +424,26 @@ const loadTherapists = async branchId => {
   } catch (error) {
     // Fallback: use doctors as therapists if therapists endpoint doesn't exist
     try {
-      const doctorResponse = await $api('/hris/doctors/paginated', {
-        method: 'POST',
-        body: {
-          page: 1,
-          per_page: 100,
-          sort_by: 'created_at',
-          sort_order: 'desc',
-          filters: [
-            {
-              search_by: 'branch_id',
-              filter_type: 'equal',
-              search_query: branchId,
-            },
-          ],
-        },
-      })
+      // const doctorResponse = await $api('/hris/doctors/paginated', {
+      //   method: 'POST',
+      //   body: {
+      //     page: 1,
+      //     per_page: 100,
+      //     sort_by: 'created_at',
+      //     sort_order: 'desc',
+      //     filters: [
+      //       {
+      //         search_by: 'branch_id',
+      //         filter_type: 'equal',
+      //         search_query: branchId,
+      //       },
+      //     ],
+      //   },
+      // })
 
+      const doctorResponse = await $api(`/hris/doctors/branch/${branchId}`, {
+        method: 'GET',
+      })
       therapists.value = doctorResponse.data.map(doctor => ({
         title: doctor.name,
         value: doctor.id,
@@ -337,18 +458,26 @@ const loadTherapists = async branchId => {
 
 // Fetch treatments for selected branch using branch-pricing endpoint
 const loadTreatments = async (branchId = null) => {
+  console.log('🔄 loadTreatments called with branchId:', branchId)
+  
   if (!branchId) {
+    console.log('❌ No branchId provided, clearing treatments')
     treatments.value = []
     return
   }
+  
   try {
     loadingTreatments.value = true
+    console.log('📡 Fetching treatments from API for branch:', branchId)
 
     const response = await $api(`/wms/branch-pricing/branch/${branchId}`, {
       method: 'GET',
     })
     
+    console.log('📦 Raw branch pricing response:', response.data)
+    
     const treatmentItems = (response.data || []).filter(item => item.item_type === 'TREATMENT')
+    console.log('🔍 Found treatment items:', treatmentItems.length)
     
     // Fetch treatment details for each item
     const treatmentDetails = await Promise.all(treatmentItems.map(async item => {
@@ -356,7 +485,9 @@ const loadTreatments = async (branchId = null) => {
       try {
         const detail = await $api(`/crm/treatments/${item.item_id}`, { method: 'GET' })
         treatmentName = detail.data?.name || item.item_id
+        console.log('📋 Fetched treatment detail:', treatmentName)
       } catch (e) {
+        console.warn('⚠️ Could not fetch treatment detail for:', item.item_id)
         // Use item_id as fallback
       }
       
@@ -371,13 +502,129 @@ const loadTreatments = async (branchId = null) => {
     }))
     
     treatments.value = treatmentDetails
+    console.log('✅ Final treatments array:', treatments.value)
+    console.log('📊 Total treatments loaded:', treatments.value.length)
   } catch (error) {
+    console.error('❌ Error loading treatments:', error)
     await showErrorAlert(error, {
       title: 'Gagal Memuat Data Treatment',
       text: 'Tidak dapat memuat daftar treatment cabang. Silakan refresh halaman.',
     })
   } finally {
     loadingTreatments.value = false
+  }
+}
+
+// Load schedules for all selected doctors
+const loadSchedulesForAllDoctors = async () => {
+  if (!selectedDate.value) return
+  
+  // Clear existing schedules
+  schedules.value = []
+  availableTimeSlots.value = []
+  
+  // Load schedules for all doctors in selected treatments
+  for (const treatment of selectedTreatmentObjects.value) {
+    if (treatment.doctor_id) {
+      await loadDoctorSchedules(treatment.doctor_id, selectedDate.value)
+    }
+  }
+}
+
+// Load doctor schedules for availability checking
+const loadDoctorSchedules = async (doctorId, date) => {
+  try {
+    loadingSchedules.value = true
+    console.log('Loading schedules for doctor:', doctorId, 'date:', date)
+
+    const response = await $api('/crm/doctor-schedules/check-available', {
+      method: 'POST',
+      body: {
+        doctor_id: doctorId,
+        date: date
+      }
+    })
+
+    console.log('Schedules API response:', response)
+
+    if (response.data && Array.isArray(response.data)) {
+      // Add new schedules to existing ones instead of replacing
+      const newSchedules = response.data
+      
+      // Remove any existing schedules for this doctor to avoid duplicates
+      schedules.value = schedules.value.filter(schedule => 
+        schedule.doctor_id !== doctorId
+      )
+      
+      // Add the new schedules
+      schedules.value.push(...newSchedules)
+      
+      // Rebuild available time slots from all schedules
+      availableTimeSlots.value = []
+      schedules.value.forEach(schedule => {
+        if (schedule.available_time_slots && schedule.available_slots > 0) {
+          schedule.available_time_slots.forEach(slot => {
+            availableTimeSlots.value.push({
+              ...slot,
+              schedule_id: schedule.id,
+              doctor_name: schedule.doctor_name,
+              day: schedule.day
+            })
+          })
+        }
+      })
+      
+      console.log('Available time slots:', availableTimeSlots.value)
+      console.log('Processed schedules:', schedules.value)
+    } else {
+      // Only clear schedules for this specific doctor
+      schedules.value = schedules.value.filter(schedule => 
+        schedule.doctor_id !== doctorId
+      )
+      
+      // Rebuild available time slots
+      availableTimeSlots.value = []
+      schedules.value.forEach(schedule => {
+        if (schedule.available_time_slots && schedule.available_slots > 0) {
+          schedule.available_time_slots.forEach(slot => {
+            availableTimeSlots.value.push({
+              ...slot,
+              schedule_id: schedule.id,
+              doctor_name: schedule.doctor_name,
+              day: schedule.day
+            })
+          })
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Error loading schedules:', error)
+    // Only clear schedules for this specific doctor on error
+    schedules.value = schedules.value.filter(schedule => 
+      schedule.doctor_id !== doctorId
+    )
+    
+    // Rebuild available time slots
+    availableTimeSlots.value = []
+    schedules.value.forEach(schedule => {
+      if (schedule.available_time_slots && schedule.available_slots > 0) {
+        schedule.available_time_slots.forEach(slot => {
+          availableTimeSlots.value.push({
+            ...slot,
+            schedule_id: schedule.id,
+            doctor_name: schedule.doctor_name,
+            day: schedule.day
+          })
+        })
+      }
+    })
+    
+    await showErrorAlert(error, {
+      title: 'Gagal Memuat Jadwal Dokter',
+      text: 'Tidak dapat memuat jadwal dokter. Silakan coba lagi.',
+    })
+  } finally {
+    loadingSchedules.value = false
   }
 }
 
@@ -409,28 +656,41 @@ const loadVisits = async branchId => {
   }
 }
 
-// Watcher for selectedBranch
-watch(selectedBranch, async (val) => {
-  const branchId = typeof val === 'object' && val !== null ? val.value : val
-  formData.value.visit_id = ''
-  selectedVisit.value = null
-  selectedTreatments.value = []
-  selectedTreatmentObjects.value = []
+// Load all visits when no billing data is available
+const loadAllVisits = async () => {
+  try {
+    loadingVisits.value = true
 
-  if (branchId) {
-    await Promise.all([
-      loadDoctors(branchId),
-      loadTherapists(branchId),
-      loadVisits(branchId),
-      loadTreatments(branchId)
-    ])
-  } else {
-    doctors.value = []
-    therapists.value = []
-    visits.value = []
-    treatments.value = []
+    const response = await $api('/rme/patient-visits', {
+      method: 'GET',
+    })
+
+    console.log('Raw visits response:', response.data)
+
+    visits.value = (response.data || []).map(visit => {
+      const visitItem = {
+        title: `${visit.patient?.name || 'Unknown Patient'} - ${visit.visit_number || 'No Visit Number'}`,
+        value: visit.id,
+        data: visit, // Store full visit data for auto-fill
+      }
+      console.log('Mapped visit item:', visitItem)
+      return visitItem
+    })
+    
+    console.log('Final visits array:', visits.value)
+  } catch (error) {
+    console.error('Error loading visits:', error)
+    await showErrorAlert(error, { 
+      title: 'Gagal Memuat Data Kunjungan',
+      text: 'Tidak dapat memuat daftar kunjungan. Silakan refresh halaman.',
+    })
+  } finally {
+    loadingVisits.value = false
   }
-})
+}
+
+// Watcher for selectedBranch
+// watch(selectedBranch, async (val) => { ... }) - REMOVED
 
 // Validation rules
 const amountValidator = value => {
@@ -543,80 +803,66 @@ const submitForm = async () => {
   try {
     isLoading.value = true
 
-    // Ambil visit_id dan patient_id dari pilihan kunjungan
-    let visitId = formData.value.visit_id
-    let patientId = formData.value.patient_id
-    if (typeof visitId === 'object' && visitId !== null) {
-      // Jika visit_id masih object, ambil value dan patient_id dari data
-      patientId = visitId.data?.patient_id || ''
-      visitId = visitId.value || ''
+    // Get visit_id from route query or form
+    let currentVisitId = visitId.value || formData.value.visit_id
+    if (typeof currentVisitId === 'object' && currentVisitId !== null) {
+      currentVisitId = currentVisitId.value || ''
     }
 
-    // Extract promo_id correctly and ensure it's a number
-    let promoId = null
-    if (selectedPromo.value) {
-      promoId = typeof selectedPromo.value === 'object' && selectedPromo.value !== null 
-        ? parseInt(selectedPromo.value.value) 
-        : parseInt(selectedPromo.value)
+    // Validate required data
+    if (!currentVisitId) {
+      await showErrorAlert({
+        title: 'Visit ID Tidak Valid',
+        text: 'Visit ID tidak ditemukan. Silakan pilih kunjungan terlebih dahulu.'
+      })
+      return
+    }
+
+    // If no billing ID, create a new billing first
+    let currentBillingId = billingId.value
+    if (!currentBillingId) {
+      try {
+        // Create a new billing for this visit
+        const billingData = {
+          visit_id: currentVisitId,
+          patient_id: formData.value.patient_id,
+          total_amount: calculateTreatmentTotal.value,
+          discount_amount: 0,
+          tax_amount: 0,
+          grand_total: calculateTreatmentTotal.value,
+          status: 'draft'
     }
     
-    // Set status selalu forwarded_to_doctor
-    const submitData = {
-      patient_id: patientId,
-      visit_id: visitId,
-      promo_id: promoId,
-      discount_amount: parseFloat(formData.value.discount_amount) || 0,
-      status: 'forwarded_to_doctor',
-    }
-    
-    // Add amounts based on treatment service
-    if (selectedTreatmentObjects.value.length > 0) {
-      const total = calculateTreatmentTotal.value
-      submitData.total_amount = total
-      submitData.grand_total = parseFloat(formData.value.grand_total) || total
-    } else {
-      // For when no treatments selected, set default values
-      submitData.total_amount = parseFloat(formData.value.total_amount) || 0
-      submitData.grand_total = parseFloat(formData.value.grand_total) || 0
-    }
-    
-    const response = await $api('/transaction/billings', {
+        const billingResponse = await $api('/transaction/billings', {
       method: 'POST',
-      body: submitData,
+          body: billingData,
     })
 
-    // Validate billing response
-    if (!response.data || !response.data.id) {
-      throw new Error('Billing ID tidak ditemukan dalam response')
-    }
-
-    console.log('✅ Billing created successfully:', response.data)
-
-    // Tambah insert visit treatment
-    if (selectedTreatmentObjects.value.length > 0) {
-      const createdTreatments = []
-      const failedTreatments = []
-      
-      // Validate visit_id
-      if (!visitId) {
-        await showErrorAlert({
-          title: 'Visit ID Tidak Valid',
-          text: 'Visit ID tidak ditemukan. Silakan pilih kunjungan terlebih dahulu.'
+        currentBillingId = billingResponse.data.id
+        console.log('Created new billing with ID:', currentBillingId)
+      } catch (billingError) {
+        await showErrorAlert(billingError, {
+          title: 'Gagal Membuat Billing',
+          text: 'Tidak dapat membuat billing baru. Silakan coba lagi.'
         })
         return
       }
+    }
+
+    if (selectedTreatmentObjects.value.length === 0) {
+        await showErrorAlert({
+        title: 'Treatment Tidak Dipilih',
+        text: 'Silakan pilih minimal satu treatment.'
+        })
+        return
+      }
+
+    // Create treatments using /rme/visit-treatments endpoint
+    const createdTreatments = []
+    const failedTreatments = []
       
       for (const treatment of selectedTreatmentObjects.value) {
         console.log('🔄 Processing treatment:', treatment)
-        console.log('🔍 Treatment data:', {
-          id: treatment.id,
-          name: treatment.name,
-          price: treatment.price,
-          doctor_id: treatment.doctor_id,
-          therapist_id: treatment.therapist_id,
-          doctor_id_type: typeof treatment.doctor_id,
-          therapist_id_type: typeof treatment.therapist_id
-        })
         
         // Validate treatment_id
         if (!treatment.id) {
@@ -650,27 +896,23 @@ const submitForm = async () => {
         
         console.log('🔍 Parsed IDs:', { doctorId, therapistId, original: { doctor_id: treatment.doctor_id, therapist_id: treatment.therapist_id } })
 
-        // Validate treatment_id
-        if (!treatment.id) {
-          console.log('❌ No treatment_id for treatment:', treatment.id)
-          failedTreatments.push({ 
-            id: treatment.id, 
-            name: treatment.name,
-            reason: 'ID Treatment tidak valid' 
-          })
-          continue
-        }
+      // Create current timestamp for performed_at and completed_at
+      const now = new Date()
+      const performedAt = new Date(now.getTime() - 30 * 60000) // 30 minutes ago
+      const completedAt = now
 
         const visitTreatmentPayload = {
-          visit_id: visitId,
+        visit_id: currentVisitId,
           treatment_id: treatment.id,
           doctor_id: doctorId,
           therapist_id: therapistId,
           quantity: 1,
           unit_price: parseFloat(treatment.price).toFixed(2),
           total_price: parseFloat(treatment.price).toFixed(2),
-          treatment_notes: `Treatment created from billing ${response.data.id}`,
-          billing_id: response.data.id
+        treatment_notes: `Treatment created from billing ${billingId.value}`,
+        performed_at: performedAt.toISOString(),
+        completed_at: completedAt.toISOString(),
+        billing_id: currentBillingId
         }
 
         console.log('📤 Visit treatment payload:', JSON.stringify(visitTreatmentPayload, null, 2))
@@ -686,7 +928,7 @@ const submitForm = async () => {
             response: visitTreatmentResponse.data
           })
         } catch (visitTreatmentError) {
-          let errorMessage = `Tagihan berhasil, tapi pembuatan treatment "${treatment.name}" gagal.`
+        let errorMessage = `Pembuatan treatment "${treatment.name}" gagal.`
           if (visitTreatmentError.response?.data?.response_message) {
             errorMessage += ` Error: ${visitTreatmentError.response.data.response_message}`
           } else if (visitTreatmentError.message) {
@@ -706,20 +948,22 @@ const submitForm = async () => {
         const failedNames = failedTreatments.map(f => f.name).join(', ')
         await showErrorAlert({
           title: 'Beberapa Treatment Gagal Dibuat',
-          text: `Tagihan berhasil dibuat, tetapi ${failedTreatments.length} treatment gagal: ${failedNames}. Silakan cek data treatment.`
+        text: `${failedTreatments.length} treatment gagal: ${failedNames}. Silakan cek data treatment.`
         })
-      }
     }
     
-
-
+    if (createdTreatments.length > 0) {
     await showSuccessAlert(
-      `Tagihan treatment berhasil dibuat dengan ID: ${response.data.id}`,
+        `${createdTreatments.length} treatment berhasil dibuat untuk billing ${currentBillingId}`,
       'Berhasil!',
     )
+    }
 
-    // Redirect to previous page
-    await router.back()
+    // Redirect back to billing detail page
+    await router.push({ 
+      name: 'transaction-billings-id', 
+      params: { id: currentBillingId } 
+    })
     
   } catch (error) {
     await showErrorAlert(error)
@@ -744,13 +988,20 @@ const resetForm = () => {
   }
   selectedTreatments.value = []
   selectedTreatmentObjects.value = []
-  selectedBranch.value = ''
+  currentBranchId.value = ''
   selectedPromo.value = null
 }
 
 // Cancel and go back
 const goBack = () => {
+  if (billingId.value) {
+    router.push({ 
+      name: 'transaction-billings-id', 
+      params: { id: billingId.value } 
+    })
+  } else {
   router.push({ name: 'transaction-billings' })
+  }
 }
 </script>
 
@@ -764,10 +1015,10 @@ const goBack = () => {
           size="small"
           @click="goBack"
         />
-        Tambah Tagihan Treatment
+        Tambah Treatment untuk Billing
       </VCardTitle>
       <VCardSubtitle>
-        Lengkapi data tagihan treatment untuk membuat tagihan baru
+        Pilih treatment untuk ditambahkan ke billing {{ billingId }}
       </VCardSubtitle>
     </VCardItem>
 
@@ -777,47 +1028,95 @@ const goBack = () => {
         @submit.prevent="submitForm"
         validate-on="submit"
       >
+        <!-- Billing Information -->
+        <VRow v-if="billingId && currentBranchId">
+          <VCol cols="12">
+            <VCard variant="outlined" color="info">
+              <VCardText class="pa-4">
+                <div class="d-flex align-center gap-2 mb-3">
+                  <VIcon size="20" color="info">
+                    tabler-receipt
+                  </VIcon>
+                  <h6 class="text-subtitle-1 font-weight-medium mb-0">
+                    Informasi Billing
+                  </h6>
+                </div>
+                <div class="d-flex justify-space-between align-center">
+                  <span class="text-body-2">Billing ID:</span>
+                  <span class="text-body-1 font-weight-medium">{{ billingId }}</span>
+                </div>
+                <div v-if="visitId" class="d-flex justify-space-between align-center">
+                  <span class="text-body-2">Visit ID:</span>
+                  <span class="text-body-1 font-weight-medium">{{ visitId }}</span>
+                </div>
+                <div v-if="currentBranchId" class="d-flex justify-space-between align-center">
+                  <span class="text-body-2">Cabang ID:</span>
+                  <span class="text-body-1 font-weight-medium">{{ currentBranchId }}</span>
+                </div>
+              </VCardText>
+            </VCard>
+          </VCol>
+        </VRow>
+
+        <!-- Visit Selection (when no billing data available) -->
+        <VRow v-if="!billingId || !currentBranchId">
+          <VCol cols="12">
+            <VCard variant="outlined" color="warning">
+              <VCardText class="pa-4">
+                <div class="d-flex align-center gap-2 mb-3">
+                  <VIcon size="20" color="warning">
+                    tabler-alert-triangle
+                  </VIcon>
+                  <h6 class="text-subtitle-1 font-weight-medium mb-0">
+                    Pilih Kunjungan Terlebih Dahulu
+                  </h6>
+                </div>
+                <p class="text-body-2 text-medium-emphasis mb-3">
+                  Data billing tidak ditemukan. Silakan pilih kunjungan untuk melanjutkan.
+                </p>
+                
         <VRow>
-          <!-- Data Cabang -->
+                  <!-- Visit Selection -->
           <VCol
             cols="12"
             md="6"
           >
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Cabang *
+                      Kunjungan *
             </label>
             <AppCombobox
-              v-model="selectedBranch"
-              placeholder="Pilih cabang..."
-              :items="branches"
-              :loading="loadingBranches"
+                      v-model="selectedVisit"
+                      placeholder="Pilih kunjungan..."
+                      :items="visits"
+                      :loading="loadingVisits"
               :rules="[requiredValidator]"
               required
               clearable
               hide-details="auto"
+                      return-object
             />
           </VCol>
 
-          <!-- Visit Autocomplete -->
-          <VCol
-            cols="12"
-            md="6"
-          >
+                  <!-- Branch Display -->
+                  <!-- <VCol cols="12" md="6">
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Kunjungan *
+                      Cabang
             </label>
-            <AppCombobox
-              v-model="formData.visit_id"
-              placeholder="Pilih kunjungan..."
-              :items="visits"
-              :loading="loadingVisits"
-              :rules="[requiredValidator]"
-              required
-              clearable
+                    <VTextField
+                      :model-value="currentBranchId || 'Belum dipilih'"
+                      readonly
+                      variant="outlined"
               hide-details="auto"
+                      prepend-inner-icon="tabler-building"
             />
+                  </VCol> -->
+                </VRow>
+              </VCardText>
+            </VCard>
           </VCol>
+        </VRow>
 
+        <VRow>
           <!-- Treatment selection -->
           <VCol
             cols="12"
@@ -840,26 +1139,42 @@ const goBack = () => {
               item-value="value"
               @update:model-value="handleTreatmentSelection"
             />
+            <div class="text-caption text-medium-emphasis mt-1">
+              <VIcon size="14" class="mr-1">
+                tabler-info-circle
+              </VIcon>
+              <span v-if="loadingTreatments">Memuat treatments untuk cabang ini...</span>
+              <span v-else-if="treatments.length > 0">{{ treatments.length }} treatments tersedia</span>
+              <span v-else-if="currentBranchId">Tidak ada treatments tersedia untuk cabang ini</span>
+              <span v-else>Pilih kunjungan terlebih dahulu untuk memuat treatments</span>
+            </div>
           </VCol>
           
-
-          
-          <!-- Promo Selection -->
+          <!-- Date Selection -->
           <VCol
             cols="12"
             md="6"
           >
             <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-              Promo (Opsional)
+              Tanggal Treatment *
             </label>
-            <AppCombobox
-              v-model="selectedPromo"
-              placeholder="Pilih promo..."
-              :items="promos"
-              :loading="loadingPromos"
-              clearable
+            <VTextField
+              v-model="selectedDate"
+              placeholder="Pilih tanggal..."
+              type="date"
+              variant="outlined"
+              :rules="[requiredValidator]"
+              required
               hide-details="auto"
+              prepend-inner-icon="tabler-calendar"
+              :min="new Date().toISOString().split('T')[0]"
             />
+            <div class="text-caption text-medium-emphasis mt-1">
+              <VIcon size="14" class="mr-1">
+                tabler-info-circle
+              </VIcon>
+              Pilih tanggal untuk melihat jadwal tersedia dokter
+            </div>
           </VCol>
         </VRow>
 
@@ -929,6 +1244,142 @@ const goBack = () => {
           </VCol>
         </VRow>
 
+        <!-- Doctor Schedule Section -->
+        <VRow v-if="schedules.length > 0">
+          <VCol cols="12">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="text-h6 mb-4">
+                <VIcon start color="primary">
+                  tabler-calendar-time
+                </VIcon>
+                Jadwal Tersedia Dokter
+              </VCardTitle>
+              
+              <VRow>
+                <VCol 
+                  v-for="schedule in schedules" 
+                  :key="schedule.id" 
+                  cols="12" 
+                  md="6"
+                >
+                  <VCard variant="outlined" class="pa-4">
+                    <div class="d-flex align-center gap-3 mb-3">
+                      <VIcon size="24" color="primary">
+                        tabler-user-md
+                      </VIcon>
+                      <div>
+                        <h6 class="text-subtitle-1 font-weight-bold mb-1">
+                          {{ schedule.doctor_name }}
+                        </h6>
+                        <p class="text-caption text-medium-emphasis mb-0">
+                          {{ schedule.day }} • {{ schedule.start_time }} - {{ schedule.end_time }}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <VDivider class="my-3" />
+                    
+                    <div class="d-flex justify-space-between align-center mb-2">
+                      <span class="text-body-2">Slot Tersedia:</span>
+                      <VChip 
+                        :color="schedule.available_slots > 0 ? 'success' : 'error'"
+                        size="small"
+                      >
+                        {{ schedule.available_slots }} / {{ schedule.max_appointments }}
+                      </VChip>
+                    </div>
+                    
+                    <div class="d-flex justify-space-between align-center mb-2">
+                      <span class="text-body-2">Durasi:</span>
+                      <span class="text-body-1 font-weight-medium">
+                        {{ schedule.duration_hours }} jam
+                      </span>
+                    </div>
+                    
+                    <div v-if="schedule.break_start_time && schedule.break_end_time" class="d-flex justify-space-between align-center mb-2">
+                      <span class="text-body-2">Istirahat:</span>
+                      <span class="text-body-1 font-weight-medium">
+                        {{ schedule.break_start_time }} - {{ schedule.break_end_time }}
+                      </span>
+                    </div>
+                    
+                    <VDivider class="my-3" />
+                    
+                    <div class="mb-3">
+                      <h6 class="text-subtitle-2 font-weight-medium mb-2">Slot Waktu Tersedia:</h6>
+                      <div class="d-flex flex-wrap gap-2">
+                        <VChip
+                          v-for="timeSlot in schedule.available_time_slots"
+                          :key="`${timeSlot.start_time}-${timeSlot.end_time}`"
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                        >
+                          {{ timeSlot.start_time }} - {{ timeSlot.end_time }}
+                        </VChip>
+                      </div>
+                    </div>
+                    
+                    <div v-if="schedule.notes" class="mt-3 pa-3 bg-info-lighten-5 rounded">
+                      <div class="d-flex align-center gap-2">
+                        <VIcon size="16" color="info">
+                          tabler-info-circle
+                        </VIcon>
+                        <span class="text-caption text-info">
+                          {{ schedule.notes }}
+                        </span>
+                      </div>
+                    </div>
+                  </VCard>
+                </VCol>
+              </VRow>
+            </VCard>
+          </VCol>
+        </VRow>
+
+        <!-- Available Time Slots -->
+        <VRow v-if="availableTimeSlots.length > 0">
+          <VCol cols="12">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="text-h6 mb-4">
+                <VIcon start color="success">
+                  tabler-clock-check
+                </VIcon>
+                Slot Waktu Tersedia
+              </VCardTitle>
+              
+              <VRow>
+                <VCol 
+                  v-for="timeSlot in availableTimeSlots" 
+                  :key="`${timeSlot.schedule_id}-${timeSlot.start_time}-${timeSlot.end_time}`" 
+                  cols="12" 
+                  md="4"
+                >
+                  <VCard 
+                    variant="outlined" 
+                    class="pa-3 time-slot-card"
+                    :class="{ 'selected-time-slot': selectedTimeSlot === timeSlot }"
+                  >
+                    <div class="d-flex align-center gap-3">
+                      <VIcon size="24" color="primary">
+                        tabler-clock
+                      </VIcon>
+                      <div class="flex-grow-1">
+                        <h6 class="text-subtitle-1 font-weight-bold mb-1">
+                          {{ timeSlot.start_time }} - {{ timeSlot.end_time }}
+                        </h6>
+                        <p class="text-caption text-medium-emphasis mb-0">
+                          {{ timeSlot.day }} • {{ timeSlot.doctor_name }}
+                        </p>
+                      </div>
+                    </div>
+                  </VCard>
+                </VCol>
+              </VRow>
+            </VCard>
+          </VCol>
+        </VRow>
+
         <!-- Cost Summary Section -->
         <VRow>
           <VCol cols="12">
@@ -940,7 +1391,7 @@ const goBack = () => {
                 Ringkasan Biaya Treatment
               </VCardTitle>
               <VRow>
-                <VCol cols="12" md="4">
+                <VCol cols="12" md="6">
                   <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
                     Total Treatment
                   </label>
@@ -953,139 +1404,20 @@ const goBack = () => {
                     variant="outlined"
                   />
                 </VCol>
-                <VCol cols="12" md="4">
+                <VCol cols="12" md="6">
                   <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Diskon Promo
+                    Jumlah Treatment
                   </label>
                   <VTextField
-                    :model-value="calculateDiscount"
+                    :model-value="selectedTreatmentObjects.length"
                     type="number"
-                    prefix="Rp"
                     readonly
                     density="comfortable"
                     variant="outlined"
-                    color="success"
-                  />
-                </VCol>
-                <VCol cols="12" md="4">
-                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Total Biaya
-                  </label>
-                  <VTextField
-                    :model-value="formData.grand_total || 0"
-                    type="number"
-                    prefix="Rp"
-                    readonly
-                    density="comfortable"
-                    variant="outlined"
-                    color="primary"
+                    color="info"
                   />
                 </VCol>
               </VRow>
-            </VCard>
-          </VCol>
-        </VRow>
-        
-        <!-- Combined Summary Card -->
-        <VRow>
-          <VCol cols="12">
-            <VCard variant="outlined" color="info">
-              <VCardText class="pa-4">
-                <div class="d-flex align-center gap-2 mb-3">
-                  <VIcon size="20" color="info">
-                    tabler-calculator
-                  </VIcon>
-                  <h6 class="text-subtitle-1 font-weight-medium mb-0">
-                    Detail Perhitungan
-                  </h6>
-                </div>
-                
-                <!-- Subtotal Section -->
-                <div class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2">Total Treatment:</span>
-                  <span class="text-body-1 font-weight-medium">
-                    {{ formatCurrency(calculateTreatmentTotal) }}
-                  </span>
-                </div>
-                
-                <!-- Promo Discount Section -->
-                <div v-if="selectedPromo" class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2">Diskon Promo:</span>
-                  <span class="text-body-1 font-weight-medium text-success">
-                    -{{ formatCurrency(calculateDiscount) }}
-                  </span>
-                </div>
-                
-                <!-- Minimum Purchase Warning -->
-                <div v-if="selectedPromo && (() => {
-                  const promoId = typeof selectedPromo === 'object' && selectedPromo !== null 
-                    ? selectedPromo.value 
-                    : selectedPromo
-                  const promo = promos.find(p => p.value === promoId)?.data
-                  const subtotal = calculateTreatmentTotal
-                  return promo?.min_purchase && subtotal < parseFloat(promo.min_purchase)
-                })()" class="d-flex align-center gap-2 mb-2 pa-2 bg-warning-lighten-5 rounded">
-                  <VIcon size="16" color="warning">
-                    tabler-alert-triangle
-                  </VIcon>
-                  <span class="text-caption text-warning">
-                    Minimum pembelian: {{ formatCurrency((() => {
-                      const promoId = typeof selectedPromo === 'object' && selectedPromo !== null 
-                        ? selectedPromo.value 
-                        : selectedPromo
-                      return promos.find(p => p.value === promoId)?.data?.min_purchase || 0
-                    })()) }}
-                  </span>
-                </div>
-                
-                <!-- Minimum Purchase Success -->
-                <div v-if="selectedPromo && (() => {
-                  const promoId = typeof selectedPromo === 'object' && selectedPromo !== null 
-                    ? selectedPromo.value 
-                    : selectedPromo
-                  const promo = promos.find(p => p.value === promoId)?.data
-                  const subtotal = calculateTreatmentTotal
-                  return promo?.min_purchase && subtotal >= parseFloat(promo.min_purchase)
-                })()" class="d-flex align-center gap-2 mb-2 pa-2 bg-success-lighten-5 rounded">
-                  <VIcon size="16" color="success">
-                    tabler-check
-                  </VIcon>
-                  <span class="text-caption text-success">
-                    Minimum pembelian terpenuhi ✓
-                  </span>
-                </div>
-                
-                <!-- Tax Section (if any) -->
-                <div v-if="formData.tax_amount && parseFloat(formData.tax_amount) > 0" class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-body-2">Pajak:</span>
-                  <span class="text-body-1 font-weight-medium">
-                    {{ formatCurrency(formData.tax_amount) }}
-                  </span>
-                </div>
-                
-                <VDivider class="my-3" />
-                
-                <!-- Grand Total -->
-                <div class="d-flex justify-space-between align-center">
-                  <span class="text-subtitle-2 font-weight-medium">Total Akhir:</span>
-                  <span class="text-h6 font-weight-bold text-primary">{{ formatCurrency(formData.grand_total) }}</span>
-                </div>
-                
-                <!-- Promo Info (if selected) -->
-                <div v-if="selectedPromo" class="mt-3 pa-3 bg-success-lighten-5 rounded">
-                  <div class="d-flex align-center gap-2 mb-2">
-                    <VIcon size="16" color="success">
-                      tabler-discount
-                    </VIcon>
-                    <span class="text-caption font-weight-medium text-success">
-                      Promo Aktif: {{ promos.find(p => p.value === selectedPromo)?.data?.name }}
-                    </span>
-                  </div>
-                  <div class="text-caption text-success">
-                    {{ promos.find(p => p.value === selectedPromo)?.data?.description }}
-                  </div>
-                </div>
-              </VCardText>
             </VCard>
           </VCol>
         </VRow>
@@ -1097,11 +1429,31 @@ const goBack = () => {
             :disabled="isLoading || selectedTreatmentObjects.length === 0"
             color="primary"
           >
-            <VIcon start icon="tabler-device-floppy" />
-            Buat Tagihan Treatment
+            <VIcon start icon="tabler-plus" />
+            Tambah Treatment ke Billing
           </VBtn>
         </div>
       </VForm>
     </VCardText>
   </VCard>
 </template> 
+
+<style lang="scss" scoped>
+.time-slot-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: rgba(25, 118, 210, 0.3);
+  }
+  
+  &.selected-time-slot {
+    border-color: #1976d2;
+    background: linear-gradient(135deg, rgba(25, 118, 210, 0.1), rgba(25, 118, 210, 0.05));
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
+  }
+}
+</style> 

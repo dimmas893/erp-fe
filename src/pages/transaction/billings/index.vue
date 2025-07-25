@@ -20,8 +20,16 @@ meta:
       <template #actions>
         <div class="d-flex gap-2">
           <VBtn
+            color="info"
+            prepend-icon="tabler-route"
+            :to="{ name: 'transaction-billings-flow' }"
+            variant="tonal"
+          >
+            Alur
+          </VBtn>
+          <VBtn
             color="primary"
-            prepend-icon="tabler-stethoscope"
+            prepend-icon="tabler-message-circle"
             :to="{ name: 'transaction-billings-consultation-create' }"
             variant="tonal"
           >
@@ -29,20 +37,20 @@ meta:
           </VBtn>
           <VBtn
             color="warning"
-            prepend-icon="tabler-activity"
+            prepend-icon="tabler-stethoscope"
             :to="{ name: 'transaction-billings-treatment-create' }"
             variant="tonal"
           >
-            Treatment
+            Tindakan
           </VBtn>
-          <VBtn
+          <!-- <VBtn
             color="success"
             prepend-icon="tabler-package"
             :to="{ name: 'transaction-billings-product-create' }"
             variant="tonal"
           >
             Produk
-          </VBtn>
+          </VBtn> -->
         </div>
       </template>
     </DynamicFilter>
@@ -212,8 +220,8 @@ const fieldConfigs = computed(() => {
       operator: 'equal',
       options: [
         { title: 'Draft', value: 'draft' },
-        { title: 'Unpaid', value: 'unpaid' },
-        { title: 'Paid', value: 'paid' },
+        { title: 'Belum Lunas', value: 'unpaid' },
+        { title: 'Lunas', value: 'paid' },
       ],
     },
   }
@@ -249,11 +257,11 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Billing Number', key: 'billing_number' },
-  { title: 'Total Amount', key: 'total_amount' },
-  { title: 'Discount Amount', key: 'discount_amount' },
-  { title: 'Tax Amount', key: 'tax_amount' },
-  { title: 'Grand Total', key: 'grand_total' },
+  { title: 'Nomor Tagihan', key: 'billing_number' },
+  { title: 'Total', key: 'total_amount' },
+  { title: 'Diskon', key: 'discount_amount' },
+  { title: 'Pajak', key: 'tax_amount' },
+  { title: 'Total Akhir', key: 'grand_total' },
   { title: 'Status', key: 'status' },
   { title: 'Tanggal Bayar', key: 'paid_at' },
   { title: 'Tanggal Dibuat', key: 'created_at' },

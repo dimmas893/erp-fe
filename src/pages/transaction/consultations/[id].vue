@@ -34,6 +34,15 @@ meta:
       </VBtn>
       <VBtn
         v-if="consultation && !consultation.end_time"
+        color="warning"
+        prepend-icon="tabler-player-play"
+        :loading="completingConsultation"
+        @click="progressConsultation"
+      >
+        Progress
+      </VBtn>
+      <VBtn
+        v-if="consultation && !consultation.end_time"
         color="success"
         prepend-icon="tabler-check"
         :loading="completingConsultation"
@@ -995,7 +1004,6 @@ meta:
                       <VBtn
                         color="success"
                         :loading="savingRecommendation"
-                        :disabled="!isRecommendationFormValid"
                         @click="submitRecommendation"
                       >
                         Buat Rekomendasi
@@ -1589,6 +1597,56 @@ async function submitConsultation() {
   }
 }
 
+async function progressConsultation() {
+  if (!consultation.value) return
+
+  completingConsultation.value = true
+
+  try {
+    // Get current date and time in Indonesian format
+    const now = new Date()
+    const indonesianDateTime = now.toLocaleString('id-ID', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    })
+    
+    // Convert to ISO string for API
+    const requestData = {
+      billing_status: 'progress_consultation'
+    }
+
+    console.log('📤 Submitting consultation progress data:', requestData)
+    console.log('📅 Indonesian format:', indonesianDateTime)
+
+    const res = await $api(`/rme/visit-consultations/${consultationId}/status`, {
+      method: 'PATCH',
+      body: requestData,
+    })
+
+    // Show success message with Indonesian date format
+    await showSuccessAlert(
+      `Konsultasi berhasil diproses pada ${indonesianDateTime}`,
+      'Berhasil!'
+    )
+
+    // Redirect back to consultations list
+    router.push({ name: 'transaction-consultations' })
+  } catch (error) {
+    console.error('❌ Error progressing consultation:', error)
+    await showErrorAlert(error, {
+      title: 'Gagal Memproses Konsultasi',
+      text: 'Tidak dapat memproses konsultasi. Silakan coba lagi.',
+    })
+  } finally {
+    completingConsultation.value = false
+  }
+}
+
 async function completeConsultation() {
   if (!consultation.value) return
 
@@ -1609,7 +1667,8 @@ async function completeConsultation() {
     
     // Convert to ISO string for API
     const requestData = {
-      end_time: now.toISOString()
+      end_time: now.toISOString(),
+      billing_status: 'complete_consultation'
     }
 
     console.log('📤 Submitting consultation completion data:', requestData)
@@ -1619,40 +1678,6 @@ async function completeConsultation() {
       method: 'PATCH',
       body: requestData,
     })
-
-    console.log('✅ Consultation completed:', res.data)
-
-    // Update local data
-    consultation.value = { ...consultation.value, ...res.data }
-
-    // Update billing status to forwarded_to_doctor
-    try {
-      // Get billing ID from consultation data or visit data
-      let billingId = res.data.billing_id
-      
-      if (!billingId && visitData.value) {
-        // Try to get billing ID from visit data
-        billingId = visitData.value.billing_id
-      }
-
-      if (billingId) {
-        console.log('📤 Updating billing status to forwarded_to_doctor:', billingId)
-        
-        const billingRes = await $api(`/transaction/billings/${billingId}`, {
-          method: 'PATCH',
-          body: {
-            status: 'confirmed'
-          },
-        })
-
-        console.log('✅ Billing status updated:', billingRes.data)
-      } else {
-        console.log('⚠️ No billing ID found, skipping billing update')
-      }
-    } catch (billingError) {
-      console.error('❌ Error updating billing status:', billingError)
-      // Don't show error alert for billing update failure, just log it
-    }
 
     // Show success message with Indonesian date format
     await showSuccessAlert(
