@@ -179,6 +179,8 @@ declare module 'vue-router/auto-routes' {
     'transaction-billings-treatment-create': RouteRecordInfo<'transaction-billings-treatment-create', '/transaction/billings_treatment/create', Record<never, never>, Record<never, never>>,
     'transaction-consultations': RouteRecordInfo<'transaction-consultations', '/transaction/consultations', Record<never, never>, Record<never, never>>,
     'transaction-consultations-id': RouteRecordInfo<'transaction-consultations-id', '/transaction/consultations/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    'transaction-consultations-anatomi': RouteRecordInfo<'transaction-consultations-anatomi', '/transaction/consultations/anatomi', Record<never, never>, Record<never, never>>,
+    'transaction-consultations-uikonsul': RouteRecordInfo<'transaction-consultations-uikonsul', '/transaction/consultations/UIkonsul', Record<never, never>, Record<never, never>>,
     'transaction-produk': RouteRecordInfo<'transaction-produk', '/transaction/produk', Record<never, never>, Record<never, never>>,
     'transaction-produk-id': RouteRecordInfo<'transaction-produk-id', '/transaction/produk/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
     'transaction-tindakan': RouteRecordInfo<'transaction-tindakan', '/transaction/tindakan', Record<never, never>, Record<never, never>>,
