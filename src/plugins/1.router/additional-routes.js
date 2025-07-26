@@ -174,14 +174,12 @@ export const routes = [
     component: () => import('@/pages/transaction/produk/[id].vue'),
   },
 
-<<<<<<< HEAD
   //ANTRIAN
   {
     path: '/billing',
     name: 'BillingSelesai',
     component: () => import('@/pages/antrian/billing.vue'),
   },
-=======
   // WMS Branches Routes
   {
     path: '/wms/branches',
@@ -446,6 +444,4 @@ export const routes = [
     name: 'finance-tax-types-edit-id',
     component: () => import('@/pages/finance/tax-types/edit/[id].vue'),
   },
-
->>>>>>> e2e18aaeff59db587538c27790f973a53803407f
 ]
