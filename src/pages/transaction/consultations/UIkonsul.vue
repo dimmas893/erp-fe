@@ -14,8 +14,8 @@ const panelStatus = ref(0)
 const selectedOptions = ref(['Alabama'])
 
 const states = [
-  'Alabama',
-  'Alaska',
+  'PRP Treatment',
+  'Laser Co2',
   'American Samoa',
   'Arizona',
   'Arkansas',
@@ -447,7 +447,7 @@ const removePoint = index => {
             placeholder="........"
           />
        </VCardItem>
-         <VCol cols="12" class="justify-end d-flex">
+         <VCol cols="12" class="w-full justify-end d-flex">
             <VBtn
                 type="submit"
                 @click="refForm?.validate()"
