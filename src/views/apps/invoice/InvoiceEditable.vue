@@ -2,6 +2,9 @@
 import InvoiceProductEdit from './InvoiceProductEdit.vue'
 import { VNodeRenderer } from '@layouts/components/VNodeRenderer'
 import { themeConfig } from '@themeConfig'
+import moztu from '@images/logos/brave.png'
+const router = useRouter()
+
 
 const props = defineProps({
   data: {
@@ -14,6 +17,19 @@ const emit = defineEmits([
   'push',
   'remove',
 ])
+
+
+
+// const emit = defineEmits(['clear'])
+
+const headers = [
+  { text: 'Name', value: 'name' },
+  { text: 'Price', value: 'price' },
+]
+
+function clearItems() {
+  emit('clear')
+}
 
 const invoice = ref(props.data.invoice)
 const salesperson = ref(props.data.salesperson)
@@ -47,33 +63,54 @@ const addItem = () => {
 const removeProduct = id => {
   emit('remove', id)
 }
+
+const goBack = () => {
+  router.push({ name: 'antrian-billingpageafterkonsul' })
+}
+
+
+
 </script>
 
 <template>
   <VCard class="pa-6 pa-sm-12">
+    <VCardItem class="d-flex py-1 px-1">
+      <VCardTitle class="d-flex  gap-">
+        <VBtn
+          icon="tabler-arrow-left"
+          variant="text"
+          size="small"
+          @click="goBack"
+        />
+        Back
+      </VCardTitle>
+      
+    </VCardItem>
     <!-- SECTION Header -->
     <div class="d-flex flex-wrap justify-space-between flex-column rounded bg-var-theme-background flex-sm-row gap-6 pa-6 mb-6">
       <!-- 👉 Left Content -->
       <div>
-        <div class="d-flex align-center app-logo mb-6">
+        <div class=" app-logo mb-6">
           <!-- 👉 Logo -->
+          <!-- <VImg height="50px" width="20px" :src="moztu" contain /> -->
           <VNodeRenderer :nodes="themeConfig.app.logo" />
 
           <!-- 👉 Title -->
           <h6 class="app-logo-title">
-            {{ themeConfig.app.title }}
+            <!-- {{ themeConfig.app.title }} -->ABC
           </h6>
         </div>
 
         <!-- 👉 Address -->
-        <p class="text-high-emphasis mb-0">
-          Office 149, 450 South Brand Brooklyn
+        <p class="text-high-emphasis mb-0 text-wrap">
+          Tebet Tim., Kec. Tebet, Kota Jakarta Selatan, 
         </p>
-        <p class="text-high-emphasis mb-0">
-          San Diego County, CA 91905, USA
+        <p class="text-high-emphasis mb-0 text-wrap">
+            Daerah Khusus Ibukota Jakarta 12820
         </p>
+        
         <p class="text-high-emphasis mb-0">
-          +1 (123) 456 7891, +44 (876) 543 2198
+          +62 (876) 543 2198
         </p>
       </div>
 
@@ -96,7 +133,7 @@ const removeProduct = id => {
         </div>
 
         <!-- 👉 Issue Date -->
-        <div class="d-flex gap-x-4 align-start align-sm-center flex-column flex-sm-row">
+        <!-- <div class="d-flex gap-x-4 align-start align-sm-center flex-column flex-sm-row">
           <span
             class="text-high-emphasis text-sm-end"
             style="inline-size: 5.625rem;"
@@ -109,7 +146,7 @@ const removeProduct = id => {
               :config="{ position: 'auto right' }"
             />
           </span>
-        </div>
+        </div> -->
 
         <!-- 👉 Due Date -->
         <div class="d-flex gap-x-4 align-start align-sm-center flex-column flex-sm-row">
@@ -129,110 +166,53 @@ const removeProduct = id => {
     </div>
     <!-- !SECTION -->
 
-    <VRow>
-      <VCol class="text-no-wrap">
-        <h6 class="text-h6 mb-4">
-          Invoice To:
-        </h6>
+    
+      <VRow>
+        <VCol class="text-no-wrap" cols="12" md="8">
+          <h6 class="text-h6 mb-4">
+            Invoice To:
+          </h6>
+          <p class="mb-0">
+            <!-- {{ invoice.client.name }} -->
+              Michel
+          </p>
+          <p class="mb-0">
+            <!-- {{ invoice.client.contact }} -->
+              +62875639736937
+          </p>
+          <p class="mb-0">
+            <!-- {{ invoice.client.companyEmail }} -->
+              Michel@gmail.com
+          </p>
+        </VCol>
 
-        <VSelect
-          v-model="invoice.client"
-          :items="clients"
-          item-title="name"
-          item-value="name"
-          placeholder="Select Client"
-          return-object
-          class="mb-4"
-          style="inline-size: 11.875rem;"
-        />
-        <p class="mb-0">
-          {{ invoice.client.name }}
-        </p>
-        <p class="mb-0">
-          {{ invoice.client.company }}
-        </p>
-        <p
-          v-if="invoice.client.address"
-          class="mb-0"
-        >
-          {{ invoice.client.address }}, {{ invoice.client.country }}
-        </p>
-        <p class="mb-0">
-          {{ invoice.client.contact }}
-        </p>
-        <p class="mb-0">
-          {{ invoice.client.companyEmail }}
-        </p>
-      </VCol>
-
-      <VCol class="text-no-wrap">
-        <h6 class="text-h6 mb-4">
-          Bill To:
-        </h6>
-
-        <table>
-          <tbody>
-            <tr>
-              <td class="pe-4">
-                Total Due:
-              </td>
-              <td>{{ props.data.paymentDetails.totalDue }}</td>
-            </tr>
-            <tr>
-              <td class="pe-4">
-                Bank Name:
-              </td>
-              <td>{{ props.data.paymentDetails.bankName }}</td>
-            </tr>
-            <tr>
-              <td class="pe-4">
-                Country:
-              </td>
-              <td>{{ props.data.paymentDetails.country }}</td>
-            </tr>
-            <tr>
-              <td class="pe-4">
-                IBAN:
-              </td>
-              <td>
-                <p class="text-wrap me-4">
-                  {{ props.data.paymentDetails.iban }}
-                </p>
-              </td>
-            </tr>
-            <tr>
-              <td class="pe-4">
-                SWIFT Code:
-              </td>
-              <td>{{ props.data.paymentDetails.swiftCode }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </VCol>
-    </VRow>
+        <VCol class="py-12 text-no-wrap" cols="12" md="4">
+          
+            <table >
+              <tbody >
+                
+                <tr >
+                  <td class="pe-4">
+                  Dokter:
+                  </td>
+                  <td>Amanda Smith spd</td>
+                </tr>
+                <tr>
+                  <td class="pe-4">
+                    trapis:
+                  </td>
+                  <td>nelsan jhonson  </td>
+                </tr>
+                
+              </tbody>
+            </table>
+        </VCol>
+      </VRow>
 
     <VDivider class="my-6 border-dashed" />
     <!-- 👉 Add purchased products -->
     <div class="add-products-form">
-      <div
-        v-for="(product, index) in props.data.purchasedProducts"
-        :key="product.title"
-        class="mb-4"
-      >
-        <InvoiceProductEdit
-          :id="index"
-          :data="product"
-          @remove-product="removeProduct"
-        />
-      </div>
-
-      <VBtn
-        size="small"
-        prepend-icon="tabler-plus"
-        @click="addItem"
-      >
-        Add Item
-      </VBtn>
+      isi data  product dan treatmen dari api
     </div>
 
     <VDivider class="my-6 border-dashed" />
@@ -240,7 +220,7 @@ const removeProduct = id => {
     <!-- 👉 Total Amount -->
     <div class="d-flex justify-space-between flex-wrap flex-column flex-sm-row">
       <div class="mb-6 mb-sm-0">
-        <div class="d-flex align-center mb-4">
+        <!-- <div class="d-flex align-center mb-4">
           <h6 class="text-h6 me-2">
             Salesperson:
           </h6>
@@ -254,10 +234,10 @@ const removeProduct = id => {
         <AppTextField
           v-model="thanksNote"
           placeholder="Thanks for your business"
-        />
+        /> -->
       </div>
 
-      <div>
+      <div >
         <table class="w-100">
           <tbody>
             <tr>

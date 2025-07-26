@@ -20,6 +20,10 @@ declare module 'vue-router/auto-routes' {
   export interface RouteNamedMap {
     '$error': RouteRecordInfo<'$error', '/:error(.*)', { error: ParamValue<true> }, { error: ParamValue<false> }>,
     'access-control': RouteRecordInfo<'access-control', '/access-control', Record<never, never>, Record<never, never>>,
+    'antrian-antrian': RouteRecordInfo<'antrian-antrian', '/antrian/antrian', Record<never, never>, Record<never, never>>,
+    'antrian-billing': RouteRecordInfo<'antrian-billing', '/antrian/billing', Record<never, never>, Record<never, never>>,
+    'antrian-billingpageafterkonsul': RouteRecordInfo<'antrian-billingpageafterkonsul', '/antrian/billingpageafterkonsul', Record<never, never>, Record<never, never>>,
+    'antrian-product': RouteRecordInfo<'antrian-product', '/antrian/product', Record<never, never>, Record<never, never>>,
     'apps-academy-course-details': RouteRecordInfo<'apps-academy-course-details', '/apps/academy/course-details', Record<never, never>, Record<never, never>>,
     'apps-academy-dashboard': RouteRecordInfo<'apps-academy-dashboard', '/apps/academy/dashboard', Record<never, never>, Record<never, never>>,
     'apps-academy-my-course': RouteRecordInfo<'apps-academy-my-course', '/apps/academy/my-course', Record<never, never>, Record<never, never>>,
