@@ -395,14 +395,6 @@ const removePoint = index => {
                       </VSheet>
                     </VCol>
                     </VRow>
-                  <VCol cols="12" class="justify-end d-flex">
-                    <VBtn
-                      type="submit"
-                      @click="refForm?.validate()"
-                    >
-                      Submit
-                    </VBtn>
-                  </VCol>
                 </VRow>
              
             </VCardText>
@@ -455,6 +447,14 @@ const removePoint = index => {
             placeholder="........"
           />
        </VCardItem>
+         <VCol cols="12" class="justify-end d-flex">
+            <VBtn
+                type="submit"
+                @click="refForm?.validate()"
+            >
+              Submit
+            </VBtn>
+          </VCol>
       </VCard>
     </div>
   
