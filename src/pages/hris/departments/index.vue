@@ -23,7 +23,7 @@ meta:
           prepend-icon="tabler-plus"
           :to="{ name: 'hris-departments-create' }"
         >
-          Tambah Departemen
+          Tambah Departemen bro
         </VBtn>
       </template>
     </DynamicFilter>
