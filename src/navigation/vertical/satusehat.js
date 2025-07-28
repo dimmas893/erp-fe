@@ -4,8 +4,12 @@ export default [
     icon: { icon: 'tabler-heartbeat' },
     children: [
       {
-        title: 'Pasien',
+        title: 'Cek Data Pasien',
         to: 'satusehat-pasien',
+      },
+      {
+        title: 'Form Pasien',
+        to: 'pages-misc-coming-soon',
       },
     ],
   },
