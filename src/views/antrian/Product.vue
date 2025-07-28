@@ -10,7 +10,7 @@ const router = useRouter()
 
 const items = ref([
     {
-        id: 1, name: 'Apple iPhone 11 Pro', price: 189900
+        id: 1, name: 'cream iritasi', price: 189900
     },
     {
         id: 2, name: 'Samsung Galaxy S22', price: 79900
