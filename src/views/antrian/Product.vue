@@ -1,9 +1,7 @@
 
 <script setup>
-import InvoiceEditable from '@/views/apps/invoice/InvoiceEditable.vue'
-import InvoiceSendInvoiceDrawer from '@/views/apps/invoice/InvoiceSendInvoiceDrawer.vue'
-import { ref } from 'vue'
 import moztu from '@images/logos/brave.png'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -95,7 +93,7 @@ function formatRupiah(value) {
       cols="12"
       md="7"
     >
-        <VCard class=" pa-12 py-6"  >
+        <VCard class=" pa-2 py-5"  >
 
             <VCardTitle class="text-h5">
             Product
@@ -117,7 +115,7 @@ function formatRupiah(value) {
                         </div>
 
                         <VCardItem>
-                            <VCardTitle class="text-wrap">{{ item.name }}</VCardTitle>
+                            <VCardTitle class="text-wrap" style="font-size: 13px;">{{ item.name }}</VCardTitle>
                         </VCardItem>
                         <div class="flex-grow-1 d-flex flex-column px-3">
 
@@ -127,7 +125,7 @@ function formatRupiah(value) {
                                 <span class="font-weight-medium"> {{ formatRupiah(item.price) }}</span>
                             </div>
 
-                            <VBtn @click="addToCart(item)" block>
+                            <VBtn @click="addToCart(item)" block size="small">
                                 <VIcon icon="tabler-shopping-cart-plus" />
                                 <span class="ms-2">Add</span>
                             </VBtn>
@@ -175,11 +173,11 @@ function formatRupiah(value) {
 
             <VDivider class=" border-dashed" />
             <div style="max-height: 350px;  overflow-y: auto;">
-                <VTable  > 
+                <VTable  style="font-size: 13px;"> 
                     <thead >
                         <tr>
                             <th>Item</th>
-                            <th>Qty</th>
+                            <!-- <th>Qty</th> -->
                             <th>Price</th>
                             <th>Total</th>
                             <th><VIcon icon="tabler-trash" size="20" /></th>
@@ -187,10 +185,10 @@ function formatRupiah(value) {
                     </thead>
                     <tbody>
                         <tr v-for="item in cartItems" :key="item.id">
-                            <td style="max-width: 150px;">{{ item.name }}</td>
-                            <td style="max-width: 50px;">{{ item.quantity }}</td>
-                            <td style="max-width: 130px;">{{ formatRupiah(item.price) }}</td>
-                            <td style="max-width: 130px;">{{formatRupiah (item.totalPrice) }}</td>
+                            <td style="max-width: 150px;">{{ item.quantity }}x{{ item.name }}</td>
+                            <!-- <td style="max-width: 50px;"></td> -->
+                            <td>{{ formatRupiah(item.price) }}</td>
+                            <td>{{formatRupiah (item.totalPrice) }}</td>
                             <td>
                                 <VBtn color="error" icon  @click="removeItem(cartItems.indexOf(item))" size="30">
                                 <VIcon icon="tabler-trash" size="20" />

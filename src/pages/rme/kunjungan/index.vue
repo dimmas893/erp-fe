@@ -308,12 +308,12 @@ const headers = [
   { title: 'No. Kunjungan', key: 'visit_number' },
   { title: 'Pasien', key: 'patient', sortable: false },
   { title: 'Tanggal Kunjungan', key: 'visit_date' },
-  { title: 'Dokter', key: 'doctor_id', sortable: false },
-  { title: 'Keluhan', key: 'chief_complaint' },
+  // { title: 'Dokter', key: 'doctor_id', sortable: false },
+  // { title: 'Keluhan', key: 'chief_complaint' },
   { title: 'Status', key: 'status', sortable: false },
-  { title: 'Status Pembayaran', key: 'payment_status', sortable: false },
-  { title: 'Total Bayar', key: 'total_amount' },
-  { title: 'Tanggal Input', key: 'created_at' },
+  // { title: 'Status Pembayaran', key: 'payment_status', sortable: false },
+  // { title: 'Total Bayar', key: 'total_amount' },
+  // { title: 'Tanggal Input', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
