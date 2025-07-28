@@ -1,6 +1,6 @@
 export default [
   {
-    title: 'RME',
+    title: 'Data Pasien',
     icon: { icon: 'tabler-notes' },
     children: [
       {

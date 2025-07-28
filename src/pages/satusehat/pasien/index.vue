@@ -15,6 +15,9 @@
             <span>Cari Pasien SatuSehat by NIK</span>
           </VCardTitle>
           <VCardText>
+            <div class="d-flex justify-center mb-3">
+              <VImg :src="satusehatnik" width="200px" height="200px"/>
+            </div>
             <VForm
               ref="nikForm"
               @submit.prevent="searchByNIK"
@@ -62,6 +65,9 @@
             </VIcon>
             <span>Cari Pasien SatuSehat by ID</span>
           </VCardTitle>
+           <div class="d-flex justify-center">
+              <VImg :src="satusehatid" width="200px" height="200px"/>
+            </div>
           <VCardText>
             <VForm
               ref="idForm"
@@ -137,7 +143,17 @@
               <VList>
                 <VListItem>
                   <VListItemTitle>ID SatuSehat</VListItemTitle>
-                  <VListItemSubtitle>{{ searchResult.data.id || '-' }}</VListItemSubtitle>
+                  <VListItemSubtitle>{{ searchResult.data.id || '-' }} 
+                    <VBtn
+                    size="small"
+                    icon="tabler-copy"
+                    variant="text"
+                    @click="copyToClipboard(searchResult.data.id)"
+                    class="ml-2"
+                    color="primary"
+                  />
+                  </VListItemSubtitle>
+                  
                 </VListItem>
                 <VListItem>
                   <VListItemTitle>Nama</VListItemTitle>
@@ -180,6 +196,10 @@
         </div>
       </VCardText>
     </VCard>
+
+     <VSnackbar location="bottom end" v-model="copied" color="success" timeout="2000">
+        Teks berhasil disalin!
+      </VSnackbar>
   </div>
 </template>
 
@@ -191,13 +211,23 @@ definePage({
   },
 })
 
-import { $api } from '@/utils/api'
-import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { $api } from '@/utils/api';
+import satusehatid from '@images/logos/satusehat-id.png';
+import satusehatnik from '@images/logos/satusehat-nik.png';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute()
 const router = useRouter()
+const copied = ref(false)
 
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    copied.value = true
+  }).catch(err => {
+    console.error('Gagal menyalin:', err)
+  })
+}
 // Debug navigation state
 onMounted(() => {
   console.log('🔍 SatuSehat Pasien Page Debug Info:')
