@@ -7,7 +7,7 @@ meta:
 <template>
   <VCard>
     <!-- Dynamic Filter Component -->
-    <DynamicFilter
+    <!-- <DynamicFilter
       title="Data Pasien"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
@@ -16,20 +16,33 @@ meta:
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
-    >
-      <template #actions>
-        <VBtn
+      > -->
+      <div class="d-flex justify-space-between align-center flex-wrap mx-4 my-2">
+        <v-text-field
+          v-model="search"
+          label="Search..."
+          class="my-2"
+          prepend-inner-icon="mdi-magnify"
+          clearable
+          density="comfortable"
+          style="max-width: 300px"
+        />
+
+        <v-btn
           color="primary"
           prepend-icon="tabler-plus"
           :to="{ name: 'rme-pasien-create' }"
+          class="my-2"
         >
           Tambah Pasien
-        </VBtn>
-      </template>
-    </DynamicFilter>
+        </v-btn>
+      </div>
+
+        <!-- </template> -->
+    <!-- </DynamicFilter> -->
     
     <VDivider />
-    <VDataTableServer
+    <v-data-table v-model:search="search"
       :headers="headers"
       :items="patients"
       :items-length="totalPatients"
@@ -51,9 +64,9 @@ meta:
           {{ item.name }}
         </RouterLink>
       </template>
-      <template #item.birth_date="{ item }">
+      <!-- <template #item.birth_date="{ item }">
         {{ formatDate(item.birth_date) }}
-      </template>
+      </template> -->
       <template #item.created_at="{ item }">
         {{ formatDateTime(item.created_at) }}
       </template>
@@ -75,7 +88,7 @@ meta:
           {{ item.consent_status }}
         </VChip>
       </template>
-      <template #item.emergency_contact="{ item }">
+      <!-- <template #item.emergency_contact="{ item }">
         <div v-if="item.emergency_contact">
           <div class="font-weight-medium">
             {{ item.emergency_contact.name }}
@@ -93,9 +106,22 @@ meta:
         >
           -
         </div>
-      </template>
+      </template> -->
       <template #item.actions="{ item }">
-        <div class="d-flex gap-2">
+        <VMenu>
+          <template #activator="{ props }">
+            <VBtn color="primary" size="small" v-bind="props">
+              Action <VIcon class="tabler-arrow-big-down-line"></VIcon>
+            </VBtn>
+          </template>
+          <VList>
+            <VListItem :to="{ name: 'rme-pasien-id', params: { id: item.id } }">View</VListItem>
+            <VListItem :to="{ name: 'rme-pasien-edit-id', params: { id: item.id } }">Edit</VListItem>
+            <VListItem :to="{ name: 'rme-pasien-edit-id', params: { id: item.id } }">Data Kunjungan</VListItem>
+            <VListItem :to="{ name: 'transaction-billings-flow' }">Kunjungan Baru</VListItem>
+          </VList>
+        </VMenu>  
+        <!-- <div class="d-flex gap-2">
           <VBtn
             icon="tabler-eye"
             size="small"
@@ -112,7 +138,7 @@ meta:
             :to="{ name: 'rme-pasien-edit-id', params: { id: item.id } }"
             title="Edit Pasien"
           />
-        </div>
+        </div> -->
       </template>
       <template #loading>
         <VSkeletonLoader
@@ -176,18 +202,14 @@ meta:
           />
         </div>
       </template>
-    </VDataTableServer>
+    </v-data-table>
   </VCard>
 </template>
 
 <script setup>
-import TablePagination from '@/@core/components/TablePagination.vue'
-import DynamicFilter from '@/components/DynamicFilter.vue'
 import { $api } from '@/utils/api'
 import { showErrorAlert } from '@/utils/errorHandler'
-import { paginationMeta } from '@/utils/paginationMeta'
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
 
 // State
 const itemsPerPage = ref(10)
@@ -197,6 +219,7 @@ const orderBy = ref('desc')
 const loading = ref(true) // Start with loading true for initial load
 const initialLoadCompleted = ref(false)
 
+const search = ref('')
 const patients = ref([])
 const totalPatients = ref(0)
 const currentFilters = ref([])
@@ -247,11 +270,11 @@ const fieldConfigs = computed(() => {
       type: 'tel',
       operator: 'like',
     },
-    'email': {
-      title: 'Email',
-      type: 'email',
-      operator: 'like',
-    },
+    // 'email': {
+    //   title: 'Email',
+    //   type: 'email',
+    //   operator: 'like',
+    // },
     'branch_id': {
       title: 'Cabang',
       type: 'select',
@@ -296,18 +319,18 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Nama', key: 'name' },
-  { title: 'NIK', key: 'nik' },
-  { title: 'Tgl Lahir', key: 'birth_date' },
-  { title: 'Gender', key: 'gender' },
-  { title: 'Telepon', key: 'phone' },
-  { title: 'Email', key: 'email' },
-  { title: 'Alamat', key: 'address' },
-  { title: 'Emergency Contact', key: 'emergency_contact', sortable: false },
-  { title: 'Status Persetujuan', key: 'consent_status' },
+  { title: 'Nama', key: 'name', sortable: true },
+  { title: 'NIK', key: 'nik', sortable: true },
+  // { title: 'Tgl Lahir', key: 'birth_date' },
+  { title: 'Gender', key: 'gender', sortable: true },
+  // { title: 'Telepon', key: 'phone' },
+  // { title: 'Email', key: 'email' },
+  // { title: 'Alamat', key: 'address' },
+  // { title: 'Emergency Contact', key: 'emergency_contact', sortable: false },
+  // { title: 'Status Persetujuan', key: 'consent_status' },
   { title: 'Aktif', key: 'is_active', sortable: false },
-  { title: 'Tanggal Input', key: 'created_at' },
-  { title: 'Aksi', key: 'actions', sortable: false },
+  { title: 'Tanggal Input', key: 'created_at', sortable: true },
+  { title: '#', key: 'actions', sortable: false },
 ]
 
 // Functions
