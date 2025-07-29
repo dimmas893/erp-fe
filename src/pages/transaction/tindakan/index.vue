@@ -8,11 +8,11 @@ meta:
   <VCard>
     <!-- Dynamic Filter Component -->
     <DynamicFilter
-      title="Data Tindakan"
+      title="Data Billing Treatment"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      quick-search-placeholder="Cari berdasarkan catatan tindakan..."
-      :quick-search-fields="['treatment_notes']"
+      quick-search-placeholder="Cari berdasarkan nomor billing..."
+      :quick-search-fields="['billing_number']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
@@ -25,8 +25,8 @@ meta:
     <VDivider />
     <VDataTableServer
       :headers="headers"
-      :items="treatments"
-      :items-length="totalTreatments"
+      :items="billings"
+      :items-length="totalBillings"
       :loading="loading"
       :items-per-page="itemsPerPage"
       :page="page"
@@ -38,23 +38,21 @@ meta:
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
 
-      <template #item.unit_price="{ item }">
-        {{ formatCurrency(item.unit_price) }}
+      <template #item.billing_number="{ item }">
+        {{ item.billing_number }}
       </template>
-      <template #item.total_price="{ item }">
-        {{ formatCurrency(item.total_price) }}
-      </template>
-      <template #item.performed_at="{ item }">
-        {{ formatDateTime(item.performed_at) }}
-      </template>
-      <template #item.completed_at="{ item }">
-        {{ item.completed_at ? formatDateTime(item.completed_at) : '-' }}
+
+      <template #item.status="{ item }">
+        <VChip
+          :color="getStatusColor(item.status)"
+          size="small"
+          label
+        >
+          {{ getStatusText(item.status) }}
+        </VChip>
       </template>
       <template #item.created_at="{ item }">
         {{ formatDateTime(item.created_at) }}
-      </template>
-      <template #item.visit_number="{ item }">
-        {{ item.visit?.visit_number || '-' }}
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex gap-2">
@@ -86,10 +84,10 @@ meta:
             color="primary"
             class="mb-4"
           >
-            tabler-stethoscope
+            tabler-receipt
           </VIcon>
           <h3 class="text-h6 mb-2">
-            Tidak ada data ditemukan
+            Tidak ada data billing treatment ditemukan
           </h3>
           <p class="text-body-2 text-medium-emphasis mb-4">
             Coba ubah filter atau kriteria pencarian Anda
@@ -120,16 +118,16 @@ meta:
             <span class="text-body-2 text-medium-emphasis">per halaman</span>
           </div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalTreatments) }}
+            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalBillings) }}
           </div>
-          <TablePagination
-            v-model:page="page"
-            v-model:items-per-page="itemsPerPage"
-            :total-items="totalTreatments"
-            :items-per-page-options="perPageOptions"
-            hide-details
-            :show-meta="false"
-          />
+                      <TablePagination
+              v-model:page="page"
+              v-model:items-per-page="itemsPerPage"
+              :total-items="totalBillings"
+              :items-per-page-options="perPageOptions"
+              hide-details
+              :show-meta="false"
+            />
         </div>
       </template>
     </VDataTableServer>
@@ -147,52 +145,44 @@ import { computed, onActivated, onMounted, ref, watch } from 'vue'
 // State
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref('performed_at')
+const sortBy = ref('created_at')
 const orderBy = ref('desc')
 const loading = ref(true) // Start with loading true for initial load
 const initialLoadCompleted = ref(false)
 
-const treatments = ref([])
-const totalTreatments = ref(0)
+const billings = ref([])
+const totalBillings = ref(0)
 const currentFilters = ref([])
 const currentQuickSearch = ref('')
 
 // Reactive field configurations
 const allowedFields = [
-  'treatment_notes',
-  'doctor_id',
-  'therapist_id',
+  'billing_number',
+  'status',
+  'patient_id',
 ]
 
 const fieldConfigs = computed(() => {
   return {
-    'treatment_notes': {
-      title: 'Catatan Tindakan',
+    'billing_number': {
+      title: 'Nomor Billing',
       type: 'text',
       operator: 'like',
     },
-    'doctor_id': {
-      title: 'Dokter',
+    'status': {
+      title: 'Status',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Dokter 1', value: 1 },
-        { title: 'Dokter 2', value: 2 },
-        { title: 'Dokter 3', value: 3 },
-        { title: 'Dokter 4', value: 4 },
-        { title: 'Dokter 5', value: 5 },
+        { title: 'Open Treatment', value: 'open_treatment' },
+        { title: 'Progress Treatment', value: 'progress_treatment' },
+        { title: 'Complete Treatment', value: 'complete_treatment' },
       ],
     },
-    'therapist_id': {
-      title: 'Terapis',
-      type: 'select',
-      operator: 'equal',
-      options: [
-        { title: 'Terapis 1', value: 1 },
-        { title: 'Terapis 2', value: 2 },
-        { title: 'Terapis 3', value: 3 },
-        { title: 'Terapis 4', value: 4 },
-      ],
+    'patient_id': {
+      title: 'ID Pasien',
+      type: 'text',
+      operator: 'like',
     },
   }
 })
@@ -214,7 +204,7 @@ const filterConfig = computed(() => ({
 
 // Computed property to control no-data display
 const shouldShowNoData = computed(() => {
-  return !loading.value && initialLoadCompleted.value && treatments.value.length === 0
+  return !loading.value && initialLoadCompleted.value && billings.value.length === 0
 })
 
 const perPageOptions = [
@@ -227,21 +217,16 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Nomor Kunjungan', key: 'visit_number' },
-  { title: 'Harga Satuan', key: 'unit_price' },
-  { title: 'Total Harga', key: 'total_price' },
-  { title: 'Jumlah', key: 'quantity' },
-  { title: 'Waktu Dilakukan', key: 'performed_at' },
-  { title: 'Waktu Selesai', key: 'completed_at' },
-  { title: 'Catatan Tindakan', key: 'treatment_notes' },
+  { title: 'Nomor Billing', key: 'billing_number' },
+  { title: 'Status', key: 'status' },
   { title: 'Tanggal Dibuat', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
-async function fetchTreatments() {
+async function fetchBillings() {
   loading.value = true
-  console.log('🔄 Starting fetchTreatments...')
+  console.log('🔄 Starting fetchBillings...')
   
   try {
     const requestBody = {
@@ -260,7 +245,7 @@ async function fetchTreatments() {
     if (currentQuickSearch.value?.trim()) {
       if (!requestBody.filters) requestBody.filters = []
       requestBody.filters.push({
-        search_by: 'treatment_notes',
+        search_by: 'billing_number',
         filter_type: 'like',
         search_query: currentQuickSearch.value.trim(),
       })
@@ -268,30 +253,30 @@ async function fetchTreatments() {
 
     console.log('📤 API Request body:', requestBody)
     
-    const res = await $api('/rme/visit-treatments/paginated', {
+    const res = await $api('/transaction/billings/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
     console.log('📥 API Response:', res)
     
-    treatments.value = res.data || []
-    totalTreatments.value = res.meta?.total || 0
+    billings.value = res.data || []
+    totalBillings.value = res.meta?.total || 0
     
-    console.log('✅ Treatments loaded:', treatments.value.length, 'total:', totalTreatments.value)
-    console.log('📋 Sample treatment data:', treatments.value[0])
+    console.log('✅ Billings loaded:', billings.value.length, 'total:', totalBillings.value)
+    console.log('📋 Sample billing data:', billings.value[0])
   } catch (error) {
-    console.error('❌ Error fetching treatments:', error)
+    console.error('❌ Error fetching billings:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Tindakan',
-      text: 'Tidak dapat memuat data tindakan. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Billing',
+      text: 'Tidak dapat memuat data billing. Silakan coba lagi.',
     })
-    treatments.value = []
-    totalTreatments.value = 0
+    billings.value = []
+    totalBillings.value = 0
   } finally {
     loading.value = false
     initialLoadCompleted.value = true
-    console.log('🏁 fetchTreatments completed')
+    console.log('🏁 fetchBillings completed')
   }
 }
 
@@ -299,20 +284,20 @@ function handleApplyFilters({ filters, quickSearch }) {
   currentFilters.value = filters
   currentQuickSearch.value = quickSearch
   page.value = 1
-  fetchTreatments()
+  fetchBillings()
 }
 
 function handleClearFilters() {
   currentFilters.value = []
   currentQuickSearch.value = ''
   page.value = 1
-  fetchTreatments()
+  fetchBillings()
 }
 
 function handleApplyQuickSearch(searchQuery) {
   currentQuickSearch.value = searchQuery
   page.value = 1
-  fetchTreatments()
+  fetchBillings()
 }
 
 function onUpdateOptions(options) {
@@ -347,11 +332,29 @@ function formatDateTime(dateStr) {
   return new Date(dateStr).toLocaleString('id-ID')
 }
 
+function getStatusColor(status) {
+  switch (status) {
+  case 'open_treatment': return 'warning'
+  case 'progress_treatment': return 'info'
+  case 'complete_treatment': return 'success'
+  default: return 'secondary'
+  }
+}
+
+function getStatusText(status) {
+  switch (status) {
+  case 'open_treatment': return 'Open Treatment'
+  case 'progress_treatment': return 'Progress Treatment'
+  case 'complete_treatment': return 'Complete Treatment'
+  default: return status
+  }
+}
+
 // Watchers
 watch([page, itemsPerPage, sortBy, orderBy], () => {
   // Only fetch if component is already mounted and not in initial loading
   if (initialLoadCompleted.value) {
-    fetchTreatments()
+    fetchBillings()
   }
 })
 
@@ -360,8 +363,8 @@ onActivated(() => {
   console.log('🎯 Component onActivated triggered')
 
   // Only fetch if we don't have data and initial load is completed
-  if (treatments.value.length === 0 && initialLoadCompleted.value) {
-    fetchTreatments()
+  if (billings.value.length === 0 && initialLoadCompleted.value) {
+    fetchBillings()
   }
 })
 
@@ -372,8 +375,17 @@ onMounted(async () => {
   // Ensure loading is true for initial load
   loading.value = true
   
-  // Only fetch treatments once on mount
-  fetchTreatments()
+  // Set initial filter to show only treatment-related billings
+  currentFilters.value = [
+    {
+      search_by: 'status',
+      filter_type: 'in',
+      values_list: "open_treatment,progress_treatment,complete_treatment"
+    }
+  ]
+  
+  // Only fetch billings once on mount
+  fetchBillings()
 })
 </script>
 

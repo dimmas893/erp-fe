@@ -11,8 +11,8 @@ meta:
       title="Data Konsultasi"
       :fields="filterConfig.fields"
       :field-configs="filterConfig.fieldConfigs"
-      quick-search-placeholder="Cari berdasarkan tipe konsultasi..."
-      :quick-search-fields="['consultation_type']"
+      quick-search-placeholder="Cari berdasarkan status billing..."
+      :quick-search-fields="['billing.status']"
       @apply-filters="handleApplyFilters"
       @clear-filters="handleClearFilters"
       @apply-quick-search="handleApplyQuickSearch"
@@ -25,8 +25,8 @@ meta:
     <VDivider />
     <VDataTableServer
       :headers="headers"
-      :items="consultations"
-      :items-length="totalConsultations"
+      :items="billings"
+      :items-length="totalBillings"
       :loading="loading"
       :items-per-page="itemsPerPage"
       :page="page"
@@ -38,23 +38,18 @@ meta:
         {{ (itemsPerPage * (page - 1)) + index + 1 }}
       </template>
 
-      <template #item.fee="{ item }">
-        {{ formatCurrency(item.fee) }}
+      <template #item.billing_number="{ item }">
+        {{ item.billing_number }}
       </template>
-      <template #item.consultation_type="{ item }">
+
+      <template #item.status="{ item }">
         <VChip
-          :color="getConsultationTypeColor(item.consultation_type)"
+          :color="getStatusColor(item.status)"
           size="small"
           label
         >
-          {{ getConsultationTypeText(item.consultation_type) }}
+          {{ getStatusText(item.status) }}
         </VChip>
-      </template>
-      <template #item.start_time="{ item }">
-        {{ formatDateTime(item.start_time) }}
-      </template>
-      <template #item.end_time="{ item }">
-        {{ item.end_time ? formatDateTime(item.end_time) : '-' }}
       </template>
       <template #item.created_at="{ item }">
         {{ formatDateTime(item.created_at) }}
@@ -66,7 +61,7 @@ meta:
             size="small"
             variant="text"
             color="primary"
-            :to="{ name: 'transaction-consultations-id', params: { id: item.id } }"
+            :to="{ name: 'transaction-consultations-uikonsul', query: { billing_id: item.id } }"
             title="Lihat Detail"
           />
           <!-- Edit button removed as per requirement -->
@@ -123,12 +118,12 @@ meta:
             <span class="text-body-2 text-medium-emphasis">per halaman</span>
           </div>
           <div class="text-body-2 text-medium-emphasis">
-            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalConsultations) }}
+            {{ paginationMeta({ page: page, itemsPerPage: itemsPerPage }, totalBillings) }}
           </div>
           <TablePagination
             v-model:page="page"
             v-model:items-per-page="itemsPerPage"
-            :total-items="totalConsultations"
+            :total-items="totalBillings"
             :items-per-page-options="perPageOptions"
             hide-details
             :show-meta="false"
@@ -150,32 +145,44 @@ import { computed, onActivated, onMounted, ref, watch } from 'vue'
 // State
 const itemsPerPage = ref(10)
 const page = ref(1)
-const sortBy = ref('start_time')
+const sortBy = ref('created_at')
 const orderBy = ref('desc')
 const loading = ref(true) // Start with loading true for initial load
 const initialLoadCompleted = ref(false)
 
-const consultations = ref([])
-const totalConsultations = ref(0)
+const billings = ref([])
+const totalBillings = ref(0)
 const currentFilters = ref([])
 const currentQuickSearch = ref('')
 
 // Reactive field configurations
 const allowedFields = [
-  'consultation_type',
+  'billing_number',
+  'status',
+  'patient_id',
 ]
 
 const fieldConfigs = computed(() => {
   return {
-    'consultation_type': {
-      title: 'Tipe Konsultasi',
+    'billing_number': {
+      title: 'Nomor Billing',
+      type: 'text',
+      operator: 'like',
+    },
+    'status': {
+      title: 'Status',
       type: 'select',
       operator: 'equal',
       options: [
-        { title: 'Konsultasi Awal', value: 'INITIAL' },
-        { title: 'Konsultasi Lanjutan', value: 'FOLLOW_UP' },
-        { title: 'Konsultasi Darurat', value: 'EMERGENCY' },
+        { title: 'Konsultasi Terbuka', value: 'open_consultation' },
+        { title: 'Konsultasi Berlangsung', value: 'progress_consultation' },
+        { title: 'Konsultasi Selesai', value: 'complete_consultation' },
       ],
+    },
+    'patient_id': {
+      title: 'ID Pasien',
+      type: 'text',
+      operator: 'like',
     },
   }
 })
@@ -197,7 +204,7 @@ const filterConfig = computed(() => ({
 
 // Computed property to control no-data display
 const shouldShowNoData = computed(() => {
-  return !loading.value && initialLoadCompleted.value && consultations.value.length === 0
+  return !loading.value && initialLoadCompleted.value && billings.value.length === 0
 })
 
 const perPageOptions = [
@@ -210,21 +217,16 @@ const perPageOptions = [
 
 const headers = [
   { title: 'No', key: 'no', sortable: false },
-  { title: 'Tipe Konsultasi', key: 'consultation_type' },
-  { title: 'Biaya', key: 'fee' },
-  { title: 'Waktu Mulai', key: 'start_time' },
-  { title: 'Waktu Selesai', key: 'end_time' },
-  { title: 'Diagnosis', key: 'diagnosis' },
-  { title: 'Rencana Perawatan', key: 'treatment_plan' },
-  { title: 'Catatan', key: 'consultation_notes' },
+  { title: 'Nomor Billing', key: 'billing_number' },
+  { title: 'Status', key: 'status' },
   { title: 'Tanggal Dibuat', key: 'created_at' },
   { title: 'Aksi', key: 'actions', sortable: false },
 ]
 
 // Functions
-async function fetchConsultations() {
+async function fetchBillings() {
   loading.value = true
-  console.log('🔄 Starting fetchConsultations...')
+  console.log('🔄 Starting fetchBillings...')
   
   try {
     const requestBody = {
@@ -239,42 +241,33 @@ async function fetchConsultations() {
       requestBody.filters = currentFilters.value
     }
 
-    // Add quick search if exists
-    if (currentQuickSearch.value?.trim()) {
-      if (!requestBody.filters) requestBody.filters = []
-      requestBody.filters.push({
-        search_by: 'consultation_type',
-        filter_type: 'like',
-        search_query: currentQuickSearch.value.trim(),
-      })
-    }
-
     console.log('📤 API Request body:', requestBody)
+    console.log('🔗 Calling API endpoint: /transaction/billings/paginated')
     
-    const res = await $api('/rme/visit-consultations/paginated', {
+    const res = await $api('/transaction/billings/paginated', {
       method: 'POST',
       body: requestBody,
     })
     
     console.log('📥 API Response:', res)
     
-    consultations.value = res.data || []
-    totalConsultations.value = res.meta?.total || 0
+    billings.value = res.data || []
+    totalBillings.value = res.meta?.total || 0
     
-    console.log('✅ Consultations loaded:', consultations.value.length, 'total:', totalConsultations.value)
-    console.log('📋 Sample consultation data:', consultations.value[0])
+    console.log('✅ Billings loaded:', billings.value.length, 'total:', totalBillings.value)
+    console.log('📋 Sample billing data:', billings.value[0])
   } catch (error) {
-    console.error('❌ Error fetching consultations:', error)
+    console.error('❌ Error fetching billings:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Konsultasi',
-      text: 'Tidak dapat memuat data konsultasi. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Billing',
+      text: 'Tidak dapat memuat data billing. Silakan coba lagi.',
     })
-    consultations.value = []
-    totalConsultations.value = 0
+    billings.value = []
+    totalBillings.value = 0
   } finally {
     loading.value = false
     initialLoadCompleted.value = true
-    console.log('🏁 fetchConsultations completed')
+    console.log('🏁 fetchBillings completed')
   }
 }
 
@@ -282,20 +275,20 @@ function handleApplyFilters({ filters, quickSearch }) {
   currentFilters.value = filters
   currentQuickSearch.value = quickSearch
   page.value = 1
-  fetchConsultations()
+  fetchBillings()
 }
 
 function handleClearFilters() {
   currentFilters.value = []
   currentQuickSearch.value = ''
   page.value = 1
-  fetchConsultations()
+  fetchBillings()
 }
 
 function handleApplyQuickSearch(searchQuery) {
   currentQuickSearch.value = searchQuery
   page.value = 1
-  fetchConsultations()
+  fetchBillings()
 }
 
 function onUpdateOptions(options) {
@@ -311,23 +304,23 @@ function onUpdateOptions(options) {
 
     // Remove direct fetch call - let the watcher handle it
   }
-}
+} 
 
-function getConsultationTypeColor(type) {
-  switch (type) {
-  case 'INITIAL': return 'primary'
-  case 'FOLLOW_UP': return 'success'
-  case 'EMERGENCY': return 'error'
+function getStatusColor(status) {
+  switch (status) {
+  case 'open_consultation': return 'warning'
+  case 'progress_consultation': return 'info'
+  case 'complete_consultation': return 'success'
   default: return 'secondary'
   }
 }
 
-function getConsultationTypeText(type) {
-  switch (type) {
-  case 'INITIAL': return 'Konsultasi Awal'
-  case 'FOLLOW_UP': return 'Konsultasi Lanjutan'
-  case 'EMERGENCY': return 'Konsultasi Darurat'
-  default: return type
+function getStatusText(status) {
+  switch (status) {
+  case 'open_consultation': return 'Konsultasi Terbuka'
+  case 'progress_consultation': return 'Konsultasi Berlangsung'
+  case 'complete_consultation': return 'Konsultasi Selesai'
+  default: return status
   }
 }
 
@@ -352,7 +345,7 @@ function formatDateTime(dateStr) {
 watch([page, itemsPerPage, sortBy, orderBy], () => {
   // Only fetch if component is already mounted and not in initial loading
   if (initialLoadCompleted.value) {
-    fetchConsultations()
+    fetchBillings()
   }
 })
 
@@ -361,8 +354,8 @@ onActivated(() => {
   console.log('🎯 Component onActivated triggered')
 
   // Only fetch if we don't have data and initial load is completed
-  if (consultations.value.length === 0 && initialLoadCompleted.value) {
-    fetchConsultations()
+  if (billings.value.length === 0 && initialLoadCompleted.value) {
+    fetchBillings()
   }
 })
 
@@ -373,8 +366,15 @@ onMounted(async () => {
   // Ensure loading is true for initial load
   loading.value = true
   
-  // Only fetch consultations once on mount
-  fetchConsultations()
+  // Set initial filter to show only consultation statuses
+  currentFilters.value = [{
+    search_by: 'status',
+    filter_type: 'in',
+    values_list: "open_consultation,progress_consultation,complete_consultation"
+  }]
+  
+  // Fetch billings with initial filter
+  fetchBillings()
 })
 </script>
 
