@@ -19,14 +19,14 @@ meta:
     >
       <template #actions>
         <div class="d-flex gap-2">
-          <VBtn
+          <!-- <VBtn
             color="info"
             prepend-icon="tabler-route"
             :to="{ name: 'transaction-billings-flow' }"
             variant="tonal"
           >
             Alur
-          </VBtn>
+          </VBtn> -->
           <VBtn
             color="primary"
             prepend-icon="tabler-message-circle"

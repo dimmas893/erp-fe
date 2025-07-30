@@ -118,7 +118,7 @@ meta:
             <VListItem :to="{ name: 'rme-pasien-id', params: { id: item.id } }">View</VListItem>
             <VListItem :to="{ name: 'rme-pasien-edit-id', params: { id: item.id } }">Edit</VListItem>
             <VListItem :to="{ name: 'rme-pasien-edit-id', params: { id: item.id } }">Data Kunjungan</VListItem>
-            <VListItem :to="{ name: 'transaction-billings-flow' }">Kunjungan Baru</VListItem>
+            <VListItem :to="{ name: 'transaction-visit-id', params: { id: item.id } }">Kunjungan Baru</VListItem>
           </VList>
         </VMenu>  
         <!-- <div class="d-flex gap-2">
