@@ -27,76 +27,68 @@ meta:
       <span>Alur Pembuatan Tagihan</span>
     </VCardTitle>
 
-    <VCardText>  
-      <div class="process-status">
-        <h5 class="text-h6 font-weight-medium mb-4">Status Proses</h5>
-        
-        <VRow>
-          <VCol cols="12" md="3">
+    <!-- Display Patient Data -->
+    <VCardText v-if="patientData" class="pt-0">
             <VCard
               variant="outlined"
-              class="text-center pa-4"
-              :class="{ 'active-step': currentStep === 'consultation' }"
+        class="mb-4"
             >
-              <VIcon size="32" color="primary" class="mb-2">
-                tabler-message-circle
+        <VCardTitle class="d-flex align-center gap-2">
+          <VIcon size="24" color="primary">
+            tabler-user
               </VIcon>
-              <h6 class="text-subtitle-1 font-weight-medium mb-1">Konsultasi</h6>
-              <p class="text-caption text-medium-emphasis mb-0">
-                {{ currentStep === 'consultation' ? 'Sedang Berlangsung' : 'Belum Dimulai' }}
-              </p>
-            </VCard>
+          <span>Data Pasien</span>
+        </VCardTitle>
+        <VCardText>
+          <VRow>
+            <VCol cols="12" md="6">
+              <div class="d-flex flex-column gap-2">
+                <div class="d-flex justify-space-between">
+                  <span class="font-weight-medium">No. Pasien:</span>
+                  <span>{{ patientData.patient_number }}</span>
+                </div>
+                <div class="d-flex justify-space-between">
+                  <span class="font-weight-medium">Nama:</span>
+                  <span>{{ patientData.name }}</span>
+                </div>
+                <div class="d-flex justify-space-between">
+                  <span class="font-weight-medium">NIK:</span>
+                  <span>{{ patientData.nik }}</span>
+                </div>
+                <div class="d-flex justify-space-between">
+                  <span class="font-weight-medium">Jenis Kelamin:</span>
+                  <span>{{ patientData.gender === 'MALE' ? 'Laki-laki' : 'Perempuan' }}</span>
+                </div>
+                <div class="d-flex justify-space-between">
+                  <span class="font-weight-medium">Tanggal Lahir:</span>
+                  <span>{{ formatDate(patientData.birth_date) }}</span>
+                </div>
+              </div>
           </VCol>
-          
-          <VCol cols="12" md="3">
-            <VCard
-              variant="outlined"
-              class="text-center pa-4"
-              :class="{ 'active-step': currentStep === 'recommendation' }"
-            >
-              <VIcon size="32" color="info" class="mb-2">
-                tabler-clipboard-list
-              </VIcon>
-              <h6 class="text-subtitle-1 font-weight-medium mb-1">Rekomendasi</h6>
-              <p class="text-caption text-medium-emphasis mb-0">
-                {{ currentStep === 'recommendation' ? 'Sedang Berlangsung' : 'Menunggu' }}
-              </p>
-            </VCard>
-          </VCol>
-          
-          <VCol cols="12" md="3">
-            <VCard
-              variant="outlined"
-              class="text-center pa-4"
-              :class="{ 'active-step': currentStep === 'treatment' }"
-            >
-              <VIcon size="32" color="warning" class="mb-2">
-                tabler-stethoscope
-              </VIcon>
-              <h6 class="text-subtitle-1 font-weight-medium mb-1">Tindakan</h6>
-              <p class="text-caption text-medium-emphasis mb-0">
-                {{ currentStep === 'treatment' ? 'Sedang Berlangsung' : 'Menunggu' }}
-              </p>
-            </VCard>
-          </VCol>
-          
-          <VCol cols="12" md="3">
-            <VCard
-              variant="outlined"
-              class="text-center pa-4"
-              :class="{ 'active-step': currentStep === 'payment' }"
-            >
-              <VIcon size="32" color="success" class="mb-2">
-                tabler-credit-card
-              </VIcon>
-              <h6 class="text-subtitle-1 font-weight-medium mb-1">Pembayaran</h6>
-              <p class="text-caption text-medium-emphasis mb-0">
-                {{ currentStep === 'payment' ? 'Sedang Berlangsung' : 'Menunggu' }}
-              </p>
-            </VCard>
+            <VCol cols="12" md="6">
+              <div class="d-flex flex-column gap-2">
+                <div class="d-flex justify-space-between">
+                  <span class="font-weight-medium">Telepon:</span>
+                  <span>{{ patientData.phone }}</span>
+                </div>
+                <div class="d-flex justify-space-between">
+                  <span class="font-weight-medium">Email:</span>
+                  <span>{{ patientData.email }}</span>
+                </div>
+                <div class="d-flex justify-space-between">
+                  <span class="font-weight-medium">Alamat:</span>
+                  <span>{{ patientData.address }}</span>
+                </div>
+
+
+              </div>
           </VCol>
         </VRow>
-      </div>
+        </VCardText>
+      </VCard>
+    </VCardText>
+
+    <VCardText>  
 
       <!-- Quick Actions -->
       <VDivider class="my-6" />
@@ -155,11 +147,15 @@ meta:
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const currentStep = ref('')
+const patientId = ref(null)
+const patientData = ref(null)
+const loadingPatient = ref(false)
 
 const breadcrumbItems = ref([
   {
@@ -191,12 +187,38 @@ function startDirectTreatment() {
 
 function goToConsultation() {
   currentStep.value = 'consultation'
-  router.push({ name: 'transaction-billings-consultation-create' })
+  const query = {}
+  
+  if (patientId.value) {
+    query.patient_id = patientId.value
+  }
+  
+  if (patientData.value?.branch_id) {
+    query.branch_id = patientData.value.branch_id
+  }
+  
+  router.push({ 
+    name: 'transaction-billings-consultation-create',
+    query: query
+  })
 }
 
 function goToTreatment() {
   currentStep.value = 'treatment'
-  router.push({ name: 'transaction-billings-treatment-create' })
+  const query = {}
+  
+  if (patientId.value) {
+    query.patient_id = patientId.value
+  }
+  
+  if (patientData.value?.branch_id) {
+    query.branch_id = patientData.value.branch_id
+  }
+  
+  router.push({ 
+    name: 'transaction-billings-treatment-create',
+    query: query
+  })
 }
 
 
@@ -221,6 +243,64 @@ router.afterEach((to) => {
     currentStep.value = 'treatment'
   } else if (to.name === 'transaction-billings-product-create') {
     currentStep.value = 'payment'
+  }
+})
+
+// Function to clear patient ID
+function clearPatientId() {
+  patientId.value = null
+  patientData.value = null
+  // Remove the parameter from the URL
+  router.replace({ 
+    name: route.name, 
+    query: { ...route.query, patient_id: undefined } 
+  })
+}
+
+// Function to fetch patient data
+async function fetchPatientData(id) {
+  loadingPatient.value = true
+  try {
+    const response = await $api(`/rme/patients/${id}`, {
+      method: 'GET',
+    })
+    patientData.value = response.data
+    console.log('Patient data fetched:', patientData.value)
+  } catch (error) {
+    console.error('Error fetching patient data:', error)
+    await showErrorAlert(error, {
+      title: 'Gagal Memuat Data Pasien',
+      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.',
+    })
+    patientData.value = null
+  } finally {
+    loadingPatient.value = false
+  }
+}
+
+// Function to format date
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('id-ID')
+}
+
+// Function to get consent color
+function getConsentColor(status) {
+  switch (status) {
+    case 'GIVEN': return 'success'
+    case 'PENDING': return 'warning'
+    case 'DENIED': return 'error'
+    default: return 'secondary'
+  }
+}
+
+// Initialize patient ID from query parameters
+onMounted(() => {
+  if (route.query.patient_id) {
+    patientId.value = route.query.patient_id
+    console.log('Patient ID received:', patientId.value)
+    // Fetch patient data
+    fetchPatientData(patientId.value)
   }
 })
 </script>

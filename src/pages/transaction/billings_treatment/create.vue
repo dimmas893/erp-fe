@@ -15,56 +15,19 @@ import { VForm } from 'vuetify/components/VForm'
 const router = useRouter()
 const route = useRoute()
 
-// Get billing_id from route query
-const billingId = computed(() => route.query.billing_id)
-const visitId = computed(() => route.query.visit_id)
-const consultationId = computed(() => route.query.consultation_id)
+// Get parameters from route query
+const patientId = computed(() => route.query.patient_id)
+const branchId = computed(() => route.query.branch_id)
 
-// Get branch_id from billing data
-const branchId = computed(() => {
-  // Try to get branch_id from billing data if available
-  // For now, we'll need to load it from the billing API
-  return null // Will be set when billing data is loaded
-})
-
-// Form data structure for treatment
-const formData = ref({
-  patient_id: '',
-  visit_id: '',
-  promo_id: '',
-  payment_method_id: '',
-  total_amount: '',
-  discount_amount: '',
-  tax_amount: '',
-  grand_total: '',
-  status: '',
-})
+// Patient and Branch data
+const patientData = ref(null)
+const branchData = ref(null)
+const loadingPatient = ref(false)
+const loadingBranch = ref(false)
 
 // Form validation
 const refForm = ref()
 const isLoading = ref(false)
-
-// Options
-const statusOptions = [
-  { title: 'Draft', value: 'draft' },
-  { title: 'Unpaid', value: 'unpaid' },
-  { title: 'Paid', value: 'paid' },
-]
-
-// Data for dropdowns
-const visits = ref([])
-const promos = ref([])
-const paymentMethods = ref([])
-
-const loadingVisits = ref(false)
-const loadingPromos = ref(false)
-const loadingPaymentMethods = ref(false)
-
-// Selected visit data
-const selectedVisit = ref(null)
-
-// Selected promo data
-const selectedPromo = ref(null)
 
 // Add new refs and state for branch, doctor, therapist, treatments
 const doctors = ref([])
@@ -78,17 +41,17 @@ const loadingTherapists = ref(false)
 const selectedTreatments = ref([]) // Array of treatment IDs for multi-select
 const selectedTreatmentObjects = ref([]) // Array of treatment objects with doctor and therapist
 
-// Schedule-related variables (for doctor availability checking)
-const schedules = ref([])
-const loadingSchedules = ref(false)
-const availableTimeSlots = ref([])
+// Date selection
 const selectedDate = ref('')
-const selectedTimeSlot = ref(null)
 
-// Set default value of serviceType to treatment
-const serviceType = ref('tindakan') // Fixed to treatment
 // Branch ID will be set automatically from billing data
 const currentBranchId = ref('')
+
+// Function to format date
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleDateString('id-ID')
+}
 
 // Helper function to create treatment object
 const createTreatmentObject = (treatmentId, treatmentData) => {
@@ -120,11 +83,6 @@ const handleTreatmentSelection = (selectedIds) => {
   })
   
   console.log('📋 Updated selectedTreatmentObjects:', selectedTreatmentObjects.value)
-  
-  // Load schedules for all doctors if date is selected
-  if (selectedDate.value) {
-    loadSchedulesForAllDoctors()
-  }
 }
 
 // Remove treatment from selected treatments
@@ -142,7 +100,7 @@ const removeTreatment = (treatmentId) => {
 }
 
 // Update doctor for specific treatment
-const updateTreatmentDoctor = async (treatmentId, doctorId) => {
+const updateTreatmentDoctor = (treatmentId, doctorId) => {
   const treatment = selectedTreatmentObjects.value.find(t => t.id === treatmentId)
   if (treatment) {
     // Handle Proxy object - extract the actual value
@@ -154,12 +112,6 @@ const updateTreatmentDoctor = async (treatmentId, doctorId) => {
     treatment.doctor_id = actualDoctorId
     const doctor = doctors.value.find(d => d.value === actualDoctorId)
     treatment.doctor_name = doctor ? doctor.title : ''
-    
-    // Load schedules for all doctors if date is selected
-    if (selectedDate.value) {
-      console.log('Loading schedules for all doctors, date:', selectedDate.value)
-      await loadSchedulesForAllDoctors()
-    }
   }
 }
 
@@ -181,185 +133,71 @@ const updateTreatmentTherapist = (treatmentId, therapistId) => {
 
 // onMounted: load initial data
 onMounted(async () => {
-  if (billingId.value) {
-    await loadBillingData()
-  } else {
-    // Load all visits when no billing data is available
-    await loadAllVisits()
+  // Load patient and branch data if available
+  if (patientId.value) {
+    await loadPatientData()
   }
-  await Promise.all([
-    loadPromos(),
-    loadPaymentMethods(),
-  ])
+  if (branchId.value) {
+    await loadBranchData(branchId.value)
+  }
 })
 
-// Load billing data to get branch_id
-const loadBillingData = async () => {
+// Load patient data
+const loadPatientData = async () => {
+  loadingPatient.value = true
   try {
-    const response = await $api(`/transaction/billings/${billingId.value}`, {
+    const response = await $api(`/rme/patients/${patientId.value}`, {
       method: 'GET',
     })
     
-    const billingData = response.data
-    
-    // Set branch_id from billing data
-    if (billingData.visit_id) {
-      // Load visit data to get branch_id
-      const visitResponse = await $api(`/rme/patient-visits/${billingData.visit_id}`, {
-        method: 'GET',
-      })
-      
-      const visitData = visitResponse.data
-      if (visitData.branch_id) {
-        // Set the branch and load related data
-        await loadBranchData(visitData.branch_id)
-      }
-    }
+    patientData.value = response.data
+    console.log('✅ Patient data loaded:', patientData.value)
   } catch (error) {
+    console.error('❌ Error loading patient data:', error)
     await showErrorAlert(error, {
-      title: 'Gagal Memuat Data Billing',
-      text: 'Tidak dapat memuat data billing. Silakan coba lagi.',
+      title: 'Gagal Memuat Data Pasien',
+      text: 'Tidak dapat memuat data pasien. Silakan coba lagi.',
     })
+    patientData.value = null
+  } finally {
+    loadingPatient.value = false
   }
 }
 
-// Load branch data and related items
+// Load branch data
 const loadBranchData = async (branchId) => {
+  loadingBranch.value = true
   try {
+    const response = await $api(`/wms/branches/${branchId}`, {
+      method: 'GET',
+    })
+    
+    branchData.value = response.data
     currentBranchId.value = branchId
+    
+    console.log('✅ Branch data loaded:', branchData.value)
+    
+    // Load related data for this branch
     await Promise.all([
       loadDoctors(branchId),
       loadTherapists(branchId),
       loadTreatments(branchId)
     ])
   } catch (error) {
-    console.error('Error loading branch data:', error)
-  }
-}
-
-// Auto-fill form when visit is selected
-const onVisitSelected = async visitObject => {
-  console.log('onVisitSelected called with:', visitObject)
-  
-  if (!visitObject) {
-    // Clear form when visit is deselected
-    selectedVisit.value = null
-    formData.value.patient_id = ''
-    formData.value.visit_id = ''
-    currentBranchId.value = ''
-    treatments.value = []
-    return
-  }
-  
-  // Handle both object and value
-  const visit = typeof visitObject === 'object' && visitObject !== null 
-    ? visitObject.data 
-    : visits.value.find(v => v.value === visitObject)?.data
-    
-  if (visit) {
-    selectedVisit.value = visitObject // Keep the full object for display
-
-    // Auto-fill form data from visit
-    formData.value.patient_id = visit.patient_id
-    formData.value.visit_id = visit.id
-    currentBranchId.value = visit.branch_id
-    
-    console.log('🔍 Visit selected with branch_id:', visit.branch_id)
-    
-    // Load branch data for this visit (includes treatments)
-    if (visit.branch_id) {
-      console.log('📋 Loading treatments for branch_id:', visit.branch_id)
-      await loadBranchData(visit.branch_id)
-      console.log('✅ Treatments loaded:', treatments.value.length, 'treatments available')
-    } else {
-      console.warn('⚠️ No branch_id found in visit data')
-    }
-    
-    // Auto-calculate amounts
-    const consultationFee = parseFloat(visit.total_consultation_fee) || 0
-    const treatmentFee = parseFloat(visit.total_treatment_fee) || 0
-    const productFee = parseFloat(visit.total_product_fee) || 0
-    
-    formData.value.total_amount = (consultationFee + treatmentFee + productFee).toFixed(2)
-    calculateGrandTotal()
-    
-    console.log('Visit selected:', {
-      visit_id: visit.id,
-      patient_id: visit.patient_id,
-      branch_id: visit.branch_id,
-      selectedVisit: selectedVisit.value,
-      treatments_loaded: treatments.value.length
-    })
-  }
-}
-
-// Watch visit selection
-watch(() => selectedVisit.value, async newVal => {
-  console.log('Visit selection changed to:', newVal)
-  console.log('Visit selection type:', typeof newVal)
-  console.log('Visit selection value:', newVal)
-  
-  if (newVal) {
-    await onVisitSelected(newVal)
-  } else {
-    // Clear form when visit is cleared
-    formData.value.patient_id = ''
-    formData.value.visit_id = ''
-    currentBranchId.value = ''
-    doctors.value = []
-    therapists.value = []
-    treatments.value = []
-    schedules.value = []
-    availableTimeSlots.value = []
-    selectedDate.value = ''
-  }
-})
-
-// Watch selected date to check availability
-watch(() => selectedDate.value, async newVal => {
-  console.log('Selected date changed to:', newVal)
-  if (newVal && selectedTreatmentObjects.value.length > 0) {
-    // Clear existing schedules when date changes
-    schedules.value = []
-    availableTimeSlots.value = []
-    
-    // Check schedules for all selected treatments' doctors
-    for (const treatment of selectedTreatmentObjects.value) {
-      if (treatment.doctor_id) {
-        await loadDoctorSchedules(treatment.doctor_id, newVal)
-      }
-    }
-  } else if (!newVal) {
-    // Clear schedules when date is cleared
-    schedules.value = []
-    availableTimeSlots.value = []
-  }
-})
-
-const loadPromos = async () => {
-  try {
-    loadingPromos.value = true
-
-    const response = await $api('/crm/promo-engine/promos')
-
-    promos.value = response.data.map(promo => ({
-      title: `${promo.name} - ${promo.description} (${promo.code})`,
-      value: promo.id,
-      data: promo, // Store full promo data for calculations
-    }))
-  } catch (error) {
+    console.error('❌ Error loading branch data:', error)
     await showErrorAlert(error, { 
-      title: 'Gagal Memuat Data Promo',
-      text: 'Tidak dapat memuat daftar promo. Silakan refresh halaman.',
+      title: 'Gagal Memuat Data Cabang',
+      text: 'Tidak dapat memuat data cabang. Silakan coba lagi.',
     })
+    branchData.value = null
   } finally {
-    loadingPromos.value = false
+    loadingBranch.value = false
   }
 }
 
-const loadPaymentMethods = async () => {
   
-}
+
+
 
 // Fetch doctors for selected branch
 const loadDoctors = async branchId => {
@@ -515,190 +353,11 @@ const loadTreatments = async (branchId = null) => {
   }
 }
 
-// Load schedules for all selected doctors
-const loadSchedulesForAllDoctors = async () => {
-  if (!selectedDate.value) return
-  
-  // Clear existing schedules
-  schedules.value = []
-  availableTimeSlots.value = []
-  
-  // Load schedules for all doctors in selected treatments
-  for (const treatment of selectedTreatmentObjects.value) {
-    if (treatment.doctor_id) {
-      await loadDoctorSchedules(treatment.doctor_id, selectedDate.value)
-    }
-  }
-}
 
-// Load doctor schedules for availability checking
-const loadDoctorSchedules = async (doctorId, date) => {
-  try {
-    loadingSchedules.value = true
-    console.log('Loading schedules for doctor:', doctorId, 'date:', date)
 
-    const response = await $api('/crm/doctor-schedules/check-available', {
-      method: 'POST',
-      body: {
-        doctor_id: doctorId,
-        date: date
-      }
-    })
 
-    console.log('Schedules API response:', response)
 
-    if (response.data && Array.isArray(response.data)) {
-      // Add new schedules to existing ones instead of replacing
-      const newSchedules = response.data
-      
-      // Remove any existing schedules for this doctor to avoid duplicates
-      schedules.value = schedules.value.filter(schedule => 
-        schedule.doctor_id !== doctorId
-      )
-      
-      // Add the new schedules
-      schedules.value.push(...newSchedules)
-      
-      // Rebuild available time slots from all schedules
-      availableTimeSlots.value = []
-      schedules.value.forEach(schedule => {
-        if (schedule.available_time_slots && schedule.available_slots > 0) {
-          schedule.available_time_slots.forEach(slot => {
-            availableTimeSlots.value.push({
-              ...slot,
-              schedule_id: schedule.id,
-              doctor_name: schedule.doctor_name,
-              day: schedule.day
-            })
-          })
-        }
-      })
-      
-      console.log('Available time slots:', availableTimeSlots.value)
-      console.log('Processed schedules:', schedules.value)
-    } else {
-      // Only clear schedules for this specific doctor
-      schedules.value = schedules.value.filter(schedule => 
-        schedule.doctor_id !== doctorId
-      )
-      
-      // Rebuild available time slots
-      availableTimeSlots.value = []
-      schedules.value.forEach(schedule => {
-        if (schedule.available_time_slots && schedule.available_slots > 0) {
-          schedule.available_time_slots.forEach(slot => {
-            availableTimeSlots.value.push({
-              ...slot,
-              schedule_id: schedule.id,
-              doctor_name: schedule.doctor_name,
-              day: schedule.day
-            })
-          })
-        }
-      })
-    }
-  } catch (error) {
-    console.error('Error loading schedules:', error)
-    // Only clear schedules for this specific doctor on error
-    schedules.value = schedules.value.filter(schedule => 
-      schedule.doctor_id !== doctorId
-    )
-    
-    // Rebuild available time slots
-    availableTimeSlots.value = []
-    schedules.value.forEach(schedule => {
-      if (schedule.available_time_slots && schedule.available_slots > 0) {
-        schedule.available_time_slots.forEach(slot => {
-          availableTimeSlots.value.push({
-            ...slot,
-            schedule_id: schedule.id,
-            doctor_name: schedule.doctor_name,
-            day: schedule.day
-          })
-        })
-      }
-    })
-    
-    await showErrorAlert(error, {
-      title: 'Gagal Memuat Jadwal Dokter',
-      text: 'Tidak dapat memuat jadwal dokter. Silakan coba lagi.',
-    })
-  } finally {
-    loadingSchedules.value = false
-  }
-}
 
-// Fetch visits for selected branch
-const loadVisits = async branchId => {
-  if (!branchId) {
-    visits.value = []
-    return
-  }
-  try {
-    loadingVisits.value = true
-
-    const response = await $api(`/rme/patient-visits/branch/${branchId}`, {
-      method: 'GET',
-    })
-
-    visits.value = (response.data || []).map(visit => ({
-      title: `${visit.patient?.name } - ${visit.visit_number}`,
-      value: visit.id,
-      data: visit, // Store full visit data for auto-fill
-    }))
-  } catch (error) {
-    await showErrorAlert(error, { 
-      title: 'Gagal Memuat Data Kunjungan',
-      text: 'Tidak dapat memuat daftar kunjungan. Silakan refresh halaman.',
-    })
-  } finally {
-    loadingVisits.value = false
-  }
-}
-
-// Load all visits when no billing data is available
-const loadAllVisits = async () => {
-  try {
-    loadingVisits.value = true
-
-    const response = await $api('/rme/patient-visits', {
-      method: 'GET',
-    })
-
-    console.log('Raw visits response:', response.data)
-
-    visits.value = (response.data || []).map(visit => {
-      const visitItem = {
-        title: `${visit.patient?.name || 'Unknown Patient'} - ${visit.visit_number || 'No Visit Number'}`,
-        value: visit.id,
-        data: visit, // Store full visit data for auto-fill
-      }
-      console.log('Mapped visit item:', visitItem)
-      return visitItem
-    })
-    
-    console.log('Final visits array:', visits.value)
-  } catch (error) {
-    console.error('Error loading visits:', error)
-    await showErrorAlert(error, { 
-      title: 'Gagal Memuat Data Kunjungan',
-      text: 'Tidak dapat memuat daftar kunjungan. Silakan refresh halaman.',
-    })
-  } finally {
-    loadingVisits.value = false
-  }
-}
-
-// Watcher for selectedBranch
-// watch(selectedBranch, async (val) => { ... }) - REMOVED
-
-// Validation rules
-const amountValidator = value => {
-  if (!value) return 'Jumlah wajib diisi'
-  if (isNaN(value) || parseFloat(value) < 0) return 'Jumlah harus berupa angka positif'
-  
-  return true
-}
 
 // Format currency helper
 const formatCurrency = (amount) => {
@@ -712,88 +371,6 @@ const formatCurrency = (amount) => {
   }).format(amount)
 }
 
-// Calculate total amount for treatments
-const calculateTreatmentTotal = computed(() => {
-  let total = 0
-  
-  // Add selected treatments total
-  if (selectedTreatmentObjects.value && selectedTreatmentObjects.value.length > 0) {
-    const treatmentsTotal = selectedTreatmentObjects.value.reduce((sum, treatment) => {
-      return sum + (parseFloat(treatment?.price) || 0)
-    }, 0)
-    total += treatmentsTotal
-  }
-  
-  return total
-})
-
-// Calculate discount based on selected promo
-const calculateDiscount = computed(() => {
-  if (!selectedPromo.value) {
-    return 0
-  }
-  
-  // Handle case where selectedPromo might be an object
-  const promoId = typeof selectedPromo.value === 'object' && selectedPromo.value !== null 
-    ? selectedPromo.value.value 
-    : selectedPromo.value
-    
-  const promo = promos.value.find(p => p.value === promoId)?.data
-  
-  if (!promo) {
-    return 0
-  }
-  
-  // Get the current total based on treatment total
-  const subtotal = calculateTreatmentTotal.value
-  
-  // Check minimum purchase requirement
-  if (promo.min_purchase && subtotal < parseFloat(promo.min_purchase)) {
-    return 0
-  }
-  
-  let discount = 0
-  if (promo.discount_type === 'percentage') {
-    // Percentage: total * discount_value / 100
-    discount = (subtotal * parseFloat(promo.discount_value) / 100)
-  } else if (promo.discount_type === 'nominal' || promo.discount_type === 'fixed') {
-    // Nominal/Fixed: direct discount value
-    discount = parseFloat(promo.discount_value)
-  }
-  
-  return discount
-})
-
-const calculateGrandTotal = () => {
-  let total = 0
-  
-  // For treatments, calculate total from selected treatments
-  total = calculateTreatmentTotal.value
-  formData.value.total_amount = total.toString()
-  
-  // Calculate discount from selected promo
-  const promoDiscount = calculateDiscount.value
-  formData.value.discount_amount = promoDiscount.toString()
-  
-  const discount = parseFloat(formData.value.discount_amount) || 0
-  const tax = parseFloat(formData.value.tax_amount) || 0
-  
-  // Apply discount to grand total: total - discount + tax
-  formData.value.grand_total = (total - discount + tax).toFixed(2)
-}
-
-// Watch for changes in amounts to auto-calculate grand total
-watch([
-  () => formData.value.total_amount,
-  () => formData.value.discount_amount,
-  () => formData.value.tax_amount,
-  () => selectedTreatments.value,
-  () => selectedPromo.value,
-  () => calculateDiscount.value,
-], () => {
-  calculateGrandTotal()
-})
-
 // Submit form
 const submitForm = async () => {
   const { valid } = await refForm.value.validate()
@@ -803,50 +380,13 @@ const submitForm = async () => {
   try {
     isLoading.value = true
 
-    // Get visit_id from route query or form
-    let currentVisitId = visitId.value || formData.value.visit_id
-    if (typeof currentVisitId === 'object' && currentVisitId !== null) {
-      currentVisitId = currentVisitId.value || ''
-    }
-
     // Validate required data
-    if (!currentVisitId) {
+    if (!patientId.value || !branchId.value) {
       await showErrorAlert({
-        title: 'Visit ID Tidak Valid',
-        text: 'Visit ID tidak ditemukan. Silakan pilih kunjungan terlebih dahulu.'
+        title: 'Data Tidak Lengkap',
+        text: 'Patient ID atau Branch ID tidak ditemukan.'
       })
       return
-    }
-
-    // If no billing ID, create a new billing first
-    let currentBillingId = billingId.value
-    if (!currentBillingId) {
-      try {
-        // Create a new billing for this visit
-        const billingData = {
-          visit_id: currentVisitId,
-          patient_id: formData.value.patient_id,
-          total_amount: calculateTreatmentTotal.value,
-          discount_amount: 0,
-          tax_amount: 0,
-          grand_total: calculateTreatmentTotal.value,
-          status: 'draft'
-    }
-    
-        const billingResponse = await $api('/transaction/billings', {
-      method: 'POST',
-          body: billingData,
-    })
-
-        currentBillingId = billingResponse.data.id
-        console.log('Created new billing with ID:', currentBillingId)
-      } catch (billingError) {
-        await showErrorAlert(billingError, {
-          title: 'Gagal Membuat Billing',
-          text: 'Tidak dapat membuat billing baru. Silakan coba lagi.'
-        })
-        return
-      }
     }
 
     if (selectedTreatmentObjects.value.length === 0) {
@@ -857,115 +397,60 @@ const submitForm = async () => {
         return
       }
 
-    // Create treatments using /rme/visit-treatments endpoint
-    const createdTreatments = []
-    const failedTreatments = []
+    // Prepare treatments data for the new API endpoint
+    const treatmentsData = selectedTreatmentObjects.value.map(treatment => {
+      const treatmentPayload = {
+        treatment_id: treatment.id
+      }
       
-      for (const treatment of selectedTreatmentObjects.value) {
-        console.log('🔄 Processing treatment:', treatment)
-        
-        // Validate treatment_id
-        if (!treatment.id) {
-          console.log('❌ No treatment_id for treatment:', treatment.id)
-          failedTreatments.push({ 
-            id: treatment.id, 
-            name: treatment.name,
-            reason: 'ID Treatment tidak valid' 
-          })
-          continue
-        }
-
-        // Doctor and therapist are now optional - use default values if not provided
-        let doctorId = 1 // Default doctor ID
-        let therapistId = 1 // Default therapist ID
-        
-        // Only parse if values are provided and not empty
+      // Add doctor_id if provided (optional)
         if (treatment.doctor_id && treatment.doctor_id !== '') {
           const parsedDoctorId = parseInt(treatment.doctor_id)
           if (!isNaN(parsedDoctorId)) {
-            doctorId = parsedDoctorId
+          treatmentPayload.doctor_id = parsedDoctorId
           }
         }
         
+      // Add therapist_id if provided (optional)
         if (treatment.therapist_id && treatment.therapist_id !== '') {
           const parsedTherapistId = parseInt(treatment.therapist_id)
           if (!isNaN(parsedTherapistId)) {
-            therapistId = parsedTherapistId
-          }
-        }
-        
-        console.log('🔍 Parsed IDs:', { doctorId, therapistId, original: { doctor_id: treatment.doctor_id, therapist_id: treatment.therapist_id } })
-
-      // Create current timestamp for performed_at and completed_at
-      const now = new Date()
-      const performedAt = new Date(now.getTime() - 30 * 60000) // 30 minutes ago
-      const completedAt = now
-
-        const visitTreatmentPayload = {
-        visit_id: currentVisitId,
-          treatment_id: treatment.id,
-          doctor_id: doctorId,
-          therapist_id: therapistId,
-          quantity: 1,
-          unit_price: parseFloat(treatment.price).toFixed(2),
-          total_price: parseFloat(treatment.price).toFixed(2),
-        treatment_notes: `Treatment created from billing ${billingId.value}`,
-        performed_at: performedAt.toISOString(),
-        completed_at: completedAt.toISOString(),
-        billing_id: currentBillingId
-        }
-
-        console.log('📤 Visit treatment payload:', JSON.stringify(visitTreatmentPayload, null, 2))
-
-        try {
-          const visitTreatmentResponse = await $api('/rme/visit-treatments', {
-            method: 'POST',
-            body: visitTreatmentPayload,
-          })
-          createdTreatments.push({
-            id: treatment.id,
-            name: treatment.name,
-            response: visitTreatmentResponse.data
-          })
-        } catch (visitTreatmentError) {
-        let errorMessage = `Pembuatan treatment "${treatment.name}" gagal.`
-          if (visitTreatmentError.response?.data?.response_message) {
-            errorMessage += ` Error: ${visitTreatmentError.response.data.response_message}`
-          } else if (visitTreatmentError.message) {
-            errorMessage += ` Error: ${visitTreatmentError.message}`
-          }
-          
-          failedTreatments.push({ 
-            id: treatment.id, 
-            name: treatment.name,
-            reason: errorMessage,
-            error: visitTreatmentError
-          })
+          treatmentPayload.therapist_id = parsedTherapistId
         }
       }
       
-      if (failedTreatments.length > 0) {
-        const failedNames = failedTreatments.map(f => f.name).join(', ')
-        await showErrorAlert({
-          title: 'Beberapa Treatment Gagal Dibuat',
-        text: `${failedTreatments.length} treatment gagal: ${failedNames}. Silakan cek data treatment.`
-        })
+      return treatmentPayload
+    })
+
+    // Prepare data for the new API endpoint
+    const submitData = {
+      patient_id: patientId.value,
+      branch_id: branchId.value,
+      visit_date: selectedDate.value,
+      status: 'open_treatment',
+      treatments: treatmentsData
     }
     
-    if (createdTreatments.length > 0) {
+    console.log('📤 Final billing submit data:', submitData)
+    console.log('📤 API call to /transaction/billings/with-treatment with body:', JSON.stringify(submitData, null, 2))
+    
+    const response = await $api('/transaction/billings/with-treatment', {
+            method: 'POST',
+      body: submitData,
+    })
+
     await showSuccessAlert(
-        `${createdTreatments.length} treatment berhasil dibuat untuk billing ${currentBillingId}`,
+      response.data.response_message,
       'Berhasil!',
     )
-    }
 
-    // Redirect back to billing detail page
+    // Redirect back to patient list
     await router.push({ 
-      name: 'transaction-billings-id', 
-      params: { id: currentBillingId } 
+      name: 'rme-pasien'
     })
     
   } catch (error) {
+    console.error('Error creating billing with treatments:', error)
     await showErrorAlert(error)
   } finally {
     isLoading.value = false
@@ -975,33 +460,14 @@ const submitForm = async () => {
 // Reset form
 const resetForm = () => {
   refForm.value?.reset()
-  formData.value = {
-    patient_id: '',
-    visit_id: '',
-    promo_id: '',
-    payment_method_id: '',
-    total_amount: '',
-    discount_amount: '',
-    tax_amount: '',
-    grand_total: '',
-    status: '',
-  }
   selectedTreatments.value = []
   selectedTreatmentObjects.value = []
-  currentBranchId.value = ''
-  selectedPromo.value = null
+  selectedDate.value = ''
 }
 
 // Cancel and go back
 const goBack = () => {
-  if (billingId.value) {
-    router.push({ 
-      name: 'transaction-billings-id', 
-      params: { id: billingId.value } 
-    })
-  } else {
-  router.push({ name: 'transaction-billings' })
-  }
+  router.push({ name: 'rme-pasien' })
 }
 </script>
 
@@ -1015,10 +481,10 @@ const goBack = () => {
           size="small"
           @click="goBack"
         />
-        Tambah Treatment untuk Billing
+        Tambah Treatment
       </VCardTitle>
       <VCardSubtitle>
-        Pilih treatment untuk ditambahkan ke billing {{ billingId }}
+        Pilih treatment untuk membuat billing baru dengan treatment
       </VCardSubtitle>
     </VCardItem>
 
@@ -1028,89 +494,90 @@ const goBack = () => {
         @submit.prevent="submitForm"
         validate-on="submit"
       >
-        <!-- Billing Information -->
-        <VRow v-if="billingId && currentBranchId">
-          <VCol cols="12">
-            <VCard variant="outlined" color="info">
-              <VCardText class="pa-4">
-                <div class="d-flex align-center gap-2 mb-3">
-                  <VIcon size="20" color="info">
-                    tabler-receipt
+
+
+        <!-- Display Patient and Branch Data -->
+        <VRow v-if="patientData || branchData" class="mb-6">
+          <!-- Patient Data -->
+          <VCol v-if="patientData" cols="12" md="6">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="d-flex align-center gap-2">
+                <VIcon size="24" color="primary">
+                  tabler-user
                   </VIcon>
-                  <h6 class="text-subtitle-1 font-weight-medium mb-0">
-                    Informasi Billing
-                  </h6>
+                <span>Data Pasien</span>
+              </VCardTitle>
+              <VCardText>
+                <div class="d-flex flex-column gap-2">
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">No. Pasien:</span>
+                    <span>{{ patientData.patient_number }}</span>
                 </div>
-                <div class="d-flex justify-space-between align-center">
-                  <span class="text-body-2">Billing ID:</span>
-                  <span class="text-body-1 font-weight-medium">{{ billingId }}</span>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Nama:</span>
+                    <span>{{ patientData.name }}</span>
                 </div>
-                <div v-if="visitId" class="d-flex justify-space-between align-center">
-                  <span class="text-body-2">Visit ID:</span>
-                  <span class="text-body-1 font-weight-medium">{{ visitId }}</span>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">NIK:</span>
+                    <span>{{ patientData.nik }}</span>
                 </div>
-                <div v-if="currentBranchId" class="d-flex justify-space-between align-center">
-                  <span class="text-body-2">Cabang ID:</span>
-                  <span class="text-body-1 font-weight-medium">{{ currentBranchId }}</span>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Jenis Kelamin:</span>
+                    <span>{{ patientData.gender === 'MALE' ? 'Laki-laki' : 'Perempuan' }}</span>
+                  </div>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Tanggal Lahir:</span>
+                    <span>{{ formatDate(patientData.birth_date) }}</span>
+                  </div>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Telepon:</span>
+                    <span>{{ patientData.phone }}</span>
+                  </div>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Email:</span>
+                    <span>{{ patientData.email }}</span>
+                  </div>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Alamat:</span>
+                    <span>{{ patientData.address }}</span>
+                  </div>
                 </div>
               </VCardText>
             </VCard>
           </VCol>
-        </VRow>
 
-        <!-- Visit Selection (when no billing data available) -->
-        <VRow v-if="!billingId || !currentBranchId">
-          <VCol cols="12">
-            <VCard variant="outlined" color="warning">
-              <VCardText class="pa-4">
-                <div class="d-flex align-center gap-2 mb-3">
-                  <VIcon size="20" color="warning">
-                    tabler-alert-triangle
+          <!-- Branch Data -->
+          <VCol v-if="branchData" cols="12" md="6">
+            <VCard variant="outlined" class="pa-4">
+              <VCardTitle class="d-flex align-center gap-2">
+                <VIcon size="24" color="info">
+                  tabler-building
                   </VIcon>
-                  <h6 class="text-subtitle-1 font-weight-medium mb-0">
-                    Pilih Kunjungan Terlebih Dahulu
-                  </h6>
+                <span>Data Cabang</span>
+              </VCardTitle>
+              <VCardText>
+                <div class="d-flex flex-column gap-2">
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Kode Cabang:</span>
+                    <span>{{ branchData.code }}</span>
                 </div>
-                <p class="text-body-2 text-medium-emphasis mb-3">
-                  Data billing tidak ditemukan. Silakan pilih kunjungan untuk melanjutkan.
-                </p>
-                
-        <VRow>
-                  <!-- Visit Selection -->
-          <VCol
-            cols="12"
-            md="6"
-          >
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                      Kunjungan *
-            </label>
-            <AppCombobox
-                      v-model="selectedVisit"
-                      placeholder="Pilih kunjungan..."
-                      :items="visits"
-                      :loading="loadingVisits"
-              :rules="[requiredValidator]"
-              required
-              clearable
-              hide-details="auto"
-                      return-object
-            />
-          </VCol>
-
-                  <!-- Branch Display -->
-                  <!-- <VCol cols="12" md="6">
-            <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                      Cabang
-            </label>
-                    <VTextField
-                      :model-value="currentBranchId || 'Belum dipilih'"
-                      readonly
-                      variant="outlined"
-              hide-details="auto"
-                      prepend-inner-icon="tabler-building"
-            />
-                  </VCol> -->
-                </VRow>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Nama Cabang:</span>
+                    <span>{{ branchData.name }}</span>
+                  </div>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Alamat:</span>
+                    <span>{{ branchData.address }}</span>
+                  </div>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Telepon:</span>
+                    <span>{{ branchData.phone }}</span>
+                  </div>
+                  <div class="d-flex justify-space-between">
+                    <span class="font-weight-medium">Email:</span>
+                    <span>{{ branchData.email }}</span>
+                  </div>
+                </div>
               </VCardText>
             </VCard>
           </VCol>
@@ -1145,8 +612,8 @@ const goBack = () => {
               </VIcon>
               <span v-if="loadingTreatments">Memuat treatments untuk cabang ini...</span>
               <span v-else-if="treatments.length > 0">{{ treatments.length }} treatments tersedia</span>
-              <span v-else-if="currentBranchId">Tidak ada treatments tersedia untuk cabang ini</span>
-              <span v-else>Pilih kunjungan terlebih dahulu untuk memuat treatments</span>
+              <span v-else-if="branchId">Tidak ada treatments tersedia untuk cabang ini</span>
+              <span v-else>Data cabang tidak tersedia</span>
             </div>
           </VCol>
           
@@ -1244,183 +711,8 @@ const goBack = () => {
           </VCol>
         </VRow>
 
-        <!-- Doctor Schedule Section -->
-        <VRow v-if="schedules.length > 0">
-          <VCol cols="12">
-            <VCard variant="outlined" class="pa-4">
-              <VCardTitle class="text-h6 mb-4">
-                <VIcon start color="primary">
-                  tabler-calendar-time
-                </VIcon>
-                Jadwal Tersedia Dokter
-              </VCardTitle>
-              
-              <VRow>
-                <VCol 
-                  v-for="schedule in schedules" 
-                  :key="schedule.id" 
-                  cols="12" 
-                  md="6"
-                >
-                  <VCard variant="outlined" class="pa-4">
-                    <div class="d-flex align-center gap-3 mb-3">
-                      <VIcon size="24" color="primary">
-                        tabler-user-md
-                      </VIcon>
-                      <div>
-                        <h6 class="text-subtitle-1 font-weight-bold mb-1">
-                          {{ schedule.doctor_name }}
-                        </h6>
-                        <p class="text-caption text-medium-emphasis mb-0">
-                          {{ schedule.day }} • {{ schedule.start_time }} - {{ schedule.end_time }}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <VDivider class="my-3" />
-                    
-                    <div class="d-flex justify-space-between align-center mb-2">
-                      <span class="text-body-2">Slot Tersedia:</span>
-                      <VChip 
-                        :color="schedule.available_slots > 0 ? 'success' : 'error'"
-                        size="small"
-                      >
-                        {{ schedule.available_slots }} / {{ schedule.max_appointments }}
-                      </VChip>
-                    </div>
-                    
-                    <div class="d-flex justify-space-between align-center mb-2">
-                      <span class="text-body-2">Durasi:</span>
-                      <span class="text-body-1 font-weight-medium">
-                        {{ schedule.duration_hours }} jam
-                      </span>
-                    </div>
-                    
-                    <div v-if="schedule.break_start_time && schedule.break_end_time" class="d-flex justify-space-between align-center mb-2">
-                      <span class="text-body-2">Istirahat:</span>
-                      <span class="text-body-1 font-weight-medium">
-                        {{ schedule.break_start_time }} - {{ schedule.break_end_time }}
-                      </span>
-                    </div>
-                    
-                    <VDivider class="my-3" />
-                    
-                    <div class="mb-3">
-                      <h6 class="text-subtitle-2 font-weight-medium mb-2">Slot Waktu Tersedia:</h6>
-                      <div class="d-flex flex-wrap gap-2">
-                        <VChip
-                          v-for="timeSlot in schedule.available_time_slots"
-                          :key="`${timeSlot.start_time}-${timeSlot.end_time}`"
-                          color="primary"
-                          variant="outlined"
-                          size="small"
-                        >
-                          {{ timeSlot.start_time }} - {{ timeSlot.end_time }}
-                        </VChip>
-                      </div>
-                    </div>
-                    
-                    <div v-if="schedule.notes" class="mt-3 pa-3 bg-info-lighten-5 rounded">
-                      <div class="d-flex align-center gap-2">
-                        <VIcon size="16" color="info">
-                          tabler-info-circle
-                        </VIcon>
-                        <span class="text-caption text-info">
-                          {{ schedule.notes }}
-                        </span>
-                      </div>
-                    </div>
-                  </VCard>
-                </VCol>
-              </VRow>
-            </VCard>
-          </VCol>
-        </VRow>
 
-        <!-- Available Time Slots -->
-        <VRow v-if="availableTimeSlots.length > 0">
-          <VCol cols="12">
-            <VCard variant="outlined" class="pa-4">
-              <VCardTitle class="text-h6 mb-4">
-                <VIcon start color="success">
-                  tabler-clock-check
-                </VIcon>
-                Slot Waktu Tersedia
-              </VCardTitle>
-              
-              <VRow>
-                <VCol 
-                  v-for="timeSlot in availableTimeSlots" 
-                  :key="`${timeSlot.schedule_id}-${timeSlot.start_time}-${timeSlot.end_time}`" 
-                  cols="12" 
-                  md="4"
-                >
-                  <VCard 
-                    variant="outlined" 
-                    class="pa-3 time-slot-card"
-                    :class="{ 'selected-time-slot': selectedTimeSlot === timeSlot }"
-                  >
-                    <div class="d-flex align-center gap-3">
-                      <VIcon size="24" color="primary">
-                        tabler-clock
-                      </VIcon>
-                      <div class="flex-grow-1">
-                        <h6 class="text-subtitle-1 font-weight-bold mb-1">
-                          {{ timeSlot.start_time }} - {{ timeSlot.end_time }}
-                        </h6>
-                        <p class="text-caption text-medium-emphasis mb-0">
-                          {{ timeSlot.day }} • {{ timeSlot.doctor_name }}
-                        </p>
-                      </div>
-                    </div>
-                  </VCard>
-                </VCol>
-              </VRow>
-            </VCard>
-          </VCol>
-        </VRow>
 
-        <!-- Cost Summary Section -->
-        <VRow>
-          <VCol cols="12">
-            <VCard variant="outlined" class="pa-4">
-              <VCardTitle class="text-h6 mb-4">
-                <VIcon start color="primary">
-                  tabler-calculator
-                </VIcon>
-                Ringkasan Biaya Treatment
-              </VCardTitle>
-              <VRow>
-                <VCol cols="12" md="6">
-                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Total Treatment
-                  </label>
-                  <VTextField
-                    :model-value="calculateTreatmentTotal"
-                    type="number"
-                    prefix="Rp"
-                    readonly
-                    density="comfortable"
-                    variant="outlined"
-                  />
-                </VCol>
-                <VCol cols="12" md="6">
-                  <label class="text-subtitle-2 font-weight-medium mb-2 d-block">
-                    Jumlah Treatment
-                  </label>
-                  <VTextField
-                    :model-value="selectedTreatmentObjects.length"
-                    type="number"
-                    readonly
-                    density="comfortable"
-                    variant="outlined"
-                    color="info"
-                  />
-                </VCol>
-              </VRow>
-            </VCard>
-          </VCol>
-        </VRow>
         
         <div class="d-flex justify-end mt-4">
           <VBtn
@@ -1430,7 +722,7 @@ const goBack = () => {
             color="primary"
           >
             <VIcon start icon="tabler-plus" />
-            Tambah Treatment ke Billing
+            Lanjutkan
           </VBtn>
         </div>
       </VForm>
@@ -1438,22 +730,4 @@ const goBack = () => {
   </VCard>
 </template> 
 
-<style lang="scss" scoped>
-.time-slot-card {
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: rgba(25, 118, 210, 0.3);
-  }
-  
-  &.selected-time-slot {
-    border-color: #1976d2;
-    background: linear-gradient(135deg, rgba(25, 118, 210, 0.1), rgba(25, 118, 210, 0.05));
-    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.2);
-  }
-}
-</style> 
+ 

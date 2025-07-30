@@ -1046,7 +1046,7 @@ meta:
 
 <script setup>
 import { $api } from '@/utils/api'
-import { showErrorAlert, showSuccessAlert } from '@/utils/errorHandler'
+import { showErrorAlert } from '@/utils/errorHandler'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -1579,10 +1579,7 @@ async function submitConsultation() {
     consultation.value = { ...consultation.value, ...res.data }
 
     // Show success message
-    await showSuccessAlert(
-      'Konsultasi berhasil diperbarui',
-      'Berhasil!'
-    )
+    await showComingSoonAlert('Submit Konsultasi')
 
     // Redirect back to consultations list
     router.push({ name: 'transaction-consultations' })
@@ -1629,10 +1626,7 @@ async function progressConsultation() {
     })
 
     // Show success message with Indonesian date format
-    await showSuccessAlert(
-      `Konsultasi berhasil diproses pada ${indonesianDateTime}`,
-      'Berhasil!'
-    )
+    await showComingSoonAlert('Progress Konsultasi')
 
     // Redirect back to consultations list
     router.push({ name: 'transaction-consultations' })
@@ -1680,10 +1674,7 @@ async function completeConsultation() {
     })
 
     // Show success message with Indonesian date format
-    await showSuccessAlert(
-      `Konsultasi berhasil diselesaikan pada ${indonesianDateTime}`,
-      'Berhasil!'
-    )
+    await showComingSoonAlert('Selesai Konsultasi')
 
     // Redirect back to consultations list
     router.push({ name: 'transaction-consultations' })
@@ -1779,10 +1770,7 @@ async function submitRecommendation() {
     console.log('✅ Recommendation submitted:', res.data)
 
     // Show success message
-    await showSuccessAlert(
-      'Rekomendasi treatment berhasil dibuat',
-      'Berhasil!'
-    )
+    await showComingSoonAlert('Rekomendasi Treatment')
 
     // Refresh existing recommendations
     const currentVisitId = consultation.value?.visit_id || consultation.value?.visit?.id
@@ -1856,10 +1844,7 @@ async function submitRecommendationDetails() {
     }
 
     // Show success message
-    await showSuccessAlert(
-      'Detail rekomendasi berhasil ditambahkan',
-      'Berhasil!'
-    )
+    await showComingSoonAlert('Detail Rekomendasi')
 
     // Refresh recommendation details
     const currentRecommendationId = existingRecommendations.value[0]?.id

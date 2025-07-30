@@ -7,10 +7,10 @@ export default [
         title: 'Pasien',
         to: 'rme-pasien',
       },
-      {
-        title: 'Kunjungan',
-        to: 'rme-kunjungan',
-      },
+      // {
+      //   title: 'Kunjungan',
+      //   to: 'rme-kunjungan',
+      // },
 
       // {
       //   title: 'Tambah Pasien',

@@ -236,4 +236,53 @@ export async function handleError(error, context = 'API Call', alertOptions = {}
   
   // Show error to user
   return await showErrorAlert(error, alertOptions)
+}
+
+/**
+ * Show coming soon alert
+ * @param {String} featureName - Name of the feature that's coming soon
+ * @param {Object} options - Additional options for SweetAlert2
+ */
+export async function showComingSoonAlert(featureName, options = {}) {
+  const defaultOptions = {
+    icon: 'info',
+    title: 'Coming Soon',
+    text: `Fitur ${featureName} akan segera hadir.`,
+    confirmButtonText: 'OK',
+    allowOutsideClick: false,
+    customClass: {
+      popup: 'coming-soon-popup',
+      title: 'coming-soon-title',
+      confirmButton: 'swal2-confirm-coming-soon',
+    },
+  }
+  
+  const swalOptions = { ...defaultOptions, ...options }
+  
+  return await Swal.fire(swalOptions)
+}
+
+/**
+ * Show coming soon alert with custom message
+ * @param {String} title - Custom title (default: 'Coming Soon')
+ * @param {String} message - Custom message
+ * @param {Object} options - Additional options for SweetAlert2
+ */
+export async function showCustomComingSoonAlert(title = 'Coming Soon', message, options = {}) {
+  const defaultOptions = {
+    icon: 'info',
+    title: title,
+    text: message,
+    confirmButtonText: 'OK',
+    allowOutsideClick: false,
+    customClass: {
+      popup: 'coming-soon-popup',
+      title: 'coming-soon-title',
+      confirmButton: 'swal2-confirm-coming-soon',
+    },
+  }
+  
+  const swalOptions = { ...defaultOptions, ...options }
+  
+  return await Swal.fire(swalOptions)
 } 
