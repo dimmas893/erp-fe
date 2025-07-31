@@ -15,14 +15,14 @@ export default [
         title: 'Product',
         to: 'antrian-product',
       },
-    //   {
-    //     title: 'Academy',
-    //     to: 'dashboards-academy',
-    //   },
-    //   {
-    //     title: 'Logistics',
-    //     to: 'dashboards-logistics',
-    //   },
+      {
+        title: 'Konsul Form',
+        to: 'antrian-create',
+      },
+      {
+        title: 'treatment',
+        to: 'antrian-createtreatment',
+      },
     ],
     // badgeContent: '5',
     // badgeClass: 'bg-error',

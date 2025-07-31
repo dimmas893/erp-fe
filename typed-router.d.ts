@@ -23,6 +23,8 @@ declare module 'vue-router/auto-routes' {
     'antrian-antrian': RouteRecordInfo<'antrian-antrian', '/antrian/antrian', Record<never, never>, Record<never, never>>,
     'antrian-billing': RouteRecordInfo<'antrian-billing', '/antrian/billing', Record<never, never>, Record<never, never>>,
     'antrian-billingpageafterkonsul': RouteRecordInfo<'antrian-billingpageafterkonsul', '/antrian/billingpageafterkonsul', Record<never, never>, Record<never, never>>,
+    'antrian-create': RouteRecordInfo<'antrian-create', '/antrian/create', Record<never, never>, Record<never, never>>,
+    'antrian-createtreatment': RouteRecordInfo<'antrian-createtreatment', '/antrian/createtreatment', Record<never, never>, Record<never, never>>,
     'antrian-product': RouteRecordInfo<'antrian-product', '/antrian/product', Record<never, never>, Record<never, never>>,
     'apps-academy-course-details': RouteRecordInfo<'apps-academy-course-details', '/apps/academy/course-details', Record<never, never>, Record<never, never>>,
     'apps-academy-dashboard': RouteRecordInfo<'apps-academy-dashboard', '/apps/academy/dashboard', Record<never, never>, Record<never, never>>,
